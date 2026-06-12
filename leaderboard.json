@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "name": "T12",
+    "score": 1200
+  },
+  {
+    "name": "T11",
+    "score": 1100
+  },
+  {
+    "name": "T10",
+    "score": 1000
+  },
+  {
+    "name": "T9",
+    "score": 900
+  },
+  {
+    "name": "T8",
+    "score": 800
+  },
+  {
+    "name": "T7",
+    "score": 700
+  },
+  {
+    "name": "T6",
+    "score": 600
+  },
+  {
+    "name": "T5",
+    "score": 500
+  },
+  {
+    "name": "T4",
+    "score": 400
+  },
+  {
+    "name": "T3",
+    "score": 300
+  }
+]
