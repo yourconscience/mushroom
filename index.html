@@ -101,7 +101,14 @@ const DEATH_LINES = [
 ];
 
 // --- Лидерборд ---
-const LB_URL='https://jsonblob.com/api/jsonBlob/019ebc25-0179-7787-aa60-6a5bdaea7fc2';
+const LB_URL='https://kvdb.io/S1L2qbYm4ZTr2uX1hMJP4A/';
+async function fetchScores(){
+  const r=await fetch(LB_URL+'?values=true&format=json');
+  const d=await r.json();
+  // kvdb отдаёт массив пар [key, value]
+  return d.map(it=>Array.isArray(it)?{n:it[0],s:+it[1]||0}:{n:it.key,s:+it.value||0})
+          .sort((a,b)=>b.s-a.s);
+}
 async function submitScore(s){
   let name=localStorage.gribName||'';
   if(!name){
@@ -110,13 +117,14 @@ async function submitScore(s){
     localStorage.gribName=name;
   }
   try{
-    const r=await fetch(LB_URL); const d=await r.json();
-    const arr=d.scores||[];
-    arr.push({n:name,s,t:Date.now()});
-    arr.sort((a,b)=>b.s-a.s);
-    d.scores=arr.slice(0,50);
-    await fetch(LB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-    return {scores:d.scores,name};
+    let scores=await fetchScores();
+    const mine=scores.find(r=>r.n===name);
+    if(!mine||s>mine.s){
+      // POST с текстовым телом — простой запрос, без CORS preflight
+      await fetch(LB_URL+encodeURIComponent(name),{method:'POST',body:String(s)});
+      scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
+    }
+    return {scores,name};
   }catch(e){ return null; }
 }
 
@@ -384,7 +392,7 @@ function die(){
       const el=document.getElementById('lbx'); if(!el)return;
       if(!res){ el.textContent='лидерборд недоступен (нет сети)'; return; }
       const rows=res.scores.slice(0,10).map((r,i)=>{
-        const me=r.n===res.name&&r.s===s?' style="color:#7CFC00"':'';
+        const me=r.n===res.name?' style="color:#7CFC00"':'';
         return `<div${me}>${String(i+1).padStart(2,' ')}. ${r.n} — ${r.s}</div>`;
       }).join('');
       el.innerHTML=`<div style="color:#ffe14d;margin-bottom:6px">ТОП-10 ГРИБОВ</div><div style="text-align:left;display:inline-block">${rows}</div>`;

@@ -3,7 +3,7 @@
 # Run from cron every 10 minutes.
 set -e
 REPO="$(cd "$(dirname "$0")" && pwd)"
-URL="https://jsonblob.com/api/jsonBlob/019ebc25-0179-7787-aa60-6a5bdaea7fc2"
+URL="https://kvdb.io/S1L2qbYm4ZTr2uX1hMJP4A/?values=true&format=json"
 
 cd "$REPO"
 TMP=$(mktemp)
