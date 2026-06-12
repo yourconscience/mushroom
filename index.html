@@ -167,11 +167,17 @@ async function submitScore(s){
 
 // Зоны: см. zones.js (ZONES, ZONE_LEN)
 
+// дорожки, чтобы баннеры не накладывались друг на друга
+const quoteLanes=[false,false,false,false];
 function showQuote(txt, big){
+  let lane=quoteLanes.indexOf(false);
+  if(lane<0)lane=0; // все заняты — кладём в нижнюю, хуже не будет
+  quoteLanes[lane]=true;
   const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
-  el.style.bottom=(H*0.32+Math.random()*H*0.1)+'px';
+  el.style.bottom=(H*(0.30+lane*0.075))+'px';
   if(big){ el.style.fontSize='clamp(18px,6vw,30px)'; el.style.color='#7CFC00'; }
-  ui.appendChild(el); setTimeout(()=>el.remove(),1700);
+  ui.appendChild(el);
+  setTimeout(()=>{ el.remove(); quoteLanes[lane]=false; },1700);
 }
 
 // --- Звук (WebAudio пиканья) ---
@@ -261,6 +267,13 @@ async function shareScore(s,line){
       return;
     }
   }catch(e){ if(e.name==='AbortError')return; }
+  // нет нативного шеринга — копируем картинку в буфер
+  try{
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    showQuote('СКОПИРОВАНО В БУФЕР 📋',true);
+    return;
+  }catch(e){}
+  // буфер недоступен (старый браузер/без https) — последний шанс: скачать
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rip-grib.png';
   a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
