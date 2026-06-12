@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ГРИБ: Тает Лёд</title>
+<style>
+  @font-face { font-family: 'px'; src: local('Courier'); }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+  html,body { height:100%; overflow:hidden; background:#0b0b14; font-family:'Press Start 2P', monospace; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  canvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
+  #ui { position:fixed; inset:0; pointer-events:none; }
+  .quote {
+    position:fixed; left:50%; transform:translateX(-50%);
+    color:#ffe14d; font-weight:bold; font-size:clamp(14px,4vw,22px);
+    text-shadow:0 0 8px #ff2d78, 2px 2px 0 #000;
+    letter-spacing:1px; white-space:nowrap;
+    animation:quotePop 1.6s ease-out forwards;
+    font-family: monospace;
+  }
+  @keyframes quotePop {
+    0% { opacity:0; transform:translateX(-50%) translateY(20px) scale(.6); }
+    15% { opacity:1; transform:translateX(-50%) translateY(0) scale(1.1); }
+    25% { transform:translateX(-50%) scale(1); }
+    80% { opacity:1; }
+    100% { opacity:0; transform:translateX(-50%) translateY(-40px); }
+  }
+  #overlay {
+    position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(5,5,15,.82); color:#fff; text-align:center; padding:24px; gap:18px;
+    font-family:monospace; backdrop-filter:blur(3px); z-index:10;
+  }
+  #overlay h1 {
+    font-size:clamp(34px,10vw,64px); color:#7CFC00; letter-spacing:4px;
+    text-shadow:0 0 18px #39ff14, 4px 4px 0 #1a4d00;
+  }
+  #overlay .sub { color:#ff2d78; font-size:clamp(13px,3.6vw,18px); text-shadow:2px 2px 0 #000; line-height:1.6; }
+  #overlay .score { color:#ffe14d; font-size:clamp(18px,5vw,28px); }
+  #overlay button {
+    pointer-events:auto; font-family:monospace; font-weight:bold;
+    font-size:clamp(16px,4.5vw,22px); padding:16px 36px; border:3px solid #7CFC00;
+    background:#10241a; color:#7CFC00; letter-spacing:2px; cursor:pointer;
+    box-shadow:0 0 16px rgba(124,252,0,.5), inset 0 0 12px rgba(124,252,0,.15);
+    animation:pulse 1.4s infinite;
+  }
+  @keyframes pulse { 50% { box-shadow:0 0 30px rgba(124,252,0,.9), inset 0 0 12px rgba(124,252,0,.3); } }
+  #overlay .hint { color:#8888aa; font-size:clamp(11px,3vw,14px); line-height:1.7; }
+  #hud {
+    position:fixed; top:env(safe-area-inset-top,8px); left:0; right:0; padding:10px 14px;
+    display:flex; justify-content:space-between; color:#fff; font-family:monospace;
+    font-size:clamp(13px,3.8vw,18px); font-weight:bold; text-shadow:2px 2px 0 #000; z-index:5;
+  }
+  #combo { color:#ff2d78; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="hud" class="hidden"><span id="score">0</span><span id="combo"></span></div>
+<div id="ui"></div>
+<div id="overlay">
+  <h1>ГРИБ</h1>
+  <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Между нами тает лёд.</div>
+  <button id="btn">ПОЕХАЛИ</button>
+  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.</div>
+</div>
+<script>
+(() => {
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
+const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo');
+const ui = document.getElementById('ui');
+
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+addEventListener('resize',resize); resize();
+
+// --- Цитаты (отсылки) ---
+const QUOTES = [
+  'МЕЖДУ НАМИ ТАЕТ ЛЁД 🧊',          // Грибы — Тает лёд
+  'ПАНЕЛЬКА, ХРУЩЁВКА 🏚',            // Хаски — Панелька
+  'ЭТО ПРОСТО ДЫМ 💨',                // Скриптонит — Это дым
+  'GIMME THE LOOT 💰',                // Big Baby Tape
+  'ГОРОД ПОД ПОДОШВОЙ 👟',           // Oxxxymiron
+  'I GOT LOVE ❤️',                    // Miyagi & Эндшпиль
+  'НОВЫЙ КАДИЛЛАК 🚗',                // Morgenshtern
+  'ВЕЧЕРИНКА У ДЕКСТЕРА 🎉',         // ЛСП x Oxxxymiron
+  'МАЛО НАМ, МАЛО 🔥',                // Скриптонит
+  'РОЗОВОЕ ВИНО 🍷',                  // Элджей & Feduk
+  'ПЛАМБЕР ВЫШЕЛ ИЗ ЧАТА ☠️',
+  'ЭЩКЕРЕ! 🗣',                       // Face
+];
+const DEATH_LINES = [
+  'Это фиаско, братан.',
+  'Между нами растаял ты.',
+  'Тебя забрали в суп.',
+  'Гриб откисает в панельке.',
+  'Сантехник прочистил тебя.',
+];
+
+function showQuote(txt, big){
+  const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
+  el.style.bottom=(H*0.32+Math.random()*H*0.1)+'px';
+  if(big){ el.style.fontSize='clamp(18px,6vw,30px)'; el.style.color='#7CFC00'; }
+  ui.appendChild(el); setTimeout(()=>el.remove(),1700);
+}
+
+// --- Звук (WebAudio пиканья) ---
+let AC=null;
+function beep(f,d,type='square',v=.12){ if(!AC)return; const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+  o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d); }
+function sJump(){ beep(330,.12); setTimeout(()=>beep(520,.1),60); }
+function sStomp(){ beep(620,.08); setTimeout(()=>beep(880,.12),50); }
+function sDie(){ beep(220,.2,'sawtooth'); setTimeout(()=>beep(140,.35,'sawtooth'),120); }
+
+// --- Состояние ---
+let running=false, gameOver=false;
+let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, best=+(localStorage.gribBest||0);
+const G=2400, JUMP=-880;
+
+function reset(){
+  player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0};
+  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0;
+  // стартовая земля
+  plats.push({x:-100,y:H*0.72,w:900});
+  let x=800;
+  while(x<3000){ x=addPlat(x); }
+  gameOver=false;
+}
+function addPlat(afterX){
+  const gap=80+Math.random()*120+speed*0.12;
+  const w=180+Math.random()*260;
+  const last=plats[plats.length-1];
+  let y=last.y+(Math.random()*220-110);
+  y=Math.max(H*0.35,Math.min(H*0.82,y));
+  const p={x:afterX+gap,y,w};
+  plats.push(p);
+  // враг
+  if(Math.random()<0.55 && w>150){
+    enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6});
+  }
+  return p.x+w;
+}
+
+// --- Ввод ---
+function jump(){
+  if(!running){ return; }
+  if(player.dead) return;
+  if(player.jumps>0){
+    player.vy=JUMP*(player.jumps===2?1:0.88);
+    player.jumps--; player.squish=-0.25; sJump();
+    for(let i=0;i<6;i++) parts.push({x:player.x,y:player.y,vx:(Math.random()-.5)*200,vy:100+Math.random()*100,l:.4,c:'#9be564'});
+  }
+}
+addEventListener('pointerdown',e=>{ if(e.target.tagName!=='BUTTON') jump(); });
+addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='ArrowUp') jump(); });
+
+btn.addEventListener('click',()=>{
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
+});
+
+// --- Фон: панельки ---
+function drawBg(t){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0d0d22'); g.addColorStop(.6,'#1a1033'); g.addColorStop(1,'#2a1440');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // луна
+  ctx.fillStyle='#ffe9a8'; ctx.beginPath(); ctx.arc(W*0.8,H*0.16,34,0,7); ctx.fill();
+  ctx.fillStyle='#0d0d22'; ctx.beginPath(); ctx.arc(W*0.8+12,H*0.16-6,28,0,7); ctx.fill();
+  // панельки 2 слоя
+  for(let layer=0;layer<2;layer++){
+    const par=(layer+1)*0.18, bw=90+layer*40, sp=bw+30;
+    const off=(camX*par)%sp;
+    ctx.fillStyle=layer?'#241a3d':'#171130';
+    for(let i=-1;i<W/sp+2;i++){
+      const bx=i*sp-off, bh=H*(0.3+((i*7+layer*3)%5)*0.07);
+      ctx.fillRect(bx,H-bh,bw,bh);
+      // окна
+      ctx.fillStyle=layer?'#4a3a6b':'#2a2150';
+      for(let wy=H-bh+14;wy<H-20;wy+=26)
+        for(let wx=bx+10;wx<bx+bw-12;wx+=22)
+          if(((wx*13+wy*7)|0)%5===0){ ctx.fillStyle='#ffd166'; ctx.fillRect(wx,wy,9,12); ctx.fillStyle=layer?'#4a3a6b':'#2a2150'; }
+          else ctx.fillRect(wx,wy,9,12);
+      ctx.fillStyle=layer?'#241a3d':'#171130';
+    }
+  }
+}
+
+// --- Рисовка гриба ---
+function drawGrib(p,t){
+  ctx.save(); ctx.translate(p.x-camX,p.y);
+  const sq=p.squish; ctx.scale(1-sq*.6,1+sq);
+  // ножка
+  ctx.fillStyle='#f5e9d0'; ctx.fillRect(-10,-18,20,18);
+  // глаза
+  ctx.fillStyle='#222'; ctx.fillRect(-7,-14,4,6); ctx.fillRect(3,-14,4,6);
+  // шляпка
+  ctx.fillStyle='#e63946';
+  ctx.beginPath(); ctx.ellipse(0,-20,20,13,0,Math.PI,0); ctx.fill();
+  ctx.fillRect(-20,-20,40,4);
+  // точки
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-8,-26,3.4,0,7); ctx.arc(8,-25,3,0,7); ctx.arc(0,-30,2.6,0,7); ctx.fill();
+  ctx.restore();
+}
+// --- Враг: сантехник ---
+function drawEnemy(e,t){
+  ctx.save(); ctx.translate(e.x-camX,e.y);
+  if(e.dead){ ctx.scale(1,0.25); ctx.globalAlpha=Math.max(0,1-e.dead*2); }
+  const bob=Math.sin(t*10+e.t)*2;
+  ctx.scale(e.dir,1);
+  // тело-комбез
+  ctx.fillStyle='#2a5fd0'; ctx.fillRect(-12,-26+bob,24,26-bob);
+  // лицо
+  ctx.fillStyle='#f0b27a'; ctx.fillRect(-10,-38+bob,20,14);
+  // усы
+  ctx.fillStyle='#3d2b1f'; ctx.fillRect(-9,-29+bob,18,4);
+  // кепка
+  ctx.fillStyle='#d62828'; ctx.fillRect(-12,-44+bob,24,8); ctx.fillRect(2,-42+bob,16,5);
+  // буква на кепке
+  ctx.fillStyle='#fff'; ctx.font='bold 8px monospace'; ctx.fillText('М',-4,-37+bob);
+  // вантуз
+  ctx.fillStyle='#8d5a2b'; ctx.fillRect(13,-24+bob,3,18);
+  ctx.fillStyle='#c1121f'; ctx.fillRect(9,-8+bob,11,6);
+  ctx.restore();
+}
+
+// --- Цикл ---
+let lt=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  const t=ts/1000, dt=Math.min((ts-lt)/1000,0.033); lt=ts;
+  drawBg(t);
+  if(!running){ return; }
+
+  if(!player.dead){
+    speed+=dt*4; dist+=speed*dt;
+    player.x+=speed*dt;
+    camX=player.x-Math.min(140,W*0.25);
+  }
+  // физика
+  player.vy+=G*dt; player.y+=player.vy*dt;
+  player.squish+= (0-player.squish)*Math.min(1,dt*10);
+
+  // платформы
+  let onGround=false;
+  for(const p of plats){
+    if(player.x>p.x-14&&player.x<p.x+p.w+14&&player.vy>=0&&player.y>=p.y-6&&player.y<=p.y+Math.max(26,player.vy*dt+8)){
+      player.y=p.y; player.vy=0; if(player.jumps<2&&!onGround){ player.squish=0.22; } player.jumps=2; onGround=true;
+    }
+  }
+  if(onGround) { combo>0&&(comboT-=dt); if(comboT<=0) combo=0; }
+
+  // генерация/чистка
+  while(plats[plats.length-1].x<camX+W*2.5) addPlat(plats[plats.length-1].x+plats[plats.length-1].w);
+  plats=plats.filter(p=>p.x+p.w>camX-200);
+  enemies=enemies.filter(e=>e.x>camX-200&&e.dead<1);
+
+  // враги
+  for(const e of enemies){
+    if(e.dead){ e.dead+=dt; continue; }
+    e.x+=e.dir*60*dt;
+    if(e.x<e.p.x+18){e.dir=1;} if(e.x>e.p.x+e.p.w-18){e.dir=-1;}
+    // коллизия
+    if(!player.dead&&Math.abs(player.x-e.x)<26&&player.y>e.y-44&&player.y-40<e.y){
+      if(player.vy>140&&player.y<e.y-14){
+        // СТОМП
+        e.dead=0.01; player.vy=JUMP*0.7; player.jumps=2;
+        combo++; comboT=2.2;
+        const pts=100*combo; score+=pts; sStomp();
+        showQuote(QUOTES[(Math.random()*QUOTES.length)|0], combo>=3);
+        if(navigator.vibrate)navigator.vibrate(30);
+        for(let i=0;i<12;i++)parts.push({x:e.x,y:e.y-20,vx:(Math.random()-.5)*400,vy:-Math.random()*300,l:.6,c:Math.random()<.5?'#d62828':'#2a5fd0'});
+      } else if(!player.dead){ die(); }
+    }
+  }
+
+  // падение
+  if(!player.dead&&player.y>H+80) die();
+
+  score+=speed*dt*0.05;
+
+  // частицы
+  for(const p of parts){ p.l-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=1200*dt; }
+  parts=parts.filter(p=>p.l>0);
+
+  // --- рендер мира ---
+  for(const p of plats){
+    const px=p.x-camX;
+    ctx.fillStyle='#3dd13d'; ctx.fillRect(px,p.y,p.w,8);
+    ctx.fillStyle='#6b4226'; ctx.fillRect(px,p.y+8,p.w,16);
+    ctx.fillStyle='#553319'; ctx.fillRect(px,p.y+24,p.w,Math.max(0,H-p.y-24));
+  }
+  for(const e of enemies) drawEnemy(e,t);
+  for(const p of parts){ ctx.globalAlpha=Math.min(1,p.l*2); ctx.fillStyle=p.c; ctx.fillRect(p.x-camX-3,p.y-3,6,6); ctx.globalAlpha=1; }
+  if(!player.dead||player.y<H+200) drawGrib(player,t);
+
+  scoreEl.textContent='СЧЁТ: '+(score|0);
+  comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';
+}
+requestAnimationFrame(loop);
+
+function die(){
+  if(player.dead)return;
+  player.dead=true; player.vy=-500; sDie();
+  if(navigator.vibrate)navigator.vibrate([60,40,80]);
+  setTimeout(()=>{
+    running=false; hud.classList.add('hidden');
+    const s=score|0; best=Math.max(best,s); localStorage.gribBest=best;
+    overlay.innerHTML=`<h1 style="color:#ff2d78;text-shadow:0 0 18px #ff2d78,4px 4px 0 #4d0022">RIP ГРИБ</h1>
+      <div class="sub">${DEATH_LINES[(Math.random()*DEATH_LINES.length)|0]}</div>
+      <div class="score">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
+      <button id="btn2">ЕЩЁ РАЗ</button>
+      <div class="hint">Скинь скрин рекорда в чат, не будь сантехником.</div>`;
+    overlay.classList.remove('hidden');
+    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); };
+  },900);
+}
+})();
+</script>
+</body>
+</html>
