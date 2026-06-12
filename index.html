@@ -96,7 +96,7 @@
   <h1>ГРИБ</h1>
   <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Между нами тает лёд.</div>
   <button id="btn">ПОЕХАЛИ</button>
-  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.</div>
+  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.</div>
 </div>
 <script src="https://yourconscience.github.io/mushroom-data/zones.js?v=5"></script>
 <script src="https://yourconscience.github.io/mushroom-data/bonuses.js?v=5"></script>
@@ -327,7 +327,14 @@ function jump(){
   }
 }
 addEventListener('pointerdown',e=>{ if(e.target.tagName!=='BUTTON') jump(); });
-addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='ArrowUp') jump(); });
+addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){
+    const again=document.getElementById('btn2');
+    if(!running&&again){ e.preventDefault(); again.click(); return; } // рестарт после смерти
+    jump();
+  }
+  if(e.code==='KeyZ') spinSlot(); // казино с клавиатуры
+});
 
 btn.addEventListener('click',()=>{
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
