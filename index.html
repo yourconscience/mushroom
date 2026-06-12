@@ -100,6 +100,35 @@ const DEATH_LINES = [
   'Сантехник прочистил тебя.',
 ];
 
+// --- Лидерборд ---
+const LB_URL='https://jsonblob.com/api/jsonBlob/019ebc25-0179-7787-aa60-6a5bdaea7fc2';
+async function submitScore(s){
+  let name=localStorage.gribName||'';
+  if(!name){
+    name=(prompt('Имя для лидерборда (до 8 букв):','ГРИБ')||'').trim().slice(0,8);
+    if(!name)name='АНОНИМ';
+    localStorage.gribName=name;
+  }
+  try{
+    const r=await fetch(LB_URL); const d=await r.json();
+    const arr=d.scores||[];
+    arr.push({n:name,s,t:Date.now()});
+    arr.sort((a,b)=>b.s-a.s);
+    d.scores=arr.slice(0,50);
+    await fetch(LB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    return {scores:d.scores,name};
+  }catch(e){ return null; }
+}
+
+// --- Зоны ---
+const ZONES=[
+  {name:'ПАНЕЛЬКА', sub:'Хаски',        sky:['#0d0d22','#1a1033','#2a1440'], plat:'#3dd13d', dirt:'#6b4226', dirt2:'#553319', build:'#171130', build2:'#241a3d', win:'#ffd166', moon:'#ffe9a8', enemies:['walk'], mult:1},
+  {name:'ТАЕТ ЛЁД',  sub:'Грибы',        sky:['#02101f','#06304a','#0a4a66'], plat:'#9fe8ff', dirt:'#23556b', dirt2:'#173b4d', build:'#0a2438', build2:'#143752', win:'#aef3ff', moon:'#dff6ff', enemies:['walk','slide'], mult:1.15},
+  {name:'ЭТО ДЫМ',   sub:'Скриптонит',   sky:['#101410','#1d2a1d','#2c3a22'], plat:'#9fc463', dirt:'#3d4a2b', dirt2:'#2b351f', build:'#16201a', build2:'#22302a', win:'#c8ff8a', moon:'#e8ffcf', enemies:['walk','fly'], mult:1.3},
+  {name:'КАДИЛЛАК',  sub:'MORGENSHTERN', sky:['#1a0510','#3a0a25','#5c1038'], plat:'#ff9bd0', dirt:'#5e1f40', dirt2:'#42152e', build:'#2a0a1c', build2:'#451530', win:'#ffd1e8', moon:'#ffd700', enemies:['slide','fly','hop'], mult:1.45},
+];
+const ZONE_LEN=2400;
+
 function showQuote(txt, big){
   const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
   el.style.bottom=(H*0.32+Math.random()*H*0.1)+'px';
@@ -118,12 +147,12 @@ function sDie(){ beep(220,.2,'sawtooth'); setTimeout(()=>beep(140,.35,'sawtooth'
 
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, best=+(localStorage.gribBest||0);
+let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, zoneI, best=+(localStorage.gribBest||0);
 const G=2400, JUMP=-880;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0};
-  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0;
+  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0;
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -139,8 +168,10 @@ function addPlat(afterX){
   const p={x:afterX+gap,y,w};
   plats.push(p);
   // враг
-  if(Math.random()<0.55 && w>150){
-    enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6});
+  if(Math.random()<0.6 && w>150){
+    const types=ZONES[zoneI].enemies;
+    const type=types[(Math.random()*types.length)|0];
+    enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y});
   }
   return p.x+w;
 }
@@ -165,27 +196,28 @@ btn.addEventListener('click',()=>{
 
 // --- Фон: панельки ---
 function drawBg(t){
+  const Z=ZONES[zoneI||0];
   const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#0d0d22'); g.addColorStop(.6,'#1a1033'); g.addColorStop(1,'#2a1440');
+  g.addColorStop(0,Z.sky[0]); g.addColorStop(.6,Z.sky[1]); g.addColorStop(1,Z.sky[2]);
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   // луна
-  ctx.fillStyle='#ffe9a8'; ctx.beginPath(); ctx.arc(W*0.8,H*0.16,34,0,7); ctx.fill();
-  ctx.fillStyle='#0d0d22'; ctx.beginPath(); ctx.arc(W*0.8+12,H*0.16-6,28,0,7); ctx.fill();
+  ctx.fillStyle=Z.moon; ctx.beginPath(); ctx.arc(W*0.8,H*0.16,34,0,7); ctx.fill();
+  ctx.fillStyle=Z.sky[0]; ctx.beginPath(); ctx.arc(W*0.8+12,H*0.16-6,28,0,7); ctx.fill();
   // панельки 2 слоя
   for(let layer=0;layer<2;layer++){
     const par=(layer+1)*0.18, bw=90+layer*40, sp=bw+30;
     const off=(camX*par)%sp;
-    ctx.fillStyle=layer?'#241a3d':'#171130';
+    const base=layer?Z.build2:Z.build, winOff=layer?Z.build2:Z.build;
+    ctx.fillStyle=base;
     for(let i=-1;i<W/sp+2;i++){
       const bx=i*sp-off, bh=H*(0.3+((i*7+layer*3)%5)*0.07);
       ctx.fillRect(bx,H-bh,bw,bh);
-      // окна
-      ctx.fillStyle=layer?'#4a3a6b':'#2a2150';
       for(let wy=H-bh+14;wy<H-20;wy+=26)
-        for(let wx=bx+10;wx<bx+bw-12;wx+=22)
-          if(((wx*13+wy*7)|0)%5===0){ ctx.fillStyle='#ffd166'; ctx.fillRect(wx,wy,9,12); ctx.fillStyle=layer?'#4a3a6b':'#2a2150'; }
-          else ctx.fillRect(wx,wy,9,12);
-      ctx.fillStyle=layer?'#241a3d':'#171130';
+        for(let wx=bx+10;wx<bx+bw-12;wx+=22){
+          ctx.fillStyle=(((wx*13+wy*7)|0)%5===0)?Z.win:winOff;
+          ctx.fillRect(wx,wy,9,12);
+        }
+      ctx.fillStyle=base;
     }
   }
 }
@@ -207,23 +239,36 @@ function drawGrib(p,t){
   ctx.beginPath(); ctx.arc(-8,-26,3.4,0,7); ctx.arc(8,-25,3,0,7); ctx.arc(0,-30,2.6,0,7); ctx.fill();
   ctx.restore();
 }
-// --- Враг: сантехник ---
+// --- Враги ---
+const SKINS={
+  walk: {cap:'#d62828', body:'#2a5fd0', letter:'М'},
+  slide:{cap:'#4cc9f0', body:'#1b3b5e', letter:'Л'},
+  hop:  {cap:'#ffd700', body:'#7a0f3f', letter:'$'},
+};
 function drawEnemy(e,t){
   ctx.save(); ctx.translate(e.x-camX,e.y);
   if(e.dead){ ctx.scale(1,0.25); ctx.globalAlpha=Math.max(0,1-e.dead*2); }
-  const bob=Math.sin(t*10+e.t)*2;
   ctx.scale(e.dir,1);
-  // тело-комбез
-  ctx.fillStyle='#2a5fd0'; ctx.fillRect(-12,-26+bob,24,26-bob);
-  // лицо
+  if(e.type==='fly'){
+    // голубь
+    const flap=Math.sin(t*16+e.t)*9;
+    ctx.fillStyle='#9a9aae';
+    ctx.beginPath(); ctx.ellipse(0,-14,15,10,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(13,-22,7,0,7); ctx.fill();
+    ctx.fillStyle='#ff8c42'; ctx.fillRect(19,-23,7,3);
+    ctx.fillStyle='#222'; ctx.fillRect(14,-25,3,3);
+    ctx.fillStyle='#6e6e85';
+    ctx.beginPath(); ctx.moveTo(-4,-16); ctx.lineTo(-14,-26-flap); ctx.lineTo(4,-18); ctx.fill();
+    ctx.fillStyle='#4cc9f0'; ctx.fillRect(-3,-9,4,4);
+    ctx.restore(); return;
+  }
+  const sk=SKINS[e.type]||SKINS.walk;
+  const bob=e.type==='hop'?0:Math.sin(t*10+e.t)*2;
+  ctx.fillStyle=sk.body; ctx.fillRect(-12,-26+bob,24,26-bob);
   ctx.fillStyle='#f0b27a'; ctx.fillRect(-10,-38+bob,20,14);
-  // усы
   ctx.fillStyle='#3d2b1f'; ctx.fillRect(-9,-29+bob,18,4);
-  // кепка
-  ctx.fillStyle='#d62828'; ctx.fillRect(-12,-44+bob,24,8); ctx.fillRect(2,-42+bob,16,5);
-  // буква на кепке
-  ctx.fillStyle='#fff'; ctx.font='bold 8px monospace'; ctx.fillText('М',-4,-37+bob);
-  // вантуз
+  ctx.fillStyle=sk.cap; ctx.fillRect(-12,-44+bob,24,8); ctx.fillRect(2,-42+bob,16,5);
+  ctx.fillStyle=e.type==='hop'?'#000':'#fff'; ctx.font='bold 8px monospace'; ctx.fillText(sk.letter,-4,-37+bob);
   ctx.fillStyle='#8d5a2b'; ctx.fillRect(13,-24+bob,3,18);
   ctx.fillStyle='#c1121f'; ctx.fillRect(9,-8+bob,11,6);
   ctx.restore();
@@ -238,9 +283,17 @@ function loop(ts){
   if(!running){ return; }
 
   if(!player.dead){
-    speed+=dt*4; dist+=speed*dt;
+    speed+=dt*5; dist+=speed*dt;
     player.x+=speed*dt;
     camX=player.x-Math.min(140,W*0.25);
+    // смена зоны
+    const zi=((dist/ZONE_LEN)|0)%ZONES.length;
+    if(zi!==zoneI){
+      zoneI=zi; speed+=18;
+      const Z=ZONES[zi];
+      showQuote('ЗОНА: '+Z.name+' • '+Z.sub, true);
+      beep(440,.1); setTimeout(()=>beep(660,.1),90); setTimeout(()=>beep(880,.16),180);
+    }
   }
   // физика
   player.vy+=G*dt; player.y+=player.vy*dt;
@@ -261,10 +314,18 @@ function loop(ts){
   enemies=enemies.filter(e=>e.x>camX-200&&e.dead<1);
 
   // враги
+  const emult=ZONES[zoneI].mult;
   for(const e of enemies){
     if(e.dead){ e.dead+=dt; continue; }
-    e.x+=e.dir*60*dt;
+    const sp=(e.type==='slide'?150:e.type==='fly'?85:e.type==='hop'?70:60)*emult;
+    e.x+=e.dir*sp*dt;
     if(e.x<e.p.x+18){e.dir=1;} if(e.x>e.p.x+e.p.w-18){e.dir=-1;}
+    if(e.type==='fly'){
+      e.y=e.baseY-58+Math.sin(t*3+e.t)*24;
+    } else if(e.type==='hop'){
+      e.vy+=G*0.7*dt; e.y+=e.vy*dt;
+      if(e.y>=e.baseY){ e.y=e.baseY; e.vy=-620; }
+    }
     // коллизия
     if(!player.dead&&Math.abs(player.x-e.x)<26&&player.y>e.y-44&&player.y-40<e.y){
       if(player.vy>140&&player.y<e.y-14){
@@ -289,11 +350,12 @@ function loop(ts){
   parts=parts.filter(p=>p.l>0);
 
   // --- рендер мира ---
+  const ZC=ZONES[zoneI];
   for(const p of plats){
     const px=p.x-camX;
-    ctx.fillStyle='#3dd13d'; ctx.fillRect(px,p.y,p.w,8);
-    ctx.fillStyle='#6b4226'; ctx.fillRect(px,p.y+8,p.w,16);
-    ctx.fillStyle='#553319'; ctx.fillRect(px,p.y+24,p.w,Math.max(0,H-p.y-24));
+    ctx.fillStyle=ZC.plat; ctx.fillRect(px,p.y,p.w,8);
+    ctx.fillStyle=ZC.dirt; ctx.fillRect(px,p.y+8,p.w,16);
+    ctx.fillStyle=ZC.dirt2; ctx.fillRect(px,p.y+24,p.w,Math.max(0,H-p.y-24));
   }
   for(const e of enemies) drawEnemy(e,t);
   for(const p of parts){ ctx.globalAlpha=Math.min(1,p.l*2); ctx.fillStyle=p.c; ctx.fillRect(p.x-camX-3,p.y-3,6,6); ctx.globalAlpha=1; }
@@ -315,9 +377,18 @@ function die(){
       <div class="sub">${DEATH_LINES[(Math.random()*DEATH_LINES.length)|0]}</div>
       <div class="score">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
       <button id="btn2">ЕЩЁ РАЗ</button>
-      <div class="hint">Скинь скрин рекорда в чат, не будь сантехником.</div>`;
+      <div id="lbx" class="hint">лидерборд грузится…</div>`;
     overlay.classList.remove('hidden');
     document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); };
+    submitScore(s).then(res=>{
+      const el=document.getElementById('lbx'); if(!el)return;
+      if(!res){ el.textContent='лидерборд недоступен (нет сети)'; return; }
+      const rows=res.scores.slice(0,10).map((r,i)=>{
+        const me=r.n===res.name&&r.s===s?' style="color:#7CFC00"':'';
+        return `<div${me}>${String(i+1).padStart(2,' ')}. ${r.n} — ${r.s}</div>`;
+      }).join('');
+      el.innerHTML=`<div style="color:#ffe14d;margin-bottom:6px">ТОП-10 ГРИБОВ</div><div style="text-align:left;display:inline-block">${rows}</div>`;
+    });
   },900);
 }
 })();
