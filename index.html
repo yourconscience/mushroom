@@ -103,7 +103,8 @@ const DEATH_LINES = [
 // --- Лидерборд ---
 const LB_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
 async function fetchScores(){
-  const r=await fetch(LB_URL+'?values=true&format=json');
+  // _= обходит cloudflare-кеш kvdb (cache-control: public)
+  const r=await fetch(LB_URL+'?values=true&format=json&_='+Date.now());
   const d=await r.json();
   // kvdb отдаёт массив пар [key, value]
   return d.map(it=>Array.isArray(it)?{n:it[0],s:+it[1]||0}:{n:it.key,s:+it.value||0})
