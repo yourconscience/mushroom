@@ -66,7 +66,8 @@
   <button id="btn">ПОЕХАЛИ</button>
   <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.</div>
 </div>
-<script src="zones.js?v=2"></script>
+<script src="https://yourconscience.github.io/mushroom-data/zones.js?v=3"></script>
+<script src="https://yourconscience.github.io/mushroom-data/bonuses.js?v=3"></script>
 <script>
 (() => {
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -164,12 +165,12 @@ function tickMusic(){
 
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, best=+(localStorage.gribBest||0);
+let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, boostT, best=+(localStorage.gribBest||0);
 const G=2400, JUMP=-880;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0};
-  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0;
+  plats=[]; enemies=[]; parts=[]; pickups=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; boostT=0;
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -190,6 +191,12 @@ function addPlat(afterX){
     const type=types[(Math.random()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y});
   }
+  // бонус
+  const roll=Math.random(); let acc=0;
+  for(const k in BONUSES){
+    acc+=BONUSES[k].chance;
+    if(roll<acc){ pickups.push({x:p.x+w*(0.2+Math.random()*0.6),y:p.y-52,kind:k,t:Math.random()*6}); break; }
+  }
   return p.x+w;
 }
 
@@ -197,9 +204,10 @@ function addPlat(afterX){
 function jump(){
   if(!running){ return; }
   if(player.dead) return;
-  if(player.jumps>0){
-    player.vy=JUMP*(player.jumps===2?1:0.88);
-    player.jumps--; player.squish=-0.25; sJump();
+  if(player.jumps>0||jetT>0){
+    player.vy=jetT>0?JUMP*0.75:JUMP*(player.jumps===2?1:0.88);
+    if(jetT<=0)player.jumps--;
+    player.squish=-0.25; sJump();
     for(let i=0;i<6;i++) parts.push({x:player.x,y:player.y,vx:(Math.random()-.5)*200,vy:100+Math.random()*100,l:.4,c:'#9be564'});
   }
 }
@@ -301,8 +309,9 @@ function loop(ts){
   if(!running){ return; }
 
   if(!player.dead){
+    jetT=Math.max(0,jetT-dt); boostT=Math.max(0,boostT-dt);
     speed+=dt*5; dist+=speed*dt;
-    player.x+=speed*dt;
+    player.x+=speed*(boostT>0?1.6:1)*dt;
     camX=player.x-Math.min(140,W*0.25);
     // смена зоны: все 8 по разу, дальше круг II, III... с ускорением
     const zn=(dist/ZONE_LEN)|0;
@@ -333,6 +342,24 @@ function loop(ts){
   while(plats[plats.length-1].x<camX+W*2.5) addPlat(plats[plats.length-1].x+plats[plats.length-1].w);
   plats=plats.filter(p=>p.x+p.w>camX-200);
   enemies=enemies.filter(e=>e.x>camX-200&&e.dead<1);
+  pickups=pickups.filter(b=>b.x>camX-100);
+
+  // подбор бонусов
+  for(const b of pickups){
+    if(player.dead||b.got)continue;
+    if(Math.abs(player.x-b.x)<32&&Math.abs(player.y-20-b.y)<44){
+      b.got=true;
+      const B=BONUSES[b.kind];
+      showQuote(B.quote,true);
+      beep(700,.08); setTimeout(()=>beep(1050,.12),60);
+      if(navigator.vibrate)navigator.vibrate(40);
+      if(b.kind==='jet')jetT=B.dur;
+      else if(b.kind==='boost')boostT=B.dur;
+      else if(b.kind==='loot')score+=500;
+      for(let i=0;i<14;i++)parts.push({x:b.x,y:b.y,vx:(Math.random()-.5)*450,vy:-Math.random()*350,l:.6,c:B.color});
+    }
+  }
+  pickups=pickups.filter(b=>!b.got);
 
   // враги
   const emult=ZONES[zoneI].mult*(1+lap*0.25);
@@ -357,6 +384,10 @@ function loop(ts){
         showQuote(QUOTES[(Math.random()*QUOTES.length)|0], combo>=3);
         if(navigator.vibrate)navigator.vibrate(30);
         for(let i=0;i<12;i++)parts.push({x:e.x,y:e.y-20,vx:(Math.random()-.5)*400,vy:-Math.random()*300,l:.6,c:Math.random()<.5?'#d62828':'#2a5fd0'});
+      } else if(boostT>0){
+        // на бусте сносим врага корпусом
+        e.dead=0.01; combo++; comboT=2.2; score+=100*combo; sStomp();
+        for(let i=0;i<12;i++)parts.push({x:e.x,y:e.y-20,vx:(Math.random()-.5)*500,vy:-Math.random()*300,l:.5,c:'#ffd700'});
       } else if(!player.dead){ die(); }
     }
   }
@@ -378,12 +409,27 @@ function loop(ts){
     ctx.fillStyle=ZC.dirt; ctx.fillRect(px,p.y+8,p.w,16);
     ctx.fillStyle=ZC.dirt2; ctx.fillRect(px,p.y+24,p.w,Math.max(0,H-p.y-24));
   }
+  // бонусы (парят и пульсируют)
+  ctx.textAlign='center';
+  for(const b of pickups){
+    const by=b.y+Math.sin(t*3+b.t)*6, B=BONUSES[b.kind];
+    ctx.save(); ctx.translate(b.x-camX,by);
+    ctx.globalAlpha=.25; ctx.fillStyle=B.color;
+    ctx.beginPath(); ctx.arc(0,0,20+Math.sin(t*6+b.t)*3,0,7); ctx.fill();
+    ctx.globalAlpha=1; ctx.font='22px monospace'; ctx.fillText(B.icon,0,8);
+    ctx.restore();
+  }
+  ctx.textAlign='left';
+  // выхлоп джетпака / буста
+  if(jetT>0&&!player.dead)parts.push({x:player.x-8,y:player.y-6,vx:-120-Math.random()*80,vy:120+Math.random()*120,l:.35,c:Math.random()<.5?'#ff8c42':'#4cc9f0'});
+  if(boostT>0&&!player.dead)parts.push({x:player.x-14,y:player.y-18,vx:-300,vy:(Math.random()-.5)*80,l:.3,c:'#ffd700'});
   for(const e of enemies) drawEnemy(e,t);
   for(const p of parts){ ctx.globalAlpha=Math.min(1,p.l*2); ctx.fillStyle=p.c; ctx.fillRect(p.x-camX-3,p.y-3,6,6); ctx.globalAlpha=1; }
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
   scoreEl.textContent='СЧЁТ: '+(score|0);
-  comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';
+  const fx=jetT>0?('🚀'+jetT.toFixed(0)+' '):boostT>0?('🏎'+boostT.toFixed(0)+' '):'';
+  comboEl.textContent=fx+(combo>1?('x'+combo+' КОМБО'):'');
 }
 requestAnimationFrame(loop);
 
