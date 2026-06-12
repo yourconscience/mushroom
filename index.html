@@ -721,7 +721,7 @@ function die(){
     overlay.innerHTML=`<h1 style="color:#ff2d78;text-shadow:0 0 18px #ff2d78,4px 4px 0 #4d0022">RIP ГРИБ</h1>
       <div class="sub">${line}</div>
       ${newRecord?'<div class="record">🏆 НОВЫЙ РЕКОРД! 🏆</div>':''}
-      <div class="score">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
+      <div class="score" id="scoreLine">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
       <div class="btnrow">
         <button id="btn2">ЕЩЁ РАЗ</button>
         <button id="btnShare" class="alt">ШЕРАНУТЬ 📸</button>
@@ -736,6 +736,13 @@ function die(){
       const el=document.getElementById('lbx'); if(!el)return;
       if(!res){ el.textContent='лидерборд недоступен (нет сети)'; return; }
       lastScores=res.scores;
+      // рекорд на устройстве отстаёт от лидерборда (играл с другого браузера) — подтягиваем
+      const mine=res.scores.find(r=>r.n===res.name);
+      if(mine&&mine.s>best){
+        best=mine.s; localStorage.gribBest=best;
+        const sl=document.getElementById('scoreLine');
+        if(sl)sl.innerHTML=`СЧЁТ: ${s}<br>РЕКОРД: ${best}`;
+      }
       const rows=res.scores.slice(0,10).map((r,i)=>{
         const me=r.n===res.name?' style="color:#7CFC00"':'';
         return `<div${me}>${String(i+1).padStart(2,' ')}. ${r.n} — ${r.s}</div>`;
