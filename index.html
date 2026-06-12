@@ -66,6 +66,7 @@
   <button id="btn">ПОЕХАЛИ</button>
   <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.</div>
 </div>
+<script src="zones.js?v=2"></script>
 <script>
 (() => {
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -131,14 +132,7 @@ async function submitScore(s){
   }catch(e){ return null; }
 }
 
-// --- Зоны ---
-const ZONES=[
-  {name:'ПАНЕЛЬКА', sub:'Хаски',        sky:['#0d0d22','#1a1033','#2a1440'], plat:'#3dd13d', dirt:'#6b4226', dirt2:'#553319', build:'#171130', build2:'#241a3d', win:'#ffd166', moon:'#ffe9a8', enemies:['walk'], mult:1},
-  {name:'ТАЕТ ЛЁД',  sub:'Грибы',        sky:['#02101f','#06304a','#0a4a66'], plat:'#9fe8ff', dirt:'#23556b', dirt2:'#173b4d', build:'#0a2438', build2:'#143752', win:'#aef3ff', moon:'#dff6ff', enemies:['walk','slide'], mult:1.15},
-  {name:'ЭТО ДЫМ',   sub:'Скриптонит',   sky:['#101410','#1d2a1d','#2c3a22'], plat:'#9fc463', dirt:'#3d4a2b', dirt2:'#2b351f', build:'#16201a', build2:'#22302a', win:'#c8ff8a', moon:'#e8ffcf', enemies:['walk','fly'], mult:1.3},
-  {name:'КАДИЛЛАК',  sub:'MORGENSHTERN', sky:['#1a0510','#3a0a25','#5c1038'], plat:'#ff9bd0', dirt:'#5e1f40', dirt2:'#42152e', build:'#2a0a1c', build2:'#451530', win:'#ffd1e8', moon:'#ffd700', enemies:['slide','fly','hop'], mult:1.45},
-];
-const ZONE_LEN=2400;
+// Зоны: см. zones.js (ZONES, ZONE_LEN)
 
 function showQuote(txt, big){
   const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
@@ -155,15 +149,27 @@ function beep(f,d,type='square',v=.12){ if(!AC)return; const o=AC.createOscillat
 function sJump(){ beep(330,.12); setTimeout(()=>beep(520,.1),60); }
 function sStomp(){ beep(620,.08); setTimeout(()=>beep(880,.12),50); }
 function sDie(){ beep(220,.2,'sawtooth'); setTimeout(()=>beep(140,.35,'sawtooth'),120); }
+function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>beep(f,dur,z.wave,.16),d*1000); d+=dur; } }
+// фоновый рифф зоны
+let nextBeat=0, beatI=0;
+function tickMusic(){
+  if(!AC||!running||player.dead)return;
+  const z=ZONES[zoneI], spb=60/z.bpm/2; // восьмые
+  if(AC.currentTime>=nextBeat){
+    const f=z.loop[beatI%z.loop.length];
+    if(f)beep(f,spb*0.9,z.wave,.045);
+    beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
+  }
+}
 
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, zoneI, best=+(localStorage.gribBest||0);
+let player, plats, enemies, parts, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, best=+(localStorage.gribBest||0);
 const G=2400, JUMP=-880;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0};
-  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0;
+  plats=[]; enemies=[]; parts=[]; camX=0; speed=260; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0;
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -298,15 +304,18 @@ function loop(ts){
     speed+=dt*5; dist+=speed*dt;
     player.x+=speed*dt;
     camX=player.x-Math.min(140,W*0.25);
-    // смена зоны
-    const zi=((dist/ZONE_LEN)|0)%ZONES.length;
-    if(zi!==zoneI){
-      zoneI=zi; speed+=18;
-      const Z=ZONES[zi];
-      showQuote('ЗОНА: '+Z.name+' • '+Z.sub, true);
-      beep(440,.1); setTimeout(()=>beep(660,.1),90); setTimeout(()=>beep(880,.16),180);
+    // смена зоны: все 8 по разу, дальше круг II, III... с ускорением
+    const zn=(dist/ZONE_LEN)|0;
+    if(zn!==zoneN){
+      zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
+      speed+=18;
+      const Z=ZONES[zoneI];
+      const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
+      showQuote('ЗОНА: '+Z.name+mark+' • '+Z.sub, true);
+      sJingle(Z);
     }
   }
+  tickMusic();
   // физика
   player.vy+=G*dt; player.y+=player.vy*dt;
   player.squish+= (0-player.squish)*Math.min(1,dt*10);
@@ -326,7 +335,7 @@ function loop(ts){
   enemies=enemies.filter(e=>e.x>camX-200&&e.dead<1);
 
   // враги
-  const emult=ZONES[zoneI].mult;
+  const emult=ZONES[zoneI].mult*(1+lap*0.25);
   for(const e of enemies){
     if(e.dead){ e.dead+=dt; continue; }
     const sp=(e.type==='slide'?150:e.type==='fly'?85:e.type==='hop'?70:60)*emult;
