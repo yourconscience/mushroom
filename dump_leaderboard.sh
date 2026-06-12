@@ -3,7 +3,7 @@
 # Run from cron every 10 minutes.
 set -e
 REPO="$(cd "$(dirname "$0")" && pwd)"
-URL="https://kvdb.io/S1L2qbYm4ZTr2uX1hMJP4A/?values=true&format=json"
+URL="https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/?values=true&format=json"
 
 cd "$REPO"
 TMP=$(mktemp)
