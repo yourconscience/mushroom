@@ -110,13 +110,15 @@ async function fetchScores(){
   return d.map(it=>Array.isArray(it)?{n:it[0],s:+it[1]||0}:{n:it.key,s:+it.value||0})
           .sort((a,b)=>b.s-a.s);
 }
+let playerName=''; // выбирается один раз за визит
+function pickName(){
+  const def=localStorage.gribName||'ГРИБ';
+  playerName=(prompt('Имя для лидерборда (до 8 букв):',def)||'').trim().slice(0,8);
+  if(!playerName)playerName='АНОНИМ';
+  localStorage.gribName=playerName;
+}
 async function submitScore(s){
-  let name=localStorage.gribName||'';
-  if(!name){
-    name=(prompt('Имя для лидерборда (до 8 букв):','ГРИБ')||'').trim().slice(0,8);
-    if(!name)name='АНОНИМ';
-    localStorage.gribName=name;
-  }
+  const name=playerName||'АНОНИМ';
   try{
     let scores=await fetchScores();
     const mine=scores.find(r=>r.n===name);
@@ -200,6 +202,7 @@ addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='ArrowUp') jump();
 
 btn.addEventListener('click',()=>{
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(!playerName) pickName();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
 });
 
