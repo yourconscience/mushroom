@@ -47,6 +47,29 @@
   }
   @keyframes pulse { 50% { box-shadow:0 0 30px rgba(124,252,0,.9), inset 0 0 12px rgba(124,252,0,.3); } }
   #overlay .hint { color:#8888aa; font-size:clamp(11px,3vw,14px); line-height:1.7; }
+  #overlay .btnrow { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  #overlay button.alt {
+    border-color:#ff2d78; color:#ff2d78; background:#240f1a;
+    box-shadow:0 0 16px rgba(255,45,120,.5), inset 0 0 12px rgba(255,45,120,.15);
+    animation:pulseAlt 1.4s infinite;
+  }
+  @keyframes pulseAlt { 50% { box-shadow:0 0 30px rgba(255,45,120,.9), inset 0 0 12px rgba(255,45,120,.3); } }
+  .record {
+    color:#ffe14d; font-size:clamp(16px,4.5vw,24px); letter-spacing:2px;
+    text-shadow:0 0 14px #ffd24d, 2px 2px 0 #000;
+    animation:recordZoom .9s cubic-bezier(.2,2,.4,1) both, recordGlow 1s infinite alternate .9s;
+  }
+  @keyframes recordZoom { 0% { transform:scale(0) rotate(-8deg); } 100% { transform:scale(1) rotate(0); } }
+  @keyframes recordGlow { from { text-shadow:0 0 8px #ffd24d,2px 2px 0 #000; } to { text-shadow:0 0 26px #ffec8a,2px 2px 0 #000; } }
+  .confetti {
+    position:fixed; top:-14px; pointer-events:none; z-index:11;
+    animation:confFall linear forwards;
+  }
+  @keyframes confFall {
+    0% { transform:translateY(0) rotate(0deg); opacity:1; }
+    85% { opacity:1; }
+    100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
+  }
   #hud {
     position:fixed; top:env(safe-area-inset-top,8px); left:0; right:0; padding:10px 14px;
     display:flex; justify-content:space-between; color:#fff; font-family:monospace;
@@ -163,6 +186,76 @@ function tickMusic(){
   }
 }
 
+// --- Спецэффекты ---
+let shakeT=0, shakeA=0, texts=[];
+function shake(amp,dur){ shakeA=Math.max(shakeA,amp); shakeT=Math.max(shakeT,dur); }
+function popText(x,y,txt,c){ texts.push({x,y,txt,c:c||'#ffe14d',l:0.9}); }
+function firework(x,y){
+  const hue=(Math.random()*360)|0;
+  for(let i=0;i<26;i++){
+    const a=i/26*Math.PI*2, sp=180+Math.random()*260;
+    parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-120,l:.7+Math.random()*.4,c:'hsl('+((hue+i*9)%360)+',90%,65%)'});
+  }
+}
+function confetti(n){
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div'); d.className='confetti';
+    const s=6+Math.random()*8;
+    d.style.left=(Math.random()*100)+'vw';
+    d.style.width=s+'px'; d.style.height=(s*0.6)+'px';
+    d.style.background='hsl('+((Math.random()*360)|0)+',90%,60%)';
+    d.style.animationDuration=(1.8+Math.random()*2.2)+'s';
+    d.style.animationDelay=(Math.random()*1.2)+'s';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),4500);
+  }
+}
+
+// --- Шер-карточка ---
+let lastScores=null;
+function buildShareCard(s,line){
+  const c=document.createElement('canvas'); c.width=720; c.height=960;
+  const x=c.getContext('2d');
+  x.fillStyle='#0b0b14'; x.fillRect(0,0,720,960);
+  for(let i=0;i<60;i++){ x.fillStyle='hsla('+((i*47)%360)+',85%,60%,'+(0.10+Math.random()*0.2)+')'; x.fillRect(Math.random()*720,Math.random()*960,4,7); }
+  x.textAlign='center'; x.font='bold 76px monospace';
+  x.shadowColor='#ff2d78'; x.shadowBlur=28; x.fillStyle='#ff2d78';
+  x.fillText('RIP ГРИБ',360,150);
+  x.shadowBlur=0; x.font='26px monospace'; x.fillStyle='#ff5c9a';
+  x.fillText(line,360,225);
+  x.font='bold 44px monospace'; x.fillStyle='#ffe14d';
+  x.fillText('СЧЁТ: '+s,360,320);
+  x.fillText('РЕКОРД: '+best,360,380);
+  x.strokeStyle='#7CFC00'; x.lineWidth=4; x.shadowColor='#39ff14'; x.shadowBlur=18;
+  x.strokeRect(220,430,280,76);
+  x.font='bold 30px monospace'; x.fillStyle='#7CFC00'; x.fillText('ЕЩЁ РАЗ',360,480);
+  x.shadowBlur=0;
+  if(lastScores){
+    x.font='bold 24px monospace'; x.fillStyle='#ffe14d'; x.fillText('ТОП-10 ГРИБОВ',360,580);
+    x.font='24px monospace'; x.textAlign='left';
+    lastScores.slice(0,10).forEach((r,i)=>{
+      x.fillStyle=r.n===playerName?'#7CFC00':'#9a9ab8';
+      x.fillText((i+1)+'. '+r.n+' — '+r.s,220,624+i*32);
+    });
+    x.textAlign='center';
+  }
+  x.font='20px monospace'; x.fillStyle='#55557a';
+  x.fillText('ГРИБ: ТАЕТ ЛЁД 🍄',360,930);
+  return c;
+}
+async function shareScore(s,line){
+  const c=buildShareCard(s,line);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  const file=new File([blob],'rip-grib.png',{type:'image/png'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'ГРИБ',text:'Мой гриб набрал '+s+'. Это фиаско? '});
+      return;
+    }
+  }catch(e){ if(e.name==='AbortError')return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rip-grib.png';
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
 // --- Состояние ---
 let running=false, gameOver=false;
 let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, boostT, best=+(localStorage.gribBest||0);
@@ -170,7 +263,7 @@ const G=2400, JUMP=-880;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0};
-  plats=[]; enemies=[]; parts=[]; pickups=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; boostT=0;
+  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; boostT=0; shakeT=0; shakeA=0;
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -380,6 +473,8 @@ let lt=0;
 function loop(ts){
   requestAnimationFrame(loop);
   const t=ts/1000, dt=Math.min((ts-lt)/1000,0.033); lt=ts;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(shakeT>0){ shakeT-=dt; const a=shakeA*Math.min(1,shakeT*4); ctx.translate((Math.random()-.5)*2*a,(Math.random()-.5)*2*a); if(shakeT<=0)shakeA=0; }
   drawBg(t);
   if(!running){ return; }
 
@@ -429,6 +524,7 @@ function loop(ts){
       showQuote(B.quote,true);
       beep(700,.08); setTimeout(()=>beep(1050,.12),60);
       if(navigator.vibrate)navigator.vibrate(40);
+      shake(3,.15); popText(b.x,b.y-30,B.icon+(b.kind==='loot'?' +500':''),B.color);
       if(b.kind==='jet')jetT=B.dur;
       else if(b.kind==='boost')boostT=B.dur;
       else if(b.kind==='loot')score+=500;
@@ -457,6 +553,9 @@ function loop(ts){
         e.dead=0.01; player.vy=JUMP*0.7; player.jumps=2;
         combo++; comboT=2.2;
         const pts=100*combo; score+=pts; sStomp();
+        popText(e.x,e.y-60,'+'+pts, combo>1?'#ff2d78':'#ffe14d');
+        shake(3+Math.min(combo*1.5,8),.18);
+        if(combo>=3) firework(e.x,e.y-80);
         showQuote(QUOTES[(Math.random()*QUOTES.length)|0], combo>=3);
         if(navigator.vibrate)navigator.vibrate(30);
         for(let i=0;i<12;i++)parts.push({x:e.x,y:e.y-20,vx:(Math.random()-.5)*400,vy:-Math.random()*300,l:.6,c:Math.random()<.5?'#d62828':'#2a5fd0'});
@@ -501,6 +600,16 @@ function loop(ts){
   if(boostT>0&&!player.dead)parts.push({x:player.x-14,y:player.y-18,vx:-300,vy:(Math.random()-.5)*80,l:.3,c:'#ffd700'});
   for(const e of enemies) drawEnemy(e,t);
   for(const p of parts){ ctx.globalAlpha=Math.min(1,p.l*2); ctx.fillStyle=p.c; ctx.fillRect(p.x-camX-3,p.y-3,6,6); ctx.globalAlpha=1; }
+  // всплывающие очки
+  ctx.textAlign='center'; ctx.font='bold 22px monospace';
+  for(const tx of texts){
+    tx.l-=dt; tx.y-=70*dt;
+    ctx.globalAlpha=Math.min(1,tx.l*2.5); ctx.fillStyle=tx.c;
+    ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.strokeText(tx.txt,tx.x-camX,tx.y);
+    ctx.fillText(tx.txt,tx.x-camX,tx.y); ctx.globalAlpha=1;
+  }
+  texts=texts.filter(tx=>tx.l>0);
+  ctx.textAlign='left';
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
   scoreEl.textContent='СЧЁТ: '+(score|0);
@@ -511,21 +620,32 @@ requestAnimationFrame(loop);
 
 function die(){
   if(player.dead)return;
-  player.dead=true; player.vy=-500; sDie();
+  player.dead=true; player.vy=-500; sDie(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{
     running=false; hud.classList.add('hidden');
-    const s=score|0; best=Math.max(best,s); localStorage.gribBest=best;
+    const s=score|0;
+    const newRecord=s>best&&s>0;
+    best=Math.max(best,s); localStorage.gribBest=best;
+    const line=DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
     overlay.innerHTML=`<h1 style="color:#ff2d78;text-shadow:0 0 18px #ff2d78,4px 4px 0 #4d0022">RIP ГРИБ</h1>
-      <div class="sub">${DEATH_LINES[(Math.random()*DEATH_LINES.length)|0]}</div>
+      <div class="sub">${line}</div>
+      ${newRecord?'<div class="record">🏆 НОВЫЙ РЕКОРД! 🏆</div>':''}
       <div class="score">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
-      <button id="btn2">ЕЩЁ РАЗ</button>
+      <div class="btnrow">
+        <button id="btn2">ЕЩЁ РАЗ</button>
+        <button id="btnShare" class="alt">ШЕРАНУТЬ 📸</button>
+      </div>
       <div id="lbx" class="hint">лидерборд грузится…</div>`;
     overlay.classList.remove('hidden');
+    confetti(newRecord?120:45);
+    if(newRecord){ sJingle(ZONES[0]); }
     document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); };
+    document.getElementById('btnShare').onclick=()=>shareScore(s,line);
     submitScore(s).then(res=>{
       const el=document.getElementById('lbx'); if(!el)return;
       if(!res){ el.textContent='лидерборд недоступен (нет сети)'; return; }
+      lastScores=res.scores;
       const rows=res.scores.slice(0,10).map((r,i)=>{
         const me=r.n===res.name?' style="color:#7CFC00"':'';
         return `<div${me}>${String(i+1).padStart(2,' ')}. ${r.n} — ${r.s}</div>`;
