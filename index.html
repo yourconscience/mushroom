@@ -96,7 +96,7 @@
   <h1>ГРИБ</h1>
   <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Между нами тает лёд.</div>
   <button id="btn">ПОЕХАЛИ</button>
-  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.</div>
+  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.<br><br>Секретные персонажи — введи букву как ник:<br>Z — без бонусов, но казино само крутится каждые 5 сек<br>X — чёрно-белый хардкор: только деньги, все враги сразу<br>V — вечный джетпак, но больше никаких бонусов</div>
 </div>
 <script src="https://yourconscience.github.io/mushroom-data/zones.js?v=5"></script>
 <script src="https://yourconscience.github.io/mushroom-data/bonuses.js?v=5"></script>
@@ -151,7 +151,7 @@ function pickName(){
   playerName=(prompt('Имя для лидерборда (до 8 букв):',def)||'').trim().slice(0,8);
   if(!playerName)playerName='АНОНИМ';
   localStorage.gribName=playerName;
-  charMode=(playerName==='z'||playerName==='Z')?'Z':(playerName==='x'||playerName==='X')?'X':'';
+  charMode=(playerName==='z'||playerName==='Z')?'Z':(playerName==='x'||playerName==='X')?'X':(playerName==='v'||playerName==='V')?'V':'';
   document.body.style.filter=charMode==='X'?'grayscale(1)':'';
 }
 async function submitScore(s){
@@ -310,8 +310,8 @@ function addPlat(afterX){
     const type=types[(Math.random()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y});
   }
-  // бонус (Z не видит ничего, X — только деньги)
-  if(charMode!=='Z'){
+  // бонус (Z и V не видят ничего, X — только деньги)
+  if(charMode!=='Z'&&charMode!=='V'){
     const roll=Math.random(); let acc=0;
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
@@ -558,6 +558,7 @@ function loop(ts){
 
   if(!player.dead){
     jetT=Math.max(0,jetT-dt); boostT=Math.max(0,boostT-dt);
+    if(charMode==='V')jetT=9; // вечный ранец
     speed=Math.min(560,speed+dt*3); dist+=speed*dt;
     player.x+=speed*(boostT>0?1.6:1)*dt;
     // гриб ближе к левому краю — впереди видно больше
