@@ -4,7 +4,7 @@ A pixel-art platformer where you play as a mushroom stomping plumbers. A tongue-
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
 
-![screenshot](screenshot.png)
+![gameplay](screenshot.png?v=2)
 
 ## How to play
 
