@@ -1,6 +1,7 @@
 # Mushroom
 
-A pixel-art platformer where you play as a mushroom stomping plumbers. A tongue-in-cheek role reversal of classic Mario.
+A pixel-art platformer where you play as a mushroom stomping plumbers. 
+A tongue-in-cheek role reversal of classic Mario.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
 
@@ -14,11 +15,7 @@ A pixel-art platformer where you play as a mushroom stomping plumbers. A tongue-
 - Z key -- spin the slot machine
 
 ## Features
-
-- Procedural zones with shifting palettes and enemy types
-- Slot machine with random score/difficulty effects
 - Online leaderboard
-- Secret characters (enter as nickname): Z, X, V
 - Mobile-friendly (touch controls)
 - Russian hip-hop quotes as kill banners
 
