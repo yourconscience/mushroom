@@ -101,7 +101,6 @@
   @keyframes bob { 50% { transform:translateX(-50%) translateY(-3px); } }
   #ver { position:fixed; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); z-index:6; font-family:var(--disp); font-size:10px; letter-spacing:.1em; color:var(--muted); opacity:.6; }
   #poolList { max-height:38vh; overflow-y:auto; font-size:12px; line-height:1.55; user-select:text; -webkit-user-select:text; }
-  #poolList .sp { color:var(--pink); }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -150,7 +149,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v17';
+const VERSION='v18';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -333,20 +332,18 @@ function tickMusic(){
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
 }
-// музыка: clips/manifest.json = {"files":[фрагменты], "special":"special.mp3"}.
-// Все фрагменты качаются сразу, декодируются по требованию (в кэше 3).
-// Каждый забег перемешивает пул; каждый 10-й уровень играет special на 1.2 громкости.
-let clipMeta=null, clipBytes=[], specialBytes=null, clipSrc=null, clipGain=null;
-const clipDecoded=new Map(), clipCache={};
+// музыка: clips/manifest.json = {"files":[фрагменты]}. special из манифеста не играет: все треки случайные.
+// Все фрагменты качаются сразу, декодируются по требованию (в кэше 3). Каждый забег перемешивает пул.
+let clipMeta=null, clipBytes=[], clipSrc=null, clipGain=null;
+const clipDecoded=new Map();
 let playlist=[], lastFirst=-1, clipToken=0, clipsLoading=false;
-const CLIP_GAIN=0.7, SPECIAL_GAIN=0.84;
+const CLIP_GAIN=0.7;
 
 function renderPool(){
   const box=document.getElementById('poolList'); if(!box||!clipMeta)return;
   const t=clipMeta.titles||[];
   box.textContent='';
   t.forEach((n,i)=>{ if(!n)return; const d=document.createElement('div'); d.textContent=(i+1)+'. '+n; box.appendChild(d); });
-  if(clipMeta.specialTitle){ const d=document.createElement('div'); d.className='sp'; d.textContent='★ '+clipMeta.specialTitle; box.appendChild(d); }
   const c=document.getElementById('poolCount'); if(c)c.textContent=t.length;
 }
 // названия в манифесте лежат не открытым текстом: XOR с ключом + base64 (tools/cut-clips.py)
@@ -359,7 +356,7 @@ async function loadClips(){
   clipsLoading=true;
   try{
     clipMeta=await (await fetch('clips/manifest.json')).json();
-    if(clipMeta.t){ clipMeta.titles=clipMeta.t.map(deob); clipMeta.specialTitle=deob(clipMeta.st); }
+    if(clipMeta.t) clipMeta.titles=clipMeta.t.map(deob);
     const files=clipMeta.files||[];
     clipBytes=new Array(files.length);
     renderPool();
@@ -368,7 +365,6 @@ async function loadClips(){
     let next=0;
     const worker=async()=>{ while(next<files.length){ const i=next++; if(!files[i])continue; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} if(ready()&&pickFor(zoneN)===i) playZone(zoneN); } };
     const jobs=Array.from({length:Math.min(8,files.length)||1},worker);
-    if(clipMeta.special) jobs.push(fetch('clips/'+clipMeta.special).then(r=>r.arrayBuffer()).then(b=>{ specialBytes=b; if(ready()&&pickFor(zoneN)==='special') playZone(zoneN); }).catch(()=>{}));
     await Promise.all(jobs);
     if(ready()) playZone(zoneN);
   }catch(e){}
@@ -381,11 +377,6 @@ function shufflePlaylist(){
   lastFirst=playlist[0];
 }
 async function clipBuffer(pick){
-  if(pick==='special'){
-    if(!specialBytes)return null;
-    if(!clipCache.special) clipCache.special=await AC.decodeAudioData(specialBytes.slice(0));
-    return clipCache.special;
-  }
   if(clipDecoded.has(pick)){ const b=clipDecoded.get(pick); clipDecoded.delete(pick); clipDecoded.set(pick,b); return b; }
   const raw=clipBytes[pick]; if(!raw)return null;
   const b=await AC.decodeAudioData(raw.slice(0));
@@ -400,13 +391,11 @@ function stopClip(){
   clipSrc=null;
 }
 function pickFor(zn){
-  if(zn%10===9&&(specialBytes||clipCache.special))return 'special';
   if(!playlist.length)return -1;
   return playlist[zn%playlist.length];
 }
 function trackTitle(zn){
   const p=pickFor(zn);
-  if(p==='special')return (clipMeta&&clipMeta.specialTitle)||'SPECIAL';
   if(p<0||!clipMeta||!clipMeta.titles)return '';
   return clipMeta.titles[p]||'';
 }
@@ -422,7 +411,7 @@ async function playZone(zn){
   if(token!==clipToken||player.dead)return;
   if(!buf){ sJingle(ZONES[zoneI]); return; }
   clipGain=AC.createGain(); clipGain.gain.value=0;
-  clipGain.gain.setTargetAtTime(pick==='special'?SPECIAL_GAIN:CLIP_GAIN,AC.currentTime,0.2);
+  clipGain.gain.setTargetAtTime(CLIP_GAIN,AC.currentTime,0.2);
   clipGain.connect(AC.destination);
   clipSrc=AC.createBufferSource(); clipSrc.buffer=buf; clipSrc.loop=true; clipSrc.connect(clipGain); clipSrc.start();
 }
@@ -679,7 +668,7 @@ function fillLevels(p){
   p.textContent='';
   const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
   const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее. Случайный босс на каждом 10-м уровне.'); p.append(a);
-  const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок. Каждый 10-й уровень играет особый трек.'); p.append(b);
+  const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок, боссы тоже под случайный трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec){
   p.textContent='';
