@@ -123,11 +123,15 @@
       <button class="chip" data-tab="levels" aria-pressed="false">Уровни</button>
       <button class="chip" data-tab="top" aria-pressed="false">Топ</button>
       <button class="chip hidden" id="poolChip" data-tab="pool" aria-pressed="false">🎧 Треки <span id="poolCount">…</span></button>
+      <button class="chip" data-tab="prog" aria-pressed="false">Прогресс <span id="progCount"></span></button>
+      <button class="chip hidden" id="secChip" data-tab="secrets" aria-pressed="false">🔓 Секреты</button>
     </div>
     <div class="panel hidden" id="tab-bonus"></div>
     <div class="panel hidden" id="tab-levels"></div>
     <div class="panel hidden" id="tab-top"></div>
     <div class="panel hidden" id="tab-pool"><b>Секретный пул: открыт за топ-5</b><div id="poolList"></div></div>
+    <div class="panel hidden" id="tab-prog"></div>
+    <div class="panel hidden" id="tab-secrets"></div>
     <p class="hint">Тап или пробел: прыжок, ещё раз в воздухе: двойной. Прыгай на врагов сверху.</p>
   </div>
   <div class="card over hidden" id="over">
@@ -135,6 +139,7 @@
     <p class="sub" id="overLine"></p>
     <div class="record hidden" id="overRec">🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД</div>
     <div class="record hidden" id="overPool" style="background:var(--lime)">🎧 Ты в топ-5: в меню открылись треки</div>
+    <div class="panel hidden" id="overUnlock"></div>
     <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l">Лучшее за сессию</div><div class="n best" id="overBest">0</div></div></div>
     <button id="btn2" class="primary">ЕЩЁ РАЗ</button>
     <div class="row"><button class="chip" id="btnShare">Шерануть 📸</button><button class="chip" id="btnMenu">Меню</button></div>
@@ -150,7 +155,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v26';
+const VERSION='v27';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -293,10 +298,12 @@ const MODES={
   'Z':      {k:'Z',     sm:1,   info:'казино крутится само каждые 5 с, бонусов нет'},
   'X':      {k:'X',     sm:1,   info:'ч/б хардкор: только лут, все враги сразу'},
   'V':      {k:'V',     sm:1,   info:'вечный джетпак, бонусов нет'},
+  'БАТТЛ':  {k:'BATTLE',sm:1.5, info:'мини-боссы через уровень с самого начала, очки x1.5'},
+  'ЛЕГЕНДА':{k:'LEG',   sm:1,   info:'всегда большой, шляпка отрастает каждую зону, тройной прыжок'},
 };
 let SM=1; // множитель очков режима
 function baseFilter(){ return charMode==='X'||charMode==='OKS'?'grayscale(1)':''; }
-function maxJumps(){ return charMode==='PUFF'?3:2; }
+function maxJumps(){ return charMode==='PUFF'||charMode==='LEG'?3:2; }
 const nickEl=document.getElementById('nick');
 try{ nickEl.value=localStorage.gribName||''; }catch(e){}
 function applyName(){
@@ -659,8 +666,11 @@ function startGame(){
   applyName();
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
-  if(charMode==='EZ')player.big=true;
+  if(charMode==='EZ'||charMode==='LEG')player.big=true;
+  if(!charMode) applyPerks();
   player.jumps=maxJumps();
+  runUnlocks=[]; renderRunUnlocks();
+  if(isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
   const M=MODES[playerName.toUpperCase()];
   if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
@@ -731,6 +741,7 @@ function fillTop(p){
 function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return false; } }
 function syncPoolChip(){ document.getElementById('poolChip').classList.toggle('hidden',!poolOpen()); }
 function checkPool(scores,me){
+  if(me&&me!=='АНОНИМ'&&!isSecret(me)&&scores.slice(0,10).some(r=>r.n===me)) metaEvent('top');
   if(poolOpen()||!me||me==='АНОНИМ'||MODES[me.toUpperCase()]||/^[zxv]$/i.test(me))return false;
   if(!scores.slice(0,5).some(r=>r.n===me))return false;
   try{ localStorage.gribPool='1'; }catch(e){}
@@ -738,7 +749,74 @@ function checkPool(scores,me){
 }
 syncPoolChip();
 try{ const me=upName(localStorage.gribName); if(me&&!poolOpen()) fetchScores().then(sc=>checkPool(sc,me)).catch(()=>{}); }catch(e){}
-const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool()};
+// --- Прогресс между забегами: цели открывают тайные ники, режимы и перки на старт (только для обычного ника) ---
+function loadMeta(){ const d={found:0,top:0,seen:{},beat:{},minis:{},heroes:{}}; try{ return Object.assign(d,JSON.parse(localStorage.gribMeta||'{}')); }catch(e){ return d; } }
+const meta=loadMeta();
+const cnt=o=>Object.keys(o).length;
+const HEROES=()=>Object.keys(MODES).filter(n=>n!=='ЛЕГЕНДА');
+const GOALS=[
+  {id:'found', t:'Дойти до первого босса (10-й уровень)', r:'вкладка «Секреты» в меню: все тайные ники', ok:()=>meta.found},
+  {id:'beat',  t:'Завалить босса', r:'🍄 старт большим грибом и режим БАТТЛ', ok:()=>cnt(meta.beat)>0},
+  {id:'seen',  t:'Встретить всех боссов', r:'🎰 заряд казино на старте', ok:()=>cnt(meta.seen)>=BOSS_KINDS.length, p:()=>cnt(meta.seen)+'/'+BOSS_KINDS.length},
+  {id:'all',   t:'Завалить всех боссов', r:'🦠 споры на старте', ok:()=>cnt(meta.beat)>=BOSS_KINDS.length, p:()=>cnt(meta.beat)+'/'+BOSS_KINDS.length},
+  {id:'minis', t:'Встретить всех мини-боссов', r:'🧲 магнит на старте', ok:()=>cnt(meta.minis)>=MINI_KINDS.length, p:()=>cnt(meta.minis)+'/'+MINI_KINDS.length},
+  {id:'top',   t:'Попасть в топ-10', r:'золотая шляпка', ok:()=>meta.top},
+  {id:'heroes',t:'Сыграть всеми тайными героями', r:'режим ЛЕГЕНДА', ok:()=>HEROES().every(n=>meta.heroes[n]), p:()=>HEROES().filter(n=>meta.heroes[n]).length+'/'+HEROES().length},
+];
+const goalDone=id=>!!GOALS.find(g=>g.id===id).ok();
+let runUnlocks=[];
+function renderRunUnlocks(){
+  const p=document.getElementById('overUnlock'); p.textContent='';
+  p.classList.toggle('hidden',!runUnlocks.length);
+  if(runUnlocks.length) p.append(el('b','sect','🔓 Открыто за этот забег'));
+  for(const g of runUnlocks) p.append(el('div',null,g.t+': '+g.r));
+}
+function syncMeta(){
+  document.getElementById('secChip').classList.toggle('hidden',!goalDone('found'));
+  document.getElementById('progCount').textContent=GOALS.filter(g=>g.ok()).length+'/'+GOALS.length;
+}
+function metaEvent(type,key){
+  const before=GOALS.filter(g=>!g.ok());
+  if(type==='boss'){ meta.seen[key]=1; if(charMode!=='GNOY') meta.found=1; } // ГНОЙНЫЙ стартует у босса, это не считается
+  else if(type==='beat') meta.beat[key]=1;
+  else if(type==='mini') meta.minis[key]=1;
+  else if(type==='top') meta.top=1;
+  else if(type==='hero') meta.heroes[key]=1;
+  try{ localStorage.gribMeta=JSON.stringify(meta); }catch(e){}
+  for(const g of before) if(g.ok()){ runUnlocks.push(g); showQuote('🔓 ОТКРЫТО: '+g.r,true); }
+  renderRunUnlocks(); syncMeta();
+}
+function applyPerks(){
+  if(goalDone('beat')) player.big=true;
+  if(goalDone('seen')){ slotCharges=1; slotBtn.classList.remove('hidden'); }
+  if(goalDone('all')) spT=BONUSES.spore.dur;
+  if(goalDone('minis')) mgT=BONUSES.magnet.dur;
+}
+function fillProg(p){
+  p.textContent='';
+  const list=el('div','blist');
+  for(const g of GOALS){
+    list.append(el('div','ic',g.ok()?'✅':'🔒'));
+    const d=el('div'); d.append(el('b',null,g.t+(g.p&&!g.ok()?' ('+g.p()+')':'')),' — '+g.r); list.append(d);
+  }
+  p.append(list);
+}
+function fillSecrets(p){
+  p.textContent='';
+  p.append(el('b','sect','Тапни ник и жми ИГРАТЬ. У тайных ников свой топ.'));
+  const cur=upName(nickEl.value), row=el('div','row');
+  for(const n in MODES){
+    if((n==='БАТТЛ'&&!goalDone('beat'))||(n==='ЛЕГЕНДА'&&!goalDone('heroes'))){ row.append(el('div','chip','🔒 ???')); continue; }
+    const c=el('button','chip',n); c.setAttribute('aria-pressed',n===cur);
+    c.addEventListener('click',()=>{ try{ if(!isSecret(upName(nickEl.value))) localStorage.gribOwnName=upName(nickEl.value); }catch(e){} nickEl.value=n; fillSecrets(p); });
+    row.append(c);
+  }
+  p.append(row);
+  if(MODES[cur]) p.append(el('div',null,'«'+cur+'»: '+MODES[cur].info+'.'));
+  let own=''; try{ own=localStorage.gribOwnName||''; }catch(e){}
+  if(isSecret(cur)&&own){ const b=el('button','chip','← Вернуть ник '+own); b.addEventListener('click',()=>{ nickEl.value=own; fillSecrets(p); }); p.append(b); }
+}
+const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool(),prog:fillProg,secrets:fillSecrets};
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
   const on=b.getAttribute('aria-pressed')!=='true';
   document.querySelectorAll('[data-tab]').forEach(o=>{ o.setAttribute('aria-pressed','false'); document.getElementById('tab-'+o.dataset.tab).classList.add('hidden'); });
@@ -825,10 +903,10 @@ function drawGrib(p,t){
   ctx.fillStyle=OL;
   ctx.beginPath(); ctx.ellipse(0,-20,21.5,14.5,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-21.5,-21.5,43,7.5);
-  ctx.fillStyle='#b82432';
+  ctx.fillStyle=meta.top?'#b8902a':'#b82432';
   ctx.beginPath(); ctx.ellipse(0,-20,20,13,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-20,-20,40,4);
-  ctx.fillStyle='#e63946';
+  ctx.fillStyle=meta.top?'#ffd84d':'#e63946';
   ctx.beginPath(); ctx.ellipse(-1.5,-21,18.5,12,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-20,-21,38,3);
   // точки
@@ -941,7 +1019,7 @@ function loop(ts){
     const zn=(dist/ZONE_LEN)|0;
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
-      if(charMode==='EZ'&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
+      if((charMode==='EZ'||charMode==='LEG')&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
       speed+=10;
       announceZone(zn);
       playZone(zn);
@@ -1190,6 +1268,7 @@ function startBoss(){
   enemies=enemies.filter(e=>e.x<player.x-40);
   showQuote((d.mini?'МИНИ-БОСС: ':'БОСС: ')+boss.name,true); if(d.line) showQuote(d.line,false); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
   const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },1800);
+  metaEvent(d.mini?'mini':'boss',d.kind);
 }
 function bossGap(rage){ return 0.9-rage*0.07; } // пауза между ключами: дольше прыжка (0.73 с)
 function bossThrow(b){
@@ -1207,6 +1286,7 @@ function bossKill(b){
   for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
   showQuote(b.mini?'МИНИ-БОСС СЛИТ +1500 🎤':'БОСС ПОВЕРЖЕН +5000 🏆',true);
   bossDone[b.lvl]=true;
+  if(!b.mini) metaEvent('beat',b.kind);
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
     plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);
@@ -1631,7 +1711,7 @@ const MINI_KINDS=[
 let miniPlan={}, miniBag=[];
 function miniAt(z){
   if(z in miniPlan) return miniPlan[z];
-  const on=z>10&&z%10!==9&&Math.random()<0.3;
+  const on=charMode==='BATTLE'?z>0&&z%2===0&&z%10!==9:z>10&&z%10!==9&&Math.random()<0.3;
   if(on&&!miniBag.length){ miniBag=[0,1,2,3]; for(let j=3;j>0;j--){ const r=(Math.random()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
   return miniPlan[z]=on?MINI_KINDS[miniBag.pop()]:null;
 }
@@ -1811,6 +1891,7 @@ function die(){
     });
   },900);
 }
+syncMeta(); // здесь, а не рядом с GOALS: цели читают MINI_KINDS, он объявлен ниже
 loadClips();
 })();
 </script>
