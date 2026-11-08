@@ -133,9 +133,9 @@
   <div class="card over hidden" id="over">
     <h1>RIP ГРИБ</h1>
     <p class="sub" id="overLine"></p>
-    <div class="record hidden" id="overRec">🏆 НОВЫЙ РЕКОРД</div>
+    <div class="record hidden" id="overRec">🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД</div>
     <div class="record hidden" id="overPool" style="background:var(--lime)">🎧 Ты в топ-5: в меню открылись треки</div>
-    <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l">Рекорд</div><div class="n best" id="overBest">0</div></div></div>
+    <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l">Лучшее за сессию</div><div class="n best" id="overBest">0</div></div></div>
     <button id="btn2" class="primary">ЕЩЁ РАЗ</button>
     <div class="row"><button class="chip" id="btnShare">Шерануть 📸</button><button class="chip" id="btnMenu">Меню</button></div>
     <div class="panel" id="overTop">Лидерборд грузится…</div>
@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v16';
+const VERSION='v17';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -251,6 +251,8 @@ async function fetchScores(secret){
           .sort((a,b)=>b.s-a.s);
 }
 let playerName=''; // выбирается один раз за визит
+function myKey(){ return (playerName||'АНОНИМ').toUpperCase(); }
+function myBest(){ return sessBest[myKey()]||0; }
 let charMode=''; // секретные персонажи: ник Z / X / V и пять режимов ниже
 // Секретные ники-режимы: отсылки к мемам про Окси (Versus 2017) и к самой игре.
 // sm — множитель очков; режим включается, если ник совпал (регистр не важен).
@@ -289,7 +291,7 @@ async function submitScore(s){
       await fetch(LB_URL+encodeURIComponent((sec?'v2s:':'v2:')+name),{method:'POST',body:String(s)});
       scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
     }
-    return {scores,name,sec};
+    return {scores,name,sec,rec:s>0&&(!mine||s>mine.s)};
   }catch(e){ return null; }
 }
 
@@ -475,10 +477,10 @@ function buildShareCard(s,line){
   x.fillStyle='#c9c9da'; x.font='500 38px '+T; x.fillText(line,pad,420);
   x.fillStyle='#71718a'; x.font='600 30px '+T; x.fillText('СЧЁТ',pad,540);
   x.fillStyle='#ffffff'; x.font='900 190px '+D; x.fillText(String(s),pad-6,720);
-  x.fillStyle='#a6a6bc'; x.font='800 40px '+D; x.fillText('РЕКОРД '+best,pad,800);
+  x.fillStyle='#a6a6bc'; x.font='800 40px '+D; x.fillText('ЛУЧШЕЕ ЗА СЕССИЮ '+myBest(),pad,800);
   const me=playerName||'АНОНИМ', rank=lastScores?lastScores.findIndex(r=>r.n===me):-1;
   if(rank>=0&&rank<10){
-    const lbl='#'+(rank+1)+' В ТОПЕ'; x.font='800 32px '+D; const lw=x.measureText(lbl).width+48;
+    const lbl='#'+(rank+1)+(isSecret(me)?' В СЕКРЕТНОМ ТОПЕ':' В ТОПЕ'); x.font='800 32px '+D; const lw=x.measureText(lbl).width+48;
     x.fillStyle='#ffd84d'; x.beginPath(); x.roundRect(pad,840,lw,60,30); x.fill();
     x.fillStyle='#0b0b14'; x.fillText(lbl,pad+24,882);
   }
@@ -526,7 +528,7 @@ async function shareScore(s,line){
 
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, best=+(localStorage.gribBest||0);
+let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, sessBest={};
 const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
@@ -1426,29 +1428,26 @@ function die(){
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{
     running=false; hud.classList.add('hidden'); slotBtn.classList.add('hidden');
-    const s=(score*SM)|0;
-    const newRecord=s>best&&s>0;
-    best=Math.max(best,s); localStorage.gribBest=best;
+    const s=(score*SM)|0, key=myKey();
+    sessBest[key]=Math.max(sessBest[key]||0,s); // лучшее за визит, отдельно для каждого ника
     const line=DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
     const overTop=document.getElementById('overTop'), overBest=document.getElementById('overBest');
     document.getElementById('overLine').textContent=line;
     document.getElementById('overScore').textContent=s;
-    overBest.textContent=best;
-    document.getElementById('overRec').classList.toggle('hidden',!newRecord);
+    overBest.textContent=sessBest[key];
+    document.getElementById('overRec').classList.add('hidden');
     document.getElementById('overPool').classList.add('hidden');
     menuEl.classList.add('hidden'); overEl.classList.remove('hidden'); overlay.classList.remove('hidden');
     document.body.style.filter=baseFilter(); // нуар не тянем на экран смерти
     shareFile=null; shareKey=''; prepShare(s,line);
-    confetti(newRecord?120:45);
-    if(newRecord){ sJingle(ZONES[0]); }
+    confetti(45);
     document.getElementById('btnShare').onclick=()=>shareScore(s,line);
     overTop.textContent='Лидерборд грузится…';
     submitScore(s).then(res=>{
       if(!res){ overTop.textContent='Лидерборд недоступен (нет сети)'; return; }
       lastScores=res.scores;
-      // рекорд на устройстве отстаёт от лидерборда (играл с другого браузера) — подтягиваем
-      const mine=res.scores.find(r=>r.n===res.name);
-      if(mine&&mine.s>best){ best=mine.s; localStorage.gribBest=best; overBest.textContent=best; }
+      // личный рекорд = побил свою строку в своём топе (общем или секретном)
+      if(res.rec){ document.getElementById('overRec').classList.remove('hidden'); confetti(120); sJingle(ZONES[0]); }
       renderTop(overTop,res.scores,res.name,res.sec);
       prepShare(s,line); // пересобрать картинку уже с топом
       if(checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
