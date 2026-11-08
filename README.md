@@ -23,7 +23,7 @@ A tongue-in-cheek role reversal of classic Mario.
 
 ## Audio
 
-Each zone plays its own bundled 15-second clip from `clips/`, matched to the zone by position (`clips/manifest.json`). The files carry no titles, artists or tags. `tools/cut-clips.py` cuts them from a private `music/` folder that stays out of git.
+The game ships 100 unnamed 15-second clips in `clips/` — no titles, artists or tags. Every run shuffles the pool, so each zone gets a different track; every 10th level plays a dedicated `clips/special.mp3` at 1.2x volume. `clips/manifest.json` lists the files. `tools/cut-clips.py` cuts them from a private `music/` folder that stays out of git.
 
 ## Credits
 

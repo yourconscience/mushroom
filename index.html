@@ -251,18 +251,48 @@ function tickMusic(){
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
 }
-// клипы зон: clips/manifest.json + clips/NN.mp3 — 15-секундные фрагменты без тегов и названий.
-// порядок файлов = порядок зон; нет файлов — играет чиптюн зоны.
-const clipBuf={}; let clipSrc=null, clipGain=null, clipsLoading=false;
+// музыка: clips/manifest.json = {"files":[фрагменты], "special":"special.mp3"}.
+// Все фрагменты качаются сразу, декодируются по требованию (в кэше 3).
+// Каждый забег перемешивает пул; каждый 10-й уровень играет special на 1.2 громкости.
+let clipMeta=null, clipBytes=[], specialBytes=null, clipSrc=null, clipGain=null;
+const clipDecoded=new Map(), clipCache={};
+let playlist=[], lastFirst=-1, clipToken=0, clipsLoading=false;
+const CLIP_GAIN=0.7, SPECIAL_GAIN=0.84;
+
 async function loadClips(){
+  clipsLoading=true;
   try{
-    const list=await (await fetch('clips/manifest.json')).json();
-    for(let i=0;i<list.length;i++){
-      const f=list[i], name=ZONES[i]&&ZONES[i].name; if(!f||!name)continue;
-      try{ clipBuf[name]=await AC.decodeAudioData(await (await fetch('clips/'+f)).arrayBuffer()); }catch(e){}
-      if(running&&!player.dead&&!clipSrc&&ZONES[zoneI].name===name) playClip();
-    }
+    clipMeta=await (await fetch('clips/manifest.json')).json();
+    const files=(clipMeta.files||[]).filter(Boolean);
+    clipBytes=new Array(files.length);
+    let next=0;
+    const worker=async()=>{ while(next<files.length){ const i=next++; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} } };
+    const jobs=Array.from({length:Math.min(8,files.length)||1},worker);
+    if(clipMeta.special) jobs.push(fetch('clips/'+clipMeta.special).then(r=>r.arrayBuffer()).then(b=>{ specialBytes=b; }).catch(()=>{}));
+    await Promise.all(jobs);
+    if(!playlist.length) shufflePlaylist();
+    if(running&&!player.dead&&!clipSrc) playZone(zoneN);
   }catch(e){}
+}
+function shufflePlaylist(){
+  const n=clipBytes.length; if(!n)return;
+  playlist=Array.from({length:n},(_,i)=>i);
+  for(let i=n-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=playlist[i]; playlist[i]=playlist[j]; playlist[j]=t; }
+  if(n>1&&playlist[0]===lastFirst){ const t=playlist[0]; playlist[0]=playlist[1]; playlist[1]=t; }
+  lastFirst=playlist[0];
+}
+async function clipBuffer(pick){
+  if(pick==='special'){
+    if(!specialBytes)return null;
+    if(!clipCache.special) clipCache.special=await AC.decodeAudioData(specialBytes.slice(0));
+    return clipCache.special;
+  }
+  if(clipDecoded.has(pick)){ const b=clipDecoded.get(pick); clipDecoded.delete(pick); clipDecoded.set(pick,b); return b; }
+  const raw=clipBytes[pick]; if(!raw)return null;
+  const b=await AC.decodeAudioData(raw.slice(0));
+  clipDecoded.set(pick,b);
+  if(clipDecoded.size>3) clipDecoded.delete(clipDecoded.keys().next().value);
+  return b;
 }
 function stopClip(){
   if(!clipSrc)return;
@@ -270,10 +300,19 @@ function stopClip(){
   setTimeout(()=>{ try{ s.stop(); }catch(e){} },700);
   clipSrc=null;
 }
-function playClip(){
+async function playZone(zn){
+  if(!AC)return;
+  const token=++clipToken;
   stopClip();
-  const buf=AC&&clipBuf[ZONES[zoneI].name]; if(!buf)return;
-  clipGain=AC.createGain(); clipGain.gain.value=0; clipGain.gain.setTargetAtTime(0.7,AC.currentTime,0.2); clipGain.connect(AC.destination);
+  const pick=(zn%10===9&&(specialBytes||clipCache.special))?'special':(playlist.length?playlist[zn%playlist.length]:-1);
+  if(pick===-1){ sJingle(ZONES[zoneI]); return; }
+  let buf=null;
+  try{ buf=await clipBuffer(pick); }catch(e){}
+  if(token!==clipToken||player.dead)return;
+  if(!buf){ sJingle(ZONES[zoneI]); return; }
+  clipGain=AC.createGain(); clipGain.gain.value=0;
+  clipGain.gain.setTargetAtTime(pick==='special'?SPECIAL_GAIN:CLIP_GAIN,AC.currentTime,0.2);
+  clipGain.connect(AC.destination);
   clipSrc=AC.createBufferSource(); clipSrc.buffer=buf; clipSrc.loop=true; clipSrc.connect(clipGain); clipSrc.start();
 }
 
@@ -367,6 +406,7 @@ function reset(){
   let x=800;
   while(x<3000){ x=addPlat(x); }
   gameOver=false;
+  shufflePlaylist();
 }
 // зона по мировой координате (dist == player.x-120)
 function zoneAt(x){ return (((x-120)/ZONE_LEN)|0)%ZONES.length; }
@@ -422,9 +462,9 @@ addEventListener('keydown',e=>{
 btn.addEventListener('click',()=>{
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
   if(!playerName) pickName();
-  if(AC&&!clipsLoading){ clipsLoading=true; loadClips(); }
+  if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
-  if(AC)playClip();
+  if(AC)playZone(zoneN);
 });
 
 // --- Слот-машина ---
@@ -702,8 +742,8 @@ function loop(ts){
       speed+=10;
       const Z=ZONES[zoneI];
       const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
-      showQuote('ЗОНА: '+Z.name+mark+' • '+Z.sub, true);
-      if(clipBuf[Z.name])playClip(); else { if(AC)stopClip(); sJingle(Z); }
+      showQuote('ЗОНА: '+Z.name+mark, true);
+      playZone(zn);
     }
   }
   tickMusic();
@@ -937,7 +977,7 @@ function die(){
     overlay.classList.remove('hidden');
     confetti(newRecord?120:45);
     if(newRecord){ sJingle(ZONES[0]); }
-    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); if(AC)playClip(); };
+    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); if(AC)playZone(zoneN); };
     document.getElementById('btnShare').onclick=()=>shareScore(s,line);
     submitScore(s).then(res=>{
       const el=document.getElementById('lbx'); if(!el)return;
@@ -958,6 +998,7 @@ function die(){
     });
   },900);
 }
+loadClips();
 })();
 </script>
 </body>

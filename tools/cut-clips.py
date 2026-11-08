@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Cut a short loop from each zone's real track.
+"""Cut 15-second loops from a pool of real tracks.
 
 Reads music/sources.json (private, gitignored):
-  {"ДРОЗД": {"src": "~/Music/favourite/Kunteynir - Дрозд.mp3", "start": 9, "len": 15}, ...}
+  {"special": {"src": "~/Music/favourite/...", "start": 9, "len": 15},
+   "pool": [{"src": "...", "start": null, "len": 15}, ...]}
+
 "start": null picks the loudest window of "len" seconds (usually the chorus).
 
-Writes clips/NN.mp3 with every metadata tag stripped, plus clips/manifest.json
-(an ordered list of file names, no titles). index.html loads that manifest.
+Writes clips/NN.mp3 for the pool (in order) and clips/special.mp3, all with
+metadata tags stripped, plus clips/manifest.json:
+  {"files": ["01.mp3", ...], "special": "special.mp3"}
+index.html loads the manifest and reshuffles the pool on every run.
 The artist/track mapping goes to music/TRACKLIST.md, which stays gitignored:
 it is the only place the real names live.
 Needs ffmpeg.
@@ -37,31 +41,45 @@ def loudest_start(power, length):
     return max(range(lo, hi), key=lambda s: sum(power[s:s + length]))
 
 
+def cut(src, start, length, out):
+    if start is None:
+        start = loudest_start(rms_per_second(src), length)
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-ss", str(start), "-t", str(length), "-i", src,
+         "-af", f"afade=t=in:d=0.25,afade=t=out:st={length - 0.4}:d=0.4",
+         "-ac", "2", "-b:a", "128k", "-map", "0:a:0", "-map_metadata", "-1",
+         "-id3v2_version", "0", "-write_id3v1", "0", out], check=True)
+    return start
+
+
 def main():
-    sources = json.load(open(os.path.join(MUSIC, "sources.json"), encoding="utf8"))
+    data = json.load(open(os.path.join(MUSIC, "sources.json"), encoding="utf8"))
     os.makedirs(CLIPS, exist_ok=True)
-    manifest, tracklist = [], ["| # | zone | source | start |", "|---|------|--------|-------|"]
-    for i, (zone, cfg) in enumerate(sources.items(), 1):
+    files, tracklist = [], ["| # | source | start |", "|---|--------|-------|"]
+    for i, cfg in enumerate(data.get("pool") or [], 1):
         src = os.path.expanduser(cfg["src"])
-        length = int(cfg.get("len") or 15)
         if not os.path.exists(src):
-            print(f"skip {zone}: no file {src}", file=sys.stderr)
-            manifest.append(None)
+            print(f"skip {src}", file=sys.stderr)
+            files.append(None)
             continue
-        start = cfg.get("start")
-        if start is None:
-            start = loudest_start(rms_per_second(src), length)
         name = f"{i:02d}.mp3"
-        subprocess.run(
-            ["ffmpeg", "-v", "error", "-y", "-ss", str(start), "-t", str(length), "-i", src,
-             "-af", f"afade=t=in:d=0.25,afade=t=out:st={length - 0.4}:d=0.4",
-             "-ac", "2", "-b:a", "128k", "-map", "0:a:0", "-map_metadata", "-1",
-             "-id3v2_version", "0", "-write_id3v1", "0", os.path.join(CLIPS, name)], check=True)
-        manifest.append(name)
-        track = os.path.basename(src)[:-4]
-        tracklist.append(f"| {i} | {zone} | {track} | {start}s |")
-        print(f"{zone}: {name} from {start}s, {length}s")
-    json.dump(manifest, open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0)
+        start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, name))
+        files.append(name)
+        tracklist.append(f"| {i} | {os.path.basename(src)[:-4]} | {start}s |")
+        print(f"{name} {start}s  {os.path.basename(src)}")
+    special = None
+    cfg = data.get("special")
+    if cfg:
+        src = os.path.expanduser(cfg["src"])
+        if os.path.exists(src):
+            start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, "special.mp3"))
+            special = "special.mp3"
+            tracklist.append(f"| special | {os.path.basename(src)[:-4]} | {start}s |")
+            print(f"special {start}s  {os.path.basename(src)}")
+        else:
+            print(f"skip special: no file {src}", file=sys.stderr)
+    json.dump({"files": files, "special": special},
+              open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0)
     open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
 
 
