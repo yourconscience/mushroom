@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v15';
+const VERSION='v16';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -260,7 +260,7 @@ const MODES={
   'ИЗИ':    {k:'EZ',    sm:0.5, info:'изи: мир медленнее, гриб большой и отрастает каждую зону, очки x0.5'},
   'ДУТЫЙ':  {k:'PUFF',  sm:1,   info:'дутая фигура: гриб надут, парит и прыгает трижды'},
   'МАРИО':  {k:'MARIO', sm:1.5, info:'Марио снова прыгает на грибы: сантехники скачут, их больше, очки x1.5'},
-  'ГНОЙНЫЙ':{k:'GNOY',  sm:1,   info:'сразу в баттл: первый босс на 25-м уровне'},
+  'ГНОЙНЫЙ':{k:'GNOY',  sm:1,   info:'сразу в баттл: случайный босс на 10-м уровне'},
   'Z':      {k:'Z',     sm:1,   info:'казино крутится само каждые 5 с, бонусов нет'},
   'X':      {k:'X',     sm:1,   info:'ч/б хардкор: только лут, все враги сразу'},
   'V':      {k:'V',     sm:1,   info:'вечный джетпак, бонусов нет'},
@@ -530,23 +530,38 @@ let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, d
 const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
-// пока босс жив (клип просто крутится по кругу). Дальше: 50, 75, 100, потом 125...200.
-const BOSSES={
-  24:{name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:4},
-  49:{name:'ГОЛУБИНЫЙ КОРОЛЬ', kind:'pigeon', hp:4},
-  74:{name:'ДУТАЯ ФИГУРА',     kind:'balloon',hp:4},
-  99:{name:'СТЕКЛЯННЫЙ ПЕТУХ', kind:'rooster',hp:5},
-};
+// пока босс жив (клип просто крутится по кругу). Босс на каждом 10-м уровне (индексы 9, 19, 29...):
+// случайный из четырёх, каждые 4 босса — все разные, повторы получают номер (II, III...).
+const BOSS_KINDS=[
+  {name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:4},
+  {name:'ГОЛУБИНЫЙ КОРОЛЬ', kind:'pigeon', hp:4},
+  {name:'ДУТАЯ ФИГУРА',     kind:'balloon',hp:4},
+  {name:'СТЕКЛЯННЫЙ ПЕТУХ', kind:'rooster',hp:5},
+];
+const ROMAN=['','II','III','IV','V'];
+let bossOrder=[];
+function bossAt(z){
+  if(z%10!==9)return null;
+  const i=(z-9)/10;
+  while(bossOrder.length<=i){ // мешок из четырёх боссов, без повтора на стыке мешков
+    const bag=[0,1,2,3];
+    for(let j=3;j>0;j--){ const r=(Math.random()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
+    if(bag[0]===bossOrder[bossOrder.length-1]) bag.push(bag.shift());
+    bossOrder.push(...bag);
+  }
+  const k=bossOrder[i], d=BOSS_KINDS[k], c=bossOrder.slice(0,i).filter(x=>x===k).length;
+  return c?{...d,name:d.name+' '+(ROMAN[c]||c+1)}:d;
+}
 let boss=null, arena=null, bossDone={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={};
-  if(charMode==='GNOY'){ dist=24*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
+  boss=null; arena=null; bossDone={}; bossOrder=[];
+  if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
-  if(charMode==='GNOY'){ arena=plats[0]; arena.w=1e7; arena.lvl=24; } // старт прямо на арене
+  if(charMode==='GNOY'){ arena=plats[0]; arena.w=1e7; arena.lvl=9; } // старт прямо на арене
   else { let x=800; while(x<3000){ x=addPlat(x); } }
   gameOver=false;
   shufflePlaylist();
@@ -559,7 +574,7 @@ function addPlat(afterX){
   const last=plats[plats.length-1];
   // арена босса: одна длинная ровная платформа без врагов и бонусов
   const pz=((dist+afterX+gap-player.x)/ZONE_LEN)|0;
-  if(BOSSES[pz]&&!bossDone[pz]&&!arena&&!boss){
+  if(bossAt(pz)&&!bossDone[pz]&&!arena&&!boss){
     const a={x:afterX+gap,y:Math.max(H*0.55,Math.min(H*0.74,last.y)),w:1e7,lvl:pz};
     plats.push(a); arena=a; return a.x+a.w;
   }
@@ -661,7 +676,7 @@ function fillBonus(p){
 function fillLevels(p){
   p.textContent='';
   const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
-  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее. Боссы ждут на 25, 50, 75 и 100 уровнях.'); p.append(a);
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее. Случайный босс на каждом 10-м уровне.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок. Каждый 10-й уровень играет особый трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec){
@@ -1114,7 +1129,7 @@ const BOSS_TIP={
   rooster:'ОСКОЛКИ — ПРЫЖОК (ДВОЙНОЙ), ФИНТ — ЖДИ ⭐',
 };
 function startBoss(){
-  const d=BOSSES[arena.lvl], sz=BOSS_SIZE[d.kind];
+  const d=bossAt(arena.lvl), sz=BOSS_SIZE[d.kind];
   boss={lvl:arena.lvl,kind:d.kind,name:d.name,hp:d.hp,max:d.hp,hw:sz[0],hh:sz[1],gy:arena.y,sx:W+80,y:d.kind==='plumber'||d.kind==='rooster'?-200:H*0.1,
         vy:0,vsx:0,st:'enter',t:0,n:0,hitT:0,rot:0,scale:1,waves:[],obs:[],vuln:false,solid:false};
   boss.x=camX+boss.sx;

@@ -1,6 +1,6 @@
 # Mushroom
 
-ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 200-track soundtrack and meets bosses on levels 25, 50, 75 and 100.
+ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 200-track soundtrack and meets a random boss every 10 levels.
 The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
@@ -13,16 +13,16 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
-- Bosses: the track loops until the boss goes down, and you can only hit a boss from above while it comes at you on the ground (gold stars over its head)
-  - Level 25, ГЛАВНЫЙ САНТЕХНИК: dodge wrenches, jump the shockwave, 4 stomps
-  - Level 50, ГОЛУБИНЫЙ КОРОЛЬ: jump the eggs, then stomp him while his beak is stuck in the ground, 4 stomps
-  - Level 75, ДУТАЯ ФИГУРА: jump low bubbles, stay put under high ones, stomp it while it bounces, 4 stomps
-  - Level 100, СТЕКЛЯННЫЙ ПЕТУХ: shards come in pairs (one jump) and triples (double jump), watch for feints, 5 stomps
+- Bosses: every 10th level brings one of four at random (all four before any repeats, repeats get numbered II, III). The track loops until the boss goes down, and you can only hit a boss from above while it comes at you on the ground (gold stars over its head)
+  - ГЛАВНЫЙ САНТЕХНИК: dodge wrenches, jump the shockwave, 4 stomps
+  - ГОЛУБИНЫЙ КОРОЛЬ: jump the eggs, then stomp him while his beak is stuck in the ground, 4 stomps
+  - ДУТАЯ ФИГУРА: jump low bubbles, stay put under high ones, stomp it while it bounces, 4 stomps
+  - СТЕКЛЯННЫЙ ПЕТУХ: shards come in pairs (one jump) and triples (double jump), watch for feints, 5 stomps
 - Z key -- spin the slot machine
 
 ## Features
 - 15 zones on a loop with procedural backgrounds, 7 enemy types
-- Four bosses on levels 25, 50, 75 and 100; more are planned up to level 200
+- A random boss every 10 levels, four kinds
 - Menu with nickname, music toggle, bonus and level info, online top-10
 - Share card for Telegram and other apps (the game link is copied for the next message)
 - Mobile-friendly (touch controls)
@@ -34,7 +34,7 @@ The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/
 
 ## Version
 
-Current build: **v15** (shown in the bottom-right corner of the game).
+Current build: **v16** (shown in the bottom-right corner of the game).
 
 ## Credits
 
