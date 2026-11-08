@@ -1,16 +1,23 @@
-// grib-lb: leaderboard for ГРИБ: Versus. SQLite file, kvdb-compatible API:
-//   GET  /?prefix=v2:      -> [["v2:NAME",score],...]
-//   POST /v2:NAME  body=N  -> keeps the max score per key
-// No deletes. Old kvdb clients and this server can be read side by side.
+// grib-lb: leaderboard for ГРИБ: Versus, the only place scores live. SQLite file.
+// Public API (behind Tailscale Funnel):
+//
+//	GET  /?prefix=v2:      -> [["v2:NAME",score],...]
+//	POST /v2:NAME  body=N  -> keeps the max score per key
+//
+// Admin API on a loopback port that is not funneled: GET / lists all, DELETE /KEY removes a row.
+// CLI on the server: `grib-lb ls`, `grib-lb rm NAME|KEY...`.
 package main
 
 import (
 	"database/sql"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +29,12 @@ import (
 
 var db *sql.DB
 
+const adminAddr = "127.0.0.1:8789"
+
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "ls" || os.Args[1] == "rm") {
+		os.Exit(cli(os.Args[1], os.Args[2:]))
+	}
 	addr := flag.String("addr", "127.0.0.1:8790", "listen address")
 	path := flag.String("db", "scores.db", "SQLite file")
 	flag.Parse()
@@ -36,7 +48,9 @@ func main() {
 		log.Fatal(err)
 	}
 	srv := &http.Server{Addr: *addr, Handler: http.HandlerFunc(handle), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
-	log.Printf("grib-lb on %s, db %s", *addr, *path)
+	adm := &http.Server{Addr: adminAddr, Handler: http.HandlerFunc(admin), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
+	go func() { log.Fatal(adm.ListenAndServe()) }()
+	log.Printf("grib-lb on %s (admin %s), db %s", *addr, adminAddr, *path)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -116,4 +130,73 @@ func put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	io.WriteString(w, "ok")
+}
+
+func admin(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		list(w, "")
+	case http.MethodDelete:
+		res, err := db.Exec(`DELETE FROM scores WHERE k = ?`, upKey(strings.TrimPrefix(r.URL.Path, "/")))
+		if err != nil {
+			http.Error(w, "db", http.StatusInternalServerError)
+			return
+		}
+		n, _ := res.RowsAffected()
+		fmt.Fprintln(w, n)
+	default:
+		http.Error(w, "not found", http.StatusNotFound)
+	}
+}
+
+// Legacy store read by game tabs older than v22; rm clears it too until those tabs are gone.
+const kvdbURL = "https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/"
+
+func cli(cmd string, args []string) int {
+	base := "http://" + adminAddr + "/"
+	if cmd == "ls" {
+		resp, err := http.Get(base)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		defer resp.Body.Close()
+		var rows [][2]any
+		json.NewDecoder(resp.Body).Decode(&rows)
+		for _, r := range rows {
+			fmt.Printf("%v\t%v\n", r[0], r[1])
+		}
+		return 0
+	}
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "usage: grib-lb rm NAME|v2:NAME|v2s:NAME ...")
+		return 2
+	}
+	code := 0
+	for _, a := range args {
+		keys := []string{"v2:" + a, "v2s:" + a} // bare name: both boards
+		if strings.HasPrefix(a, "v2:") || strings.HasPrefix(a, "v2s:") {
+			keys = []string{a}
+		}
+		for _, k := range keys {
+			req, _ := http.NewRequest(http.MethodDelete, base+url.PathEscape(k), nil)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				code = 1
+				continue
+			}
+			n, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			fmt.Printf("%s: deleted %s", upKey(k), n)
+			for _, kk := range []string{k, upKey(k), strings.ToLower(k)} {
+				if req, err := http.NewRequest(http.MethodDelete, kvdbURL+url.PathEscape(kk), nil); err == nil {
+					if resp, err := http.DefaultClient.Do(req); err == nil {
+						resp.Body.Close()
+					}
+				}
+			}
+		}
+	}
+	return code
 }

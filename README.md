@@ -34,13 +34,19 @@ The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/
 
 ## Leaderboard
 
-Scores live in a small Go + SQLite server (`server/`) that keeps the best score per nickname and has no delete endpoint. A scheduled GitHub Action (`.github/workflows/backup-scores.yml`) merges it into `backup/scores.json` every day, and the game also reads that file, so the board still shows when the server is down. Scores that fail to send wait in the browser and go out on the next visit. The old kvdb.io bucket is still read and written during the switch, so older open tabs keep working.
+Scores live in one place: a small Go + SQLite server (`server/`) that keeps the best score per nickname, with names in caps. The public API can only read and add. Deleting goes through an admin port that only the server itself can reach:
 
-To restore an empty server, start the game once: it re-sends every score it sees in the backup.
+```
+ssh <vps> grib-lb ls            # every row
+ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for one
+gh workflow run backup-scores.yml   # refresh the backup right away
+```
+
+A scheduled GitHub Action (`.github/workflows/backup-scores.yml`) mirrors the server into `backup/scores.json` once a day, so deleted rows leave the backup too and git history keeps older copies. To restore an empty server, POST each row of that file back to the server. Scores that fail to send wait in the browser and go out on the next visit.
 
 ## Version
 
-Current build: **v21** (shown in the bottom-right corner of the game).
+Current build: **v22** (shown in the bottom-right corner of the game).
 
 ## Credits
 
