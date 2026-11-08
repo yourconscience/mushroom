@@ -13,6 +13,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect coins and bonuses: 🍄 big mushroom (survives one hit), 🦠 spores, 🌀 slow-mo, 🧲 magnet, 🎞 noir (one zone in black and white with no bonuses), 🚀 jetpack
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
+- Level 25: boss fight with ГЛАВНЫЙ САНТЕХНИК. Dodge wrenches, jump the shockwave, stomp his head 4 times while he charges. The track loops until he goes down
 - Z key -- spin the slot machine
 
 ## Features
@@ -27,7 +28,7 @@ The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/
 
 ## Version
 
-Current build: **v9** (shown in the bottom-right corner of the game).
+Current build: **v10** (shown in the bottom-right corner of the game).
 
 ## Credits
 

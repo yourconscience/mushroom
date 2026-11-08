@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v9';
+const VERSION='v10';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -249,6 +249,7 @@ const MODES={
   'ИЗИ':    {k:'EZ',    sm:0.5, info:'изи: мир медленнее, гриб большой и отрастает каждую зону, очки x0.5'},
   'ДУТЫЙ':  {k:'PUFF',  sm:1,   info:'дутая фигура: гриб надут, парит и прыгает трижды'},
   'МАРИО':  {k:'MARIO', sm:1.5, info:'Марио снова прыгает на грибы: сантехники скачут, их больше, очки x1.5'},
+  'ГНОЙНЫЙ':{k:'GNOY',  sm:1,   info:'сразу в баттл: первый босс на 25-м уровне'},
 };
 let SM=1; // множитель очков режима
 function baseFilter(){ return charMode==='X'||charMode==='OKS'?'grayscale(1)':''; }
@@ -513,10 +514,18 @@ async function shareScore(s,line){
 let running=false, gameOver=false;
 let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, best=+(localStorage.gribBest||0);
 const G=2400, JUMP=-880, WG=1400;
+// --- Боссы ---
+// Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
+// пока босс жив (клип просто крутится по кругу). Дальше: 50, 75, 100, потом 125...200.
+const BOSS_AT={24:'ГЛАВНЫЙ САНТЕХНИК'};
+const BOSS_HP=4, BOSS_W=34, BOSS_H=96; // полуширина и рост (сантехник x2.2)
+let boss=null, arena=null, bossDone={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
+  boss=null; arena=null; bossDone={};
+  if(charMode==='GNOY'){ dist=24*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -530,6 +539,12 @@ function addPlat(afterX){
   const gap=60+Math.random()*100+speed*0.08;
   const w=200+Math.random()*260;
   const last=plats[plats.length-1];
+  // арена босса: одна длинная ровная платформа без врагов и бонусов
+  const pz=((dist+afterX+gap-player.x)/ZONE_LEN)|0;
+  if(BOSS_AT[pz]&&!bossDone[pz]&&!arena&&!boss){
+    const a={x:afterX+gap,y:Math.max(H*0.55,Math.min(H*0.74,last.y)),w:1e7,lvl:pz};
+    plats.push(a); arena=a; return a.x+a.w;
+  }
   let y=last.y+(Math.random()*220-110);
   y=Math.max(H*0.35,Math.min(H*0.82,y));
   const p={x:afterX+gap,y,w};
@@ -624,7 +639,7 @@ function fillBonus(p){
 function fillLevels(p){
   p.textContent='';
   const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
-  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее.'); p.append(a);
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее. На 25-м уровне ждёт первый босс.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок. Каждый 10-й уровень играет особый трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec){
@@ -849,7 +864,7 @@ function loop(ts){
     jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
     if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
-    speed=Math.min(560,speed+dt*3); dist+=speed*dt;
+    speed=Math.min(560,speed+dt*3); if(!boss) dist+=speed*dt; // пока жив босс, зона стоит
     player.x+=speed*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
@@ -1005,6 +1020,9 @@ function loop(ts){
     if(!player.dead&&player.inv<=0&&Math.abs(player.x-w.x)<20*wsc&&w.y>player.y-40*wsc-6&&w.y<player.y+4){ w.l=0; hit(); }
   }
   wrenches=wrenches.filter(w=>w.l>0&&w.y<H+100&&w.x>camX-200);
+  // босс
+  if(arena&&!boss&&!player.dead&&player.x>arena.x+60) startBoss();
+  if(boss) updBoss(dt,onGround);
   // падение
   if(!player.dead&&player.y>H+80) die();
 
@@ -1030,6 +1048,7 @@ function loop(ts){
   // выхлоп джетпака
   if(jetT>0&&!player.dead)parts.push({x:player.x-8,y:player.y-6,vx:-120-Math.random()*80,vy:120+Math.random()*120,l:.35,c:Math.random()<.5?'#ff8c42':'#4cc9f0'});
   for(const e of enemies) drawEnemy(e,t);
+  if(boss) drawBoss(t);
   for(const sp of spores){
     ctx.globalAlpha=.35; ctx.fillStyle='#a6e22e'; ctx.beginPath(); ctx.arc(sp.x-camX,sp.y,10,0,7); ctx.fill();
     ctx.globalAlpha=1; ctx.fillStyle='#e6ff9e'; ctx.beginPath(); ctx.arc(sp.x-camX,sp.y,4.5,0,7); ctx.fill();
@@ -1061,6 +1080,118 @@ function loop(ts){
 }
 requestAnimationFrame(loop);
 
+// --- Босс №1: ГЛАВНЫЙ САНТЕХНИК ---
+// Цикл: кидает ключи → (после первого тычка ещё прыжок с ударной волной) → устал и прёт на гриб.
+// Пока прёт — прыгни ему на голову. 4 тычка — отлетает. Позиция босса — в координатах экрана (sx),
+// потому что гриб всё время бежит, а камера едет вместе с ним.
+function startBoss(){
+  boss={lvl:arena.lvl,name:BOSS_AT[arena.lvl],hp:BOSS_HP,sx:W+80,y:-200,vy:0,vsx:0,st:'enter',t:0,n:0,hitT:0,rot:0,waves:[]};
+  boss.x=camX+boss.sx;
+  enemies=enemies.filter(e=>e.x<player.x-40);
+  showQuote('БОСС: '+boss.name,true); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
+}
+function bossThrow(b){
+  const tdx=Math.max(120,b.x-player.x), T=0.55+tdx/1600, x0=b.x-24, y0=b.y-BOSS_H*0.8;
+  const tx=player.x+speed*T+(Math.random()-.5)*40, ty=player.y-18;
+  wrenches.push({x:x0,y:y0,vx:(tx-x0)/T,vy:(ty-y0-0.5*WG*T*T)/T,r:0,l:4});
+  beep(420,.06,'triangle');
+}
+function bossKill(b){
+  b.st='dead'; b.t=0; b.vsx=520; b.vy=-900; b.waves=[];
+  score+=5000; confetti(90); shake(18,.6);
+  for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
+  showQuote('БОСС ПОВЕРЖЕН +5000 🏆',true);
+  bossDone[b.lvl]=true;
+  if(arena){ arena.w=Math.max(200,camX+W*1.6-arena.x); arena=null; }
+  dist=(zoneN+1)*ZONE_LEN+1; // следующий уровень и новый трек начинаются сразу
+}
+function updBoss(dt,onGround){
+  const b=boss, psx=player.x-camX, gy=arena?arena.y:b.y, anchor=W*0.72, rage=BOSS_HP-b.hp;
+  b.t+=dt; b.hitT=Math.max(0,b.hitT-dt);
+  switch(b.st){
+    case 'enter':
+      b.sx+=(anchor-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt;
+      if(b.y>=gy){ b.y=gy; b.vy=0; shake(12,.3); b.st='throw'; b.t=0; b.n=0; }
+      break;
+    case 'throw':
+      b.sx+=(anchor-b.sx)*Math.min(1,dt*4); b.y=gy;
+      if(b.t>0.62-rage*0.08){ b.t=0; b.n++; bossThrow(b);
+        if(b.n>=3+rage){ b.n=0; b.t=0; if(rage>0){ b.st='leap'; b.vy=-1250; b.lx=b.sx; b.tx=psx+320; } else b.st='charge'; } }
+      break;
+    case 'leap':
+      b.vy+=G*dt; b.y+=b.vy*dt; b.sx=b.lx+(b.tx-b.lx)*Math.min(1,b.t/0.9);
+      if(b.y>=gy&&b.vy>0){ b.y=gy; b.vy=0; b.st='slam'; b.t=0; shake(16,.4); beep(70,.35,'square',.2);
+        b.waves.push({sx:b.sx-BOSS_W,d:-1},{sx:b.sx+BOSS_W,d:1}); }
+      break;
+    case 'slam': // волна идёт к грибу, босс ждёт: сначала перепрыгни волну, потом тычок
+      b.y=gy; if(b.t>0.95){ b.st='charge'; b.t=0; }
+      break;
+    case 'charge': // устал и прёт на гриб: окно для тычка
+      b.y=gy; b.sx-=(230+rage*40)*dt;
+      if(b.sx<-120){ b.st='back'; b.t=0; b.sx=W+100; }
+      break;
+    case 'hurt': // отлетает после тычка
+      b.sx+=b.vsx*dt; b.vsx*=Math.pow(0.08,dt); b.vy+=G*dt; b.y+=b.vy*dt;
+      if(b.y>=gy){ b.y=gy; b.vy=0; }
+      if(b.t>0.8){ b.st='back'; b.t=0; }
+      break;
+    case 'back':
+      b.y=gy; b.sx+=(anchor-b.sx)*Math.min(1,dt*3);
+      if(Math.abs(anchor-b.sx)<10){ b.st='throw'; b.t=0; b.n=0; }
+      break;
+    case 'dead':
+      b.sx+=b.vsx*dt; b.vy+=G*0.55*dt; b.y+=b.vy*dt; b.rot+=dt*9;
+      if(b.t>2.2){ boss=null; return; }
+      break;
+  }
+  b.x=camX+b.sx;
+  // ударная волна по земле: перепрыгни
+  for(const w of b.waves){ w.sx+=w.d*400*dt;
+    if(!player.dead&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } }
+  b.waves=b.waves.filter(w=>!w.dead&&w.sx>-60&&w.sx<W+60);
+  // столкновение с грибом
+  if(player.dead||b.st==='dead'||b.st==='enter')return;
+  const psc=player.big?1.35:1, top=b.y-BOSS_H, dx=Math.abs(player.x-b.x);
+  if(dx<BOSS_W+20*psc&&player.y>top-4&&player.y-40*psc<b.y){
+    if(player.vy>60&&player.y<top+30){
+      player.vy=JUMP*0.78; player.jumps=maxJumps();
+      if(b.st==='charge'){ // тычок
+        b.hp--; b.hitT=0.5; score+=1000; sStomp(); shake(12,.3); firework(b.x,top-20);
+        popText(b.x,top-40,'+1000','#ffd84d');
+        if(b.hp<=0){ bossKill(b); return; }
+        showQuote('ТЫЧОК '+(BOSS_HP-b.hp)+'/'+BOSS_HP+' 👊',true);
+        b.st='hurt'; b.t=0; b.vsx=900; b.vy=-520;
+      } else { beep(900,.05,'square',.08); } // каска: дзынь, без урона
+    } else if(b.st!=='hurt'){ hit(); b.st='back'; b.t=0; }
+  }
+}
+function drawBoss(t){
+  const b=boss, s=2.2;
+  if(b.hitT>0&&((t*24)|0)%2)return;
+  ctx.save(); ctx.translate(b.x-camX,b.y);
+  if(b.st==='dead') ctx.rotate(b.rot);
+  ctx.scale(s,s);
+  drawEnemy({x:camX,y:0,type:'walk',dir:-1,t:0,dead:0},t); // тот же сантехник, только огромный
+  // корона главного
+  ctx.fillStyle='#ffd84d'; ctx.strokeStyle=OL; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(-10,-45); ctx.lineTo(-10,-53); ctx.lineTo(-5,-48); ctx.lineTo(0,-55); ctx.lineTo(5,-48); ctx.lineTo(10,-53); ctx.lineTo(10,-45); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  // «устал»: звёздочки над головой — можно бить
+  if(b.st==='charge'){
+    ctx.fillStyle='#ffd84d';
+    for(let i=0;i<3;i++){ const a=t*5+i*2.1; ctx.fillRect(b.x-camX+Math.cos(a)*26-3,b.y-BOSS_H-26+Math.sin(a)*7-3,6,6); }
+  }
+  // ударные волны
+  for(const w of b.waves){ ctx.fillStyle='rgba(255,216,77,.8)'; ctx.fillRect(w.sx-14,b.y-10,28,10); ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(w.sx-8,b.y-18,16,8); }
+  // полоска здоровья
+  if(b.st!=='dead'){
+    const bw=Math.min(260,W*0.6), x0=(W-bw)/2, y0=62;
+    ctx.fillStyle='rgba(10,10,18,.6)'; ctx.fillRect(x0-8,y0-22,bw+16,40);
+    ctx.fillStyle='#fff'; ctx.font="800 12px 'Unbounded',system-ui,sans-serif"; ctx.textAlign='center'; ctx.fillText(b.name,W/2,y0-6); ctx.textAlign='left';
+    const pw=(bw-6*(BOSS_HP-1))/BOSS_HP;
+    for(let i=0;i<BOSS_HP;i++){ ctx.fillStyle=i<b.hp?'#ff3d7f':'rgba(255,255,255,.18)'; ctx.fillRect(x0+i*(pw+6),y0,pw,8); }
+  }
+}
 // нуар: на ZONE_LEN пути всё ч/б, текущие бонусы сгорают (кроме большого гриба), новых нет
 function startNoir(){
   noirTo=dist+ZONE_LEN; jetT=0; spT=0; hyT=0; fsT=0; mgT=0; // большой гриб остаётся
