@@ -11,7 +11,7 @@ A tongue-in-cheek role reversal of classic Mario.
 
 - Tap / Space -- jump (tap again mid-air for double jump)
 - Land ON enemies to stomp them
-- Collect coins and bonuses: 🍄 big mushroom (survives one hit), 🦠 spores, 🌀 slow-mo, 🧲 magnet, ☂️ glider, 🚀 jetpack
+- Collect coins and bonuses: 🍄 big mushroom (survives one hit), 🦠 spores, 🌀 slow-mo, 🧲 magnet, 🎞 noir (one zone in black and white with no bonuses), 🚀 jetpack
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
 - Z key -- spin the slot machine
 

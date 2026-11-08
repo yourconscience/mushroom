@@ -2,7 +2,7 @@ const BONUSES={
   jet:   {icon:'🚀', color:'#4cc9f0', dur:4,  chance:0.05,
           quote:'ПАНЕЛЬКА НА ЛУНЕ, Я ВЗЛЕТАЮ 🚀',
           hud:'ДЖЕТПАК'},
-  loot:  {icon:'💰', color:'#7CFC00', dur:0,  chance:0.08,
+  loot:  {icon:'💰', color:'#7CFC00', dur:0,  chance:0.09,
           quote:'GIMME THE LOOT +500 💰',
           hud:''},
   slot:  {icon:'🎰', color:'#ff2d78', dur:0,  chance:0.05,
@@ -20,9 +20,9 @@ const BONUSES={
   magnet:{icon:'🧲', color:'#ff6b6b', dur:8,  chance:0.03,
           quote:'ВСЁ ТЯНЕТСЯ К ГРИБУ 🧲',
           hud:'МАГНИТ'},
-  glide: {icon:'☂️', color:'#ffd166', dur:6,  chance:0.04,
-          quote:'ПЛАНЕР ОТКРЫТ, ПАРИМ ☂️',
-          hud:'ПЛАНЕР'},
+  noir:  {icon:'🎞', color:'#d0d0d0', dur:0,  chance:0.03,
+          quote:'ЧЁРНО-БЕЛОЕ КИНО: БОНУСОВ НЕТ 🎞',
+          hud:'НУАР'},
 };
 const SLOT_OUTCOMES=[
   {t:'ДЖЕКПОТ! +2000 💰', k:'jackpot'},

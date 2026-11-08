@@ -97,7 +97,7 @@
   <h1>ГРИБ</h1>
   <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Versus 2017 продолжается.</div>
   <button id="btn">ПОЕХАЛИ</button>
-  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.<br><br>Секретные персонажи — введи букву как ник:<br>Z — без бонусов, но казино само крутится каждые 5 сек<br>X — чёрно-белый хардкор: только деньги, все враги сразу<br>V — вечный джетпак, но больше никаких бонусов<br><br>🍄 — станешь большим: переживёшь один удар<br>Ещё: 🦠 споры • 🌀 замедление • 🧲 магнит • ☂️ планер</div>
+  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.<br><br>Секретные персонажи — введи букву как ник:<br>Z — без бонусов, но казино само крутится каждые 5 сек<br>X — чёрно-белый хардкор: только деньги, все враги сразу<br>V — вечный джетпак, но больше никаких бонусов<br><br>🍄 — станешь большим: переживёшь один удар<br>Ещё: 🦠 споры • 🌀 замедление • 🧲 магнит<br>🎞 нуар: зона в ч/б, все бонусы сгорают</div>
 </div>
 <script src="zones.js"></script>
 <script src="bonuses.js"></script>
@@ -243,8 +243,8 @@ function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>bee
 let nextBeat=0, beatI=0;
 function tickMusic(){
   if(!AC||!running||player.dead)return;
-  if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:1; return; } // играет живой трек
-  const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:1); // восьмые
+  if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:fsT>0?1.4:1; return; } // играет живой трек
+  const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:fsT>0?1/1.4:1); // восьмые
   if(AC.currentTime>=nextBeat){
     const f=z.loop[beatI%z.loop.length];
     if(f)beep(f,spb*0.9,z.wave,.045);
@@ -395,12 +395,12 @@ async function shareScore(s,line){
 
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, glT=0, spCd=0, spores=[], wrenches=[], zTimer=0, best=+(localStorage.gribBest||0);
+let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, best=+(localStorage.gribBest||0);
 const G=2400, JUMP=-880, WG=1400;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
-  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; glT=0; spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
+  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=charMode==='X'?'grayscale(1)':''; spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -426,7 +426,7 @@ function addPlat(afterX){
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y,cd:0.15+Math.random()*0.3});
   }
   // бонус (Z и V не видят ничего, X — только деньги)
-  if(charMode!=='Z'&&charMode!=='V'){
+  if(charMode!=='Z'&&charMode!=='V'&&p.x-120>=noirTo){ // нуар: бонусов нет до конца
     const roll=Math.random(); let acc=0;
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
@@ -646,12 +646,6 @@ function drawGrib(p,t){
   // точки
   ctx.fillStyle='#fff';
   ctx.beginPath(); ctx.arc(-8,-26,3.4,0,7); ctx.arc(8,-25,3,0,7); ctx.arc(0,-30,2.6,0,7); ctx.fill();
-  if(glT>0){
-    // планер-зонтик над шляпкой
-    ctx.fillStyle='#ffd166'; ctx.beginPath(); ctx.ellipse(0,-50,26,12,0,Math.PI,0); ctx.fill();
-    ctx.fillStyle='#e07a1f'; ctx.fillRect(-26,-50,52,3);
-    ctx.strokeStyle='#555'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,-50); ctx.lineTo(0,-34); ctx.stroke();
-  }
   ctx.restore();
 }
 // --- Враги ---
@@ -721,7 +715,7 @@ let lt=0;
 function loop(ts){
   requestAnimationFrame(loop);
   const t=ts/1000, rdt=Math.min((ts-lt)/1000,0.033); lt=ts;
-  const dt=rdt*(hyT>0?0.5:1); // гипногриб: мир идёт вдвое медленнее, таймеры бонусов в реальном времени
+  const dt=rdt*(hyT>0?0.5:fsT>0?1.4:1); // гипногриб: вдвое медленнее, потом отходняк x1.4; таймеры бонусов в реальном времени
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(running&&hyT>0){ ctx.translate(W/2,H/2); ctx.transform(1,Math.sin(t*2.3)*.015,Math.sin(t*1.9)*.015,1,0,0); ctx.translate(-W/2,-H/2); }
   if(shakeT>0){ shakeT-=rdt; const a=shakeA*Math.min(1,shakeT*4); ctx.translate((Math.random()-.5)*2*a,(Math.random()-.5)*2*a); if(shakeT<=0)shakeA=0; }
@@ -729,7 +723,8 @@ function loop(ts){
   if(!running){ return; }
 
   if(!player.dead){
-    jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); hyT=Math.max(0,hyT-rdt); mgT=Math.max(0,mgT-rdt); glT=Math.max(0,glT-rdt); player.inv=Math.max(0,player.inv-rdt);
+    jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
+    if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=charMode==='X'?'grayscale(1)':''; showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
     speed=Math.min(560,speed+dt*3); dist+=speed*dt;
     player.x+=speed*dt;
@@ -758,7 +753,7 @@ function loop(ts){
     }
   }
   // физика
-  player.vy+=G*dt; if(glT>0&&player.vy>220)player.vy=220; player.y+=player.vy*dt;
+  player.vy+=G*dt; player.y+=player.vy*dt;
   player.squish+= (0-player.squish)*Math.min(1,dt*10);
 
   // платформы
@@ -792,7 +787,7 @@ function loop(ts){
       else if(b.kind==='spore')spT=B.dur;
       else if(b.kind==='hypno')hyT=B.dur;
       else if(b.kind==='magnet')mgT=B.dur;
-      else if(b.kind==='glide')glT=B.dur;
+      else if(b.kind==='noir')startNoir();
       else if(b.kind==='loot')score+=500;
       else if(b.kind==='slot'){ slotCharges++; slotBtn.classList.remove('hidden'); }
       for(let i=0;i<14;i++)parts.push({x:b.x,y:b.y,vx:(Math.random()-.5)*450,vy:-Math.random()*350,l:.6,c:B.color});
@@ -940,13 +935,19 @@ function loop(ts){
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
   scoreEl.textContent='СЧЁТ: '+(score|0);
-  const fx=(player.big?'🍄 ':'')+[['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT],['glide',glT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])).join(' ');
+  const fx=[player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
   fxEl.textContent=fx;
   if(hyT>0){ ctx.fillStyle='hsla('+((t*90)%360|0)+',90%,60%,0.14)'; ctx.fillRect(-20,-20,W+40,H+40); }
   comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';
 }
 requestAnimationFrame(loop);
 
+// нуар: до конца следующей зоны (ZONE_LEN пути) всё ч/б, текущие бонусы сгорают, новых нет
+function startNoir(){
+  noirTo=dist+ZONE_LEN; jetT=0; spT=0; hyT=0; fsT=0; mgT=0; player.big=false;
+  slotCharges=0; slotBtn.classList.add('hidden'); pickups=[];
+  document.body.style.filter='grayscale(1)';
+}
 // удар: большой гриб уменьшается и неуязвим 1.5 с, маленький умирает
 function hit(){
   if(player.dead||player.inv>0)return;
