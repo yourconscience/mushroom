@@ -9,13 +9,24 @@ Reads music/sources.json (private, gitignored):
 
 Writes clips/NN.mp3 for the pool (in order) and clips/special.mp3, all with
 metadata tags stripped, plus clips/manifest.json:
-  {"files": ["01.mp3", ...], "special": "special.mp3"}
+  {"files": ["01.mp3", ...], "t": [...], "special": "special.mp3", "st": "..."}
+"t"/"st" hold the titles XOR-ed with a fixed key and base64-encoded, so the names
+never sit in the public repo as plain text; index.html decodes them (deob).
 index.html loads the manifest and reshuffles the pool on every run.
 The artist/track mapping goes to music/TRACKLIST.md, which stays gitignored:
 it is the only place the real names live.
 Needs ffmpeg.
 """
-import json, os, re, subprocess, sys
+import base64, json, os, re, subprocess, sys
+
+OBF_KEY = b"grib-versus"  # same key as OBF_KEY in index.html
+
+
+def obf(s):
+    if s is None:
+        return None
+    b = s.encode("utf8")
+    return base64.b64encode(bytes(c ^ OBF_KEY[i % len(OBF_KEY)] for i, c in enumerate(b))).decode()
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUSIC = os.path.join(ROOT, "music")
@@ -80,7 +91,7 @@ def main():
             print(f"special {start}s  {os.path.basename(src)}")
         else:
             print(f"skip special: no file {src}", file=sys.stderr)
-    json.dump({"files": files, "titles": titles, "special": special, "specialTitle": special_title},
+    json.dump({"files": files, "t": [obf(t) for t in titles], "special": special, "st": obf(special_title)},
               open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0, ensure_ascii=False)
     open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
 

@@ -311,10 +311,17 @@ function renderPool(){
   if(clipMeta.specialTitle){ const d=document.createElement('div'); d.className='sp'; d.textContent='★ '+clipMeta.specialTitle; box.appendChild(d); }
   const c=document.getElementById('poolCount'); if(c)c.textContent=t.length;
 }
+// названия в манифесте лежат не открытым текстом: XOR с ключом + base64 (tools/cut-clips.py)
+const OBF_KEY=Array.from('grib-versus',c=>c.charCodeAt(0));
+function deob(s){
+  if(!s)return s;
+  try{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i)^OBF_KEY[i%OBF_KEY.length]; return new TextDecoder().decode(u); }catch(e){ return ''; }
+}
 async function loadClips(){
   clipsLoading=true;
   try{
     clipMeta=await (await fetch('clips/manifest.json')).json();
+    if(clipMeta.t){ clipMeta.titles=clipMeta.t.map(deob); clipMeta.specialTitle=deob(clipMeta.st); }
     const files=(clipMeta.files||[]).filter(Boolean);
     clipBytes=new Array(files.length);
     renderPool();
