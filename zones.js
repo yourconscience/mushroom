@@ -1,5 +1,5 @@
 const ZONES=[
-  {name:'ДРОЗД',
+  {name:'ЛЕС',
    sky:['#46505e','#8d98a6','#cdd3d6'], plat:'#b9c98a', dirt:'#6b6a5c', dirt2:'#53524a',
    build:'#3a4350', build2:'#5a6472', win:'#fff6d0', moon:'#f2f2ea',
    bg:'fog', enemies:['walk'], mult:1,
@@ -7,7 +7,7 @@ const ZONES=[
    jingle:[[659,.08],[784,.08],[659,.08],[880,.08],[784,.25]],
    loop:[220,0,262,0,330,262,0,294]},
 
-  {name:'В ГОВНЕ',
+  {name:'СПАЛЬНЫЙ РАЙОН',
    sky:['#0b1020','#141b33','#1e2745'], plat:'#4caf50', dirt:'#5d4037', dirt2:'#4a332b',
    build:'#10162b', build2:'#1a2240', win:'#ffcf70', moon:'#f4e8c8',
    bg:'city', enemies:['walk'], mult:1.08,
@@ -15,7 +15,7 @@ const ZONES=[
    jingle:[[220,.18],[262,.18],[247,.18],[196,.4]],
    loop:[110,0,131,0,110,147,131,0]},
 
-  {name:'BLACK SIEMENS',
+  {name:'ЗАКАТ',
    sky:['#2a0f2e','#8a3a2a','#e8a04a'], plat:'#e9c46a', dirt:'#9c5a2e', dirt2:'#74401f',
    build:'#2b1426', build2:'#43202e', win:'#ffe0a0', moon:'#ffb347',
    bg:'sunset', enemies:['walk','spike'], mult:1.12,
@@ -23,7 +23,7 @@ const ZONES=[
    jingle:[[294,.12],[349,.12],[440,.12],[392,.3]],
    loop:[147,0,0,175,147,0,220,175]},
 
-  {name:'ТАМАГОЧИ',
+  {name:'СНЕГОПАД',
    sky:['#1c1740','#3b2f6b','#6b5aa8'], plat:'#f4a6d7', dirt:'#5a4a8a', dirt2:'#43376a',
    build:'#17123a', build2:'#241b52', win:'#ffd6f0', moon:'#fff0fa',
    bg:'snow', enemies:['walk','fly','dive'], mult:1.16,
@@ -31,7 +31,7 @@ const ZONES=[
    jingle:[[523,.1],[659,.1],[587,.1],[784,.28]],
    loop:[262,0,330,392,0,330,294,349]},
 
-  {name:'ПОЛОЖЕНИЕ',
+  {name:'БОЛОТО',
    sky:['#11150f','#222b1d','#33402a'], plat:'#a8c474', dirt:'#454f33', dirt2:'#333b26',
    build:'#181f15', build2:'#252e1f', win:'#d4e8a8', moon:'#e8f0d0',
    bg:'fog', enemies:['walk','slide','thrower'], mult:1.2,
@@ -39,7 +39,7 @@ const ZONES=[
    jingle:[[220,.25],[208,.25],[196,.45]],
    loop:[98,0,0,110,0,98,123,0]},
 
-  {name:'ВСЁ КАК У ЛЮДЕЙ',
+  {name:'КРЫШИ',
    sky:['#08201f','#12423f','#2a6f62'], plat:'#7ee0c3', dirt:'#2d5e55', dirt2:'#214740',
    build:'#0b2a28', build2:'#12403b', win:'#d8fff0', moon:'#e8fff8',
    bg:'city', enemies:['slide','spike','thrower'], mult:1.24,
@@ -47,7 +47,7 @@ const ZONES=[
    jingle:[[330,.1],[330,.1],[392,.1],[494,.3]],
    loop:[110,0,165,110,0,196,165,0]},
 
-  {name:'БИТ ШАТАЕТ ГОЛОВУ',
+  {name:'ТУМАН',
    sky:['#1a0808','#3a1010','#5e1a1a'], plat:'#ff7b5c', dirt:'#5c2020', dirt2:'#431616',
    build:'#240b0b', build2:'#381414', win:'#ffb08a', moon:'#ff9a7a',
    bg:'fog', enemies:['slide','fly','dive'], mult:1.28,
@@ -55,7 +55,7 @@ const ZONES=[
    jingle:[[247,.08],[247,.08],[370,.12],[330,.12],[294,.25]],
    loop:[123,0,123,147,0,123,185,147]},
 
-  {name:'ГОРОД ПОД ПОДОШВОЙ',
+  {name:'ДОЖДЬ',
    sky:['#121216','#1f1f28','#2c2c3a'], plat:'#9aa0b4', dirt:'#3e4254', dirt2:'#2e3140',
    build:'#181820', build2:'#232330', win:'#ff6b6b', moon:'#d8d8e8',
    bg:'rain', enemies:['walk','fly','dive'], mult:1.32,
@@ -63,7 +63,7 @@ const ZONES=[
    jingle:[[294,.1],[294,.1],[440,.2],[392,.25]],
    loop:[147,0,147,175,0,147,196,0]},
 
-  {name:'КАМО ГРЯДЕШИ',
+  {name:'ГРИБНОЙ БОР',
    sky:['#05100a','#0d2416','#173a22'], plat:'#6fcf7a', dirt:'#3b2f1e', dirt2:'#2b2216',
    build:'#07180d', build2:'#0d2a17', win:'#d6ff8a', moon:'#e6f5c8',
    bg:'forest', enemies:['walk','spike','dive'], mult:1.36,
@@ -71,7 +71,7 @@ const ZONES=[
    jingle:[[220,.15],[262,.15],[330,.15],[294,.3]],
    loop:[147,0,220,196,0,165,196,0]},
 
-  {name:'ЧЕТВЁРТЫЙ ВСАДНИК',
+  {name:'ДИСКОТЕКА',
    sky:['#2a1500','#6b3a00','#b86a10'], plat:'#ffd23f', dirt:'#7a4a12', dirt2:'#5c3609',
    build:'#2e1a05', build2:'#4a2a08', win:'#fff3b0', moon:'#ffe066',
    bg:'party', enemies:['slide','hop','thrower'], mult:1.4,
@@ -79,7 +79,7 @@ const ZONES=[
    jingle:[[392,.08],[494,.08],[392,.08],[587,.08],[784,.24]],
    loop:[196,247,0,294,196,0,247,330]},
 
-  {name:'GIMME THE LOOT',
+  {name:'ЗОЛОТАЯ ЖИЛА',
    sky:['#0d0a04','#241c08','#3e3210'], plat:'#ffd24d', dirt:'#665018', dirt2:'#4a3a11',
    build:'#171307', build2:'#28210d', win:'#ffe97a', moon:'#ffd24d',
    bg:'gold', enemies:['slide','hop'], mult:1.44,
@@ -87,7 +87,7 @@ const ZONES=[
    jingle:[[392,.08],[392,.08],[392,.08],[622,.28]],
    loop:[196,0,233,196,0,233,311,233]},
 
-  {name:'ЧЁРНЫЙ ВЛАСТЕЛИН',
+  {name:'ПЫЛЬНАЯ ТРАССА',
    sky:['#0d0618','#2a0e3e','#5a1a54'], plat:'#c77dff', dirt:'#3c1d5a', dirt2:'#2b1442',
    build:'#14082a', build2:'#220f40', win:'#ff7ad9', moon:'#b5179e',
    bg:'sunset', enemies:['hop','spike','dive'], mult:1.48,
@@ -95,7 +95,7 @@ const ZONES=[
    jingle:[[330,.1],[311,.1],[294,.1],[262,.1],[247,.3]],
    loop:[110,0,131,0,110,165,0,147]},
 
-  {name:'ЗВЕЗДА',
+  {name:'КОСМОС',
    sky:['#020208','#070714','#0c0c22'], plat:'#c8c8e8', dirt:'#42425e', dirt2:'#30304a',
    build:'#10101e', build2:'#1c1c30', win:'#9af0ff', moon:'#ffffff',
    bg:'space', enemies:['walk','fly','hop','thrower'], mult:1.52,
@@ -103,7 +103,7 @@ const ZONES=[
    jingle:[[523,.12],[440,.12],[349,.12],[262,.35]],
    loop:[131,0,262,0,196,0,330,262]},
 
-  {name:'CRISTAL & МОЁТ',
+  {name:'НЕОНОВЫЙ ЦЕНТР',
    sky:['#050505','#111114','#1d1d24'], plat:'#f2e9d0', dirt:'#3a3a44', dirt2:'#2a2a32',
    build:'#0a0a0d', build2:'#15151a', win:'#ffd700', moon:'#ffffff',
    bg:'city', enemies:['slide','spike','thrower','dive'], mult:1.56,
@@ -111,7 +111,7 @@ const ZONES=[
    jingle:[[523,.08],[622,.08],[784,.08],[1047,.08],[784,.2]],
    loop:[175,0,175,208,0,262,208,175]},
 
-  {name:'КИНДЕР БУЭНО',
+  {name:'ФИНАЛ',
    sky:['#220a2e','#4a1060','#7a1f6e'], plat:'#ffe14d', dirt:'#5a2a7a', dirt2:'#42205c',
    build:'#2a0f40', build2:'#401760', win:'#6dffee', moon:'#ff6df0',
    bg:'party', enemies:['walk','slide','fly','hop','spike','thrower','dive'], mult:1.6,

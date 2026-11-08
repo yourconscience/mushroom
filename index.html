@@ -85,6 +85,7 @@
     box-shadow:0 0 16px rgba(255,45,120,.6), inset 0 0 12px rgba(255,45,120,.15);
     animation:pulseAlt 1.1s infinite;
   }
+  #ver { position:fixed; right:12px; bottom:calc(env(safe-area-inset-bottom,10px) + 8px); z-index:6; font-family:monospace; font-size:11px; letter-spacing:.08em; color:#9a9a86; opacity:.75; text-shadow:1px 1px 0 #000; }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -93,6 +94,7 @@
 <div id="hud" class="hidden"><span id="score">0</span><span id="combo"></span><div id="fx"></div></div>
 <button id="slotBtn" class="hidden">🎰 КРУТИТЬ</button>
 <div id="ui"></div>
+<div id="ver"></div>
 <div id="overlay">
   <h1>ГРИБ</h1>
   <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Versus 2017 продолжается.</div>
@@ -107,6 +109,8 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
+const VERSION='v7';
+document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
 function resize(){ DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -131,19 +135,19 @@ const QUOTES = [
   'ПЛАМБЕР ВЫШЕЛ ИЗ ЧАТА ☠️',
   'РИЛ ТОК 🗣',                       // мем с Окси
   'ЙЕЕЕ БОИИИ 🔊',                    // Obe1Kanobe
-  'ЗВЕЗДА В ШЛЯПКЕ ⭐',                // название трека
-  'CRISTAL & МОЁТ 🍾',                    // название трека
-  'BLACK SIEMENS НА СВЯЗИ 📞',                // название трека
-  'ПОКОРМИ ТАМАГОЧИ 🐣',             // название трека
-  'ТАКОЕ ПОЛОЖЕНИЕ 🌫',               // название трека
-  'ВСЁ КАК У ЛЮДЕЙ 🏠',                       // название трека
-  'БИТ ШАТАЕТ ГОЛОВУ 🥁',     // название трека
-  'КАМО ГРЯДЕШИ, ГРИБ? 🧭',           // название трека
-  'ЧЕТВЁРТЫЙ ВСАДНИК ПРИЕХАЛ 🐎',                 // название трека
-  'ЧЁРНЫЙ ВЛАСТЕЛИН ДОВОЛЕН 🖤',       // название трека
-  'КИНДЕР БУЭНО 🍫',                  // название трека
-  'ДРОЗД НА ПРОВОДЕ 🐦',              // название трека
-  'В ГОВНЕ, НО В ШЛЯПКЕ 🎩',     // название трека
+  'ГРИБ ВЫШЕЛ НА БИС 🍄',
+  'СВЯЗЬ С ЛЕСОМ УСТОЙЧИВА 📡',
+  'СПОРЫ В ВОЗДУХЕ 🦠',
+  'ПОЛЯНА ЗАЧИЩЕНА 🌾',
+  'ДОМА ЛУЧШЕ 🏠',
+  'РИТМ ДЕРЖИТ 🥁',
+  'КУРС НА СЕВЕР 🧭',
+  'ФИНИШНАЯ ПРЯМАЯ 🏁',
+  'ТЁМНАЯ СТОРОНА 🖤',
+  'ШОКОЛАДНЫЙ ЗАПАС 🍫',
+  'ПТИЦА НА ПРОВОДЕ 🐦',
+  'ШЛЯПКА НАБЕКРЕНЬ 🎩',
+  'ЛЕС НЕ СПИТ 🌲',
   'ГАЕЧНЫЙ КЛЮЧ — НЕ ОПРАВДАНИЕ 🔧',  // оригинал
   'СТОМП ЗАСЧИТАН ✅',                // оригинал
   'САНТЕХНИК ВНЕ ИГРЫ 🪠',            // оригинал
@@ -167,16 +171,16 @@ const DEATH_LINES = [
   'Охлади свой пыл.',
   'Это фиаско, братан.',
   'Простите.',
-  'Звезда погасла.',
-  'Cristal & Моёт подождут.',
-  'Black Siemens: абонент недоступен.',
-  'Тамагочи не покормлен.',
+  'Свет погас.',
+  'Вечеринка подождёт.',
+  'Абонент недоступен.',
+  'Питомец не покормлен.',
   'Ёж оказался принципиальным.',
   'Голубь выиграл по очкам.',
   'Гаечный ключ — аргумент.',
-  'Камо грядеши? Вниз.',
-  'Чёрный властелин недоволен.',
-  'Всё как у людей: упал.',
+  'Курс — вниз.',
+  'Начальник недоволен.',
+  'Как у всех: упал.',
   'Кто-то потерял шляпку.',
 ];
 
@@ -265,13 +269,14 @@ async function loadClips(){
     clipMeta=await (await fetch('clips/manifest.json')).json();
     const files=(clipMeta.files||[]).filter(Boolean);
     clipBytes=new Array(files.length);
+    shufflePlaylist();
+    const ready=()=>running&&!player.dead&&!clipSrc;
     let next=0;
-    const worker=async()=>{ while(next<files.length){ const i=next++; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} } };
+    const worker=async()=>{ while(next<files.length){ const i=next++; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} if(ready()&&pickFor(zoneN)===i) playZone(zoneN); } };
     const jobs=Array.from({length:Math.min(8,files.length)||1},worker);
-    if(clipMeta.special) jobs.push(fetch('clips/'+clipMeta.special).then(r=>r.arrayBuffer()).then(b=>{ specialBytes=b; }).catch(()=>{}));
+    if(clipMeta.special) jobs.push(fetch('clips/'+clipMeta.special).then(r=>r.arrayBuffer()).then(b=>{ specialBytes=b; if(ready()&&pickFor(zoneN)==='special') playZone(zoneN); }).catch(()=>{}));
     await Promise.all(jobs);
-    if(!playlist.length) shufflePlaylist();
-    if(running&&!player.dead&&!clipSrc) playZone(zoneN);
+    if(ready()) playZone(zoneN);
   }catch(e){}
 }
 function shufflePlaylist(){
@@ -300,11 +305,16 @@ function stopClip(){
   setTimeout(()=>{ try{ s.stop(); }catch(e){} },700);
   clipSrc=null;
 }
+function pickFor(zn){
+  if(zn%10===9&&(specialBytes||clipCache.special))return 'special';
+  if(!playlist.length)return -1;
+  return playlist[zn%playlist.length];
+}
 async function playZone(zn){
   if(!AC)return;
   const token=++clipToken;
   stopClip();
-  const pick=(zn%10===9&&(specialBytes||clipCache.special))?'special':(playlist.length?playlist[zn%playlist.length]:-1);
+  const pick=pickFor(zn);
   if(pick===-1){ sJingle(ZONES[zoneI]); return; }
   let buf=null;
   try{ buf=await clipBuffer(pick); }catch(e){}
