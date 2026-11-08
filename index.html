@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v12';
+const VERSION='v13';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -347,13 +347,13 @@ async function loadClips(){
   try{
     clipMeta=await (await fetch('clips/manifest.json')).json();
     if(clipMeta.t){ clipMeta.titles=clipMeta.t.map(deob); clipMeta.specialTitle=deob(clipMeta.st); }
-    const files=(clipMeta.files||[]).filter(Boolean);
+    const files=clipMeta.files||[];
     clipBytes=new Array(files.length);
     renderPool();
     shufflePlaylist();
     const ready=()=>running&&!player.dead&&!clipSrc;
     let next=0;
-    const worker=async()=>{ while(next<files.length){ const i=next++; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} if(ready()&&pickFor(zoneN)===i) playZone(zoneN); } };
+    const worker=async()=>{ while(next<files.length){ const i=next++; if(!files[i])continue; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} if(ready()&&pickFor(zoneN)===i) playZone(zoneN); } };
     const jobs=Array.from({length:Math.min(8,files.length)||1},worker);
     if(clipMeta.special) jobs.push(fetch('clips/'+clipMeta.special).then(r=>r.arrayBuffer()).then(b=>{ specialBytes=b; if(ready()&&pickFor(zoneN)==='special') playZone(zoneN); }).catch(()=>{}));
     await Promise.all(jobs);

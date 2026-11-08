@@ -55,10 +55,12 @@ def loudest_start(power, length):
 def cut(src, start, length, out):
     if start is None:
         start = loudest_start(rms_per_second(src), length)
+    # aresample/aformat work around libmp3lame "inadequate AVFrame plane padding"
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-ss", str(start), "-t", str(length), "-i", src,
-         "-af", f"afade=t=in:d=0.25,afade=t=out:st={length - 0.4}:d=0.4",
-         "-ac", "2", "-b:a", "128k", "-map", "0:a:0", "-map_metadata", "-1",
+         "-af", f"aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo,"
+                f"afade=t=in:d=0.25,afade=t=out:st={length - 0.4}:d=0.4",
+         "-ac", "2", "-ar", "44100", "-b:a", "128k", "-map", "0:a:0", "-map_metadata", "-1",
          "-id3v2_version", "0", "-write_id3v1", "0", out], check=True)
     return start
 
@@ -75,7 +77,13 @@ def main():
             titles.append(None)
             continue
         name = f"{i:02d}.mp3"
-        start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, name))
+        try:
+            start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, name))
+        except subprocess.CalledProcessError:
+            print(f"skip {src}: ffmpeg failed", file=sys.stderr)
+            files.append(None)
+            titles.append(None)
+            continue
         files.append(name)
         titles.append(os.path.basename(src)[:-4])
         tracklist.append(f"| {i} | {os.path.basename(src)[:-4]} | {start}s |")

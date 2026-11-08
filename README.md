@@ -26,11 +26,11 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 ## Audio
 
-The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name; every 10th level plays `clips/special.mp3` at 1.2x volume. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
+The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: picks from the @psyterrormagazine channel (posts from the last three years) plus the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник). Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name; every 10th level plays `clips/special.mp3` at 1.2x volume. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
 
 ## Version
 
-Current build: **v12** (shown in the bottom-right corner of the game).
+Current build: **v13** (shown in the bottom-right corner of the game).
 
 ## Credits
 
