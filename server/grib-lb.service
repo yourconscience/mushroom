@@ -3,8 +3,9 @@ Description=ГРИБ: Versus leaderboard
 After=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/grib-lb -addr 127.0.0.1:8790 -db /var/lib/grib-lb/scores.db
+ExecStart=/usr/local/bin/grib-lb -addr 127.0.0.1:8790 -db /var/lib/grib-lb/scores.db -tls-host 207-180-207-128.sslip.io -certs /var/lib/grib-lb/certs
 DynamicUser=yes
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 StateDirectory=grib-lb
 Restart=always
 RestartSec=2

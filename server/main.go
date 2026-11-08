@@ -1,5 +1,5 @@
 // grib-lb: leaderboard for ГРИБ: Versus, the only place scores live. SQLite file.
-// Public API (behind Tailscale Funnel):
+// Public API, HTTPS on a public hostname so browsers on tailnet devices do not see a local address:
 //
 //	GET  /?prefix=v2:      -> [["v2:NAME",score],...]
 //	POST /v2:NAME  body=N  -> keeps the max score per key
@@ -24,6 +24,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"golang.org/x/crypto/acme/autocert"
 	_ "modernc.org/sqlite"
 )
 
@@ -37,6 +38,9 @@ func main() {
 	}
 	addr := flag.String("addr", "127.0.0.1:8790", "listen address")
 	path := flag.String("db", "scores.db", "SQLite file")
+	host := flag.String("tls-host", "", "public hostname: serve HTTPS with a Let's Encrypt certificate")
+	tlsAddr := flag.String("tls-addr", ":8445", "HTTPS listen address, with -tls-host")
+	certs := flag.String("certs", "certs", "certificate cache directory, with -tls-host")
 	flag.Parse()
 	var err error
 	db, err = sql.Open("sqlite", "file:"+*path+"?_pragma=journal_mode(WAL)&_pragma=synchronous(FULL)&_pragma=busy_timeout(5000)")
@@ -50,6 +54,12 @@ func main() {
 	srv := &http.Server{Addr: *addr, Handler: http.HandlerFunc(handle), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
 	adm := &http.Server{Addr: adminAddr, Handler: http.HandlerFunc(admin), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
 	go func() { log.Fatal(adm.ListenAndServe()) }()
+	if *host != "" {
+		m := &autocert.Manager{Prompt: autocert.AcceptTOS, HostPolicy: autocert.HostWhitelist(*host), Cache: autocert.DirCache(*certs)}
+		go func() { log.Fatal(http.ListenAndServe(":80", m.HTTPHandler(nil))) }() // ACME HTTP-01: 443 is taken by the VPN container
+		pub := &http.Server{Addr: *tlsAddr, Handler: http.HandlerFunc(handle), TLSConfig: m.TLSConfig(), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
+		go func() { log.Fatal(pub.ListenAndServeTLS("", "")) }()
+	}
 	log.Printf("grib-lb on %s (admin %s), db %s", *addr, adminAddr, *path)
 	log.Fatal(srv.ListenAndServe())
 }
@@ -59,7 +69,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	h.Set("Access-Control-Allow-Origin", "*")
 	h.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	h.Set("Cache-Control", "no-store")
-	h.Set("Access-Control-Allow-Private-Network", "true") // Chrome preflight for pages reaching a tailnet address
 	switch {
 	case r.Method == http.MethodOptions:
 		w.WriteHeader(http.StatusNoContent)
@@ -149,9 +158,6 @@ func admin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Legacy store read by game tabs older than v22; rm clears it too until those tabs are gone.
-const kvdbURL = "https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/"
-
 func cli(cmd string, args []string) int {
 	base := "http://" + adminAddr + "/"
 	if cmd == "ls" {
@@ -189,13 +195,6 @@ func cli(cmd string, args []string) int {
 			n, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			fmt.Printf("%s: deleted %s", upKey(k), n)
-			for _, kk := range []string{k, upKey(k), strings.ToLower(k)} {
-				if req, err := http.NewRequest(http.MethodDelete, kvdbURL+url.PathEscape(kk), nil); err == nil {
-					if resp, err := http.DefaultClient.Do(req); err == nil {
-						resp.Body.Close()
-					}
-				}
-			}
 		}
 	}
 	return code
