@@ -7,7 +7,7 @@ const ZONES=[
    jingle:[[659,.08],[784,.08],[659,.08],[880,.08],[784,.25]],
    loop:[220,0,262,0,330,262,0,294]},
 
-  {name:'Я ХЕЙТЕР', sub:'Oxxxymiron',
+  {name:'В ГОВНЕ', sub:'Oxxxymiron',
    sky:['#0b1020','#141b33','#1e2745'], plat:'#4caf50', dirt:'#5d4037', dirt2:'#4a332b',
    build:'#10162b', build2:'#1a2240', win:'#ffcf70', moon:'#f4e8c8',
    bg:'city', enemies:['walk'], mult:1.08,
@@ -15,7 +15,7 @@ const ZONES=[
    jingle:[[220,.18],[262,.18],[247,.18],[196,.4]],
    loop:[110,0,131,0,110,147,131,0]},
 
-  {name:'ДИКО, НАПРИМЕР', sub:'Pharaoh',
+  {name:'BLACK SIEMENS', sub:'Pharaoh',
    sky:['#2a0f2e','#8a3a2a','#e8a04a'], plat:'#e9c46a', dirt:'#9c5a2e', dirt2:'#74401f',
    build:'#2b1426', build2:'#43202e', win:'#ffe0a0', moon:'#ffb347',
    bg:'sunset', enemies:['walk','spike'], mult:1.12,
@@ -23,7 +23,7 @@ const ZONES=[
    jingle:[[294,.12],[349,.12],[440,.12],[392,.3]],
    loop:[147,0,0,175,147,0,220,175]},
 
-  {name:'КАЖДЫЙ РАЗ', sub:'Монеточка',
+  {name:'ТАМАГОЧИ', sub:'Мэйби Бэйби',
    sky:['#1c1740','#3b2f6b','#6b5aa8'], plat:'#f4a6d7', dirt:'#5a4a8a', dirt2:'#43376a',
    build:'#17123a', build2:'#241b52', win:'#ffd6f0', moon:'#fff0fa',
    bg:'snow', enemies:['walk','fly','dive'], mult:1.16,
@@ -31,7 +31,7 @@ const ZONES=[
    jingle:[[523,.1],[659,.1],[587,.1],[784,.28]],
    loop:[262,0,330,392,0,330,294,349]},
 
-  {name:'ЭТО ДЫМ', sub:'Скриптонит',
+  {name:'ПОЛОЖЕНИЕ', sub:'Скриптонит',
    sky:['#11150f','#222b1d','#33402a'], plat:'#a8c474', dirt:'#454f33', dirt2:'#333b26',
    build:'#181f15', build2:'#252e1f', win:'#d4e8a8', moon:'#e8f0d0',
    bg:'fog', enemies:['walk','slide','thrower'], mult:1.2,
@@ -39,7 +39,7 @@ const ZONES=[
    jingle:[[220,.25],[208,.25],[196,.45]],
    loop:[98,0,0,110,0,98,123,0]},
 
-  {name:'ВЫДЫХАЙ', sub:'Noize MC',
+  {name:'ВСЁ КАК У ЛЮДЕЙ', sub:'Noize MC',
    sky:['#08201f','#12423f','#2a6f62'], plat:'#7ee0c3', dirt:'#2d5e55', dirt2:'#214740',
    build:'#0b2a28', build2:'#12403b', win:'#d8fff0', moon:'#e8fff8',
    bg:'city', enemies:['slide','spike','thrower'], mult:1.24,
@@ -47,7 +47,7 @@ const ZONES=[
    jingle:[[330,.1],[330,.1],[392,.1],[494,.3]],
    loop:[110,0,165,110,0,196,165,0]},
 
-  {name:'ПУЛЯ-ДУРА', sub:'Хаски',
+  {name:'БИТ ШАТАЕТ ГОЛОВУ', sub:'Хаски',
    sky:['#1a0808','#3a1010','#5e1a1a'], plat:'#ff7b5c', dirt:'#5c2020', dirt2:'#431616',
    build:'#240b0b', build2:'#381414', win:'#ffb08a', moon:'#ff9a7a',
    bg:'fog', enemies:['slide','fly','dive'], mult:1.28,
@@ -71,7 +71,7 @@ const ZONES=[
    jingle:[[220,.15],[262,.15],[330,.15],[294,.3]],
    loop:[147,0,220,196,0,165,196,0]},
 
-  {name:'ЮМОРИСТ', sub:'Face',
+  {name:'ЧЕТВЁРТЫЙ ВСАДНИК', sub:'Face',
    sky:['#2a1500','#6b3a00','#b86a10'], plat:'#ffd23f', dirt:'#7a4a12', dirt2:'#5c3609',
    build:'#2e1a05', build2:'#4a2a08', win:'#fff3b0', moon:'#ffe066',
    bg:'party', enemies:['slide','hop','thrower'], mult:1.4,
@@ -87,7 +87,7 @@ const ZONES=[
    jingle:[[392,.08],[392,.08],[392,.08],[622,.28]],
    loop:[196,0,233,196,0,233,311,233]},
 
-  {name:'ПОЛУКРОВКА', sub:'Icegergert',
+  {name:'ЧЁРНЫЙ ВЛАСТЕЛИН', sub:'Бабангида',
    sky:['#0d0618','#2a0e3e','#5a1a54'], plat:'#c77dff', dirt:'#3c1d5a', dirt2:'#2b1442',
    build:'#14082a', build2:'#220f40', win:'#ff7ad9', moon:'#b5179e',
    bg:'sunset', enemies:['hop','spike','dive'], mult:1.48,
@@ -95,7 +95,7 @@ const ZONES=[
    jingle:[[330,.1],[311,.1],[294,.1],[262,.1],[247,.3]],
    loop:[110,0,131,0,110,165,0,147]},
 
-  {name:'ПАНЕЛЬКА НА ЛУНЕ', sub:'Хаски x НАСА',
+  {name:'ЗВЕЗДА', sub:'Паша Техник',
    sky:['#020208','#070714','#0c0c22'], plat:'#c8c8e8', dirt:'#42425e', dirt2:'#30304a',
    build:'#10101e', build2:'#1c1c30', win:'#9af0ff', moon:'#ffffff',
    bg:'space', enemies:['walk','fly','hop','thrower'], mult:1.52,
@@ -103,7 +103,7 @@ const ZONES=[
    jingle:[[523,.12],[440,.12],[349,.12],[262,.35]],
    loop:[131,0,262,0,196,0,330,262]},
 
-  {name:'АРИСТОКРАТ', sub:'Morgenshtern',
+  {name:'CRISTAL & МОЁТ', sub:'Morgenshtern',
    sky:['#050505','#111114','#1d1d24'], plat:'#f2e9d0', dirt:'#3a3a44', dirt2:'#2a2a32',
    build:'#0a0a0d', build2:'#15151a', win:'#ffd700', moon:'#ffffff',
    bg:'city', enemies:['slide','spike','thrower','dive'], mult:1.56,
