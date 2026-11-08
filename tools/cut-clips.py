@@ -52,6 +52,12 @@ def loudest_start(power, length):
     return max(range(lo, hi), key=lambda s: sum(power[s:s + length]))
 
 
+def title_of(path):
+    # "053 Artist - Title.mp3" -> "Artist - Title"
+    t = os.path.basename(path)[:-4]
+    return re.sub(r"^\d{1,3}[ .\-]+", "", t)
+
+
 def cut(src, start, length, out):
     if start is None:
         start = loudest_start(rms_per_second(src), length)
@@ -85,8 +91,8 @@ def main():
             titles.append(None)
             continue
         files.append(name)
-        titles.append(os.path.basename(src)[:-4])
-        tracklist.append(f"| {i} | {os.path.basename(src)[:-4]} | {start}s |")
+        titles.append(title_of(src))
+        tracklist.append(f"| {i} | {title_of(src)} | {start}s |")
         print(f"{name} {start}s  {os.path.basename(src)}")
     special, special_title = None, None
     cfg = data.get("special")
@@ -94,8 +100,8 @@ def main():
         src = os.path.expanduser(cfg["src"])
         if os.path.exists(src):
             start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, "special.mp3"))
-            special, special_title = "special.mp3", os.path.basename(src)[:-4]
-            tracklist.append(f"| special | {os.path.basename(src)[:-4]} | {start}s |")
+            special, special_title = "special.mp3", title_of(src)
+            tracklist.append(f"| special | {title_of(src)} | {start}s |")
             print(f"special {start}s  {os.path.basename(src)}")
         else:
             print(f"skip special: no file {src}", file=sys.stderr)

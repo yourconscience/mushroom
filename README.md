@@ -30,7 +30,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 ## Audio
 
-The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: picks from the @psyterrormagazine channel (posts from the last three years) plus the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник). Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
+The game ships 396 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: the first 200 come from the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник), the rest are the channel's 2023-2026 picks — year-end top lists, release reviews and profiles from @psyterrormagazine — downloaded and cut per track. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
 
 ## Leaderboard
 
@@ -43,9 +43,11 @@ ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for
 
 Scores that fail to send wait in the browser and go out on the next visit.
 
+The page reads two sources and shows the best score per nickname: the server, and the public kvdb.io mirror of the same keys. The mirror exists because a public page cannot call a tailnet address — Chrome blocks it as local network access — so the top list stays visible either way. Writes go to both.
+
 ## Version
 
-Current build: **v22** (shown in the bottom-right corner of the game).
+Current build: **v23** (shown in the bottom-right corner of the game).
 
 ## Credits
 
