@@ -1,7 +1,7 @@
 # Mushroom
 
-A pixel-art platformer where you play as a mushroom stomping plumbers. 
-A tongue-in-cheek role reversal of classic Mario.
+ГРИБ: Versus is an endless runner where a mushroom stomps plumbers through 15 zones named after Russian hip-hop tracks.
+The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
 
@@ -27,4 +27,4 @@ The game ships 100 unnamed 15-second clips in `clips/` — no titles, artists or
 
 ## Credits
 
-Built in half a day with [Claude Fable](https://claude.ai). Single-file, zero dependencies.
+The first version took half a day with Claude Fable. Version 2 (zones, bonuses, enemies, audio and graphics) grew over several sessions with Claude Opus and Sonnet. Plain HTML and JavaScript: no build step, no dependencies.
