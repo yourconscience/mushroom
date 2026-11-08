@@ -1,26 +1,28 @@
 # Mushroom
 
-ГРИБ: Versus is an endless runner where a mushroom stomps plumbers through 15 zones named after Russian hip-hop tracks.
+ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 200-track soundtrack and meets a boss on level 25.
 The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
 
-![gameplay](screenshot.png?v=4)
+![gameplay](screenshot.png?v=5)
 
 ## How to play
 
 - Tap / Space -- jump (tap again mid-air for double jump)
 - Land ON enemies to stomp them
-- Collect coins and bonuses: 🍄 big mushroom (survives one hit), 🦠 spores, 🌀 slow-mo, 🧲 magnet, 🎞 noir (one zone in black and white with no bonuses), 🚀 jetpack
+- Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
 - Level 25: boss fight with ГЛАВНЫЙ САНТЕХНИК. Dodge wrenches, jump the shockwave, stomp his head 4 times while he charges. The track loops until he goes down
 - Z key -- spin the slot machine
 
 ## Features
-- 15 music zones, 7 enemy types
-- Online leaderboard (v2 board)
+- 15 zones on a loop with procedural backgrounds, 7 enemy types
+- Boss on level 25; more are planned for levels 50, 75, 100 and up to 200
+- Menu with nickname, music toggle, bonus and level info, online top-10
+- Share card for Telegram and other apps (the game link is copied for the next message)
 - Mobile-friendly (touch controls)
-- Russian hip-hop quotes as kill banners
+- Hip-hop quotes as kill banners
 
 ## Audio
 
@@ -28,8 +30,8 @@ The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/
 
 ## Version
 
-Current build: **v11** (shown in the bottom-right corner of the game).
+Current build: **v12** (shown in the bottom-right corner of the game).
 
 ## Credits
 
-The first version took half a day with Claude Fable. Version 2 (zones, bonuses, enemies, audio and graphics) grew over several sessions with Claude Opus and Sonnet. Plain HTML and JavaScript: no build step, no dependencies.
+The first version took half a day with Claude Fable. Version 2 (zones, bonuses, enemies, audio, graphics, menu and bosses) grew over several sessions with Claude Opus and Sonnet. Plain HTML and JavaScript: no build step, no libraries.

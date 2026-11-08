@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v11';
+const VERSION='v12';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -1127,7 +1127,7 @@ function updBoss(dt,onGround){
       b.sx+=(anchor-b.sx)*Math.min(1,dt*4); b.y=gy;
       b.wind=b.t>bossGap(rage)-0.35; // замах: ключ над головой
       if(b.t>bossGap(rage)){ b.t=0; b.n++; bossThrow(b);
-        if(b.n>=2+(rage>=2?1:0)){ b.n=0; b.t=0; if(rage>0){ b.st='leap'; b.vy=-1250; b.lx=b.sx; b.tx=psx+320; } else b.st='charge'; } }
+        if(b.n>=2+(rage>=2?1:0)){ b.n=0; b.t=0; if(rage>0){ b.st='leap'; b.vy=-1250; b.lx=b.sx; b.tx=psx+340; } else b.st='charge'; } }
       break;
     case 'leap':
       b.vy+=G*dt; b.y+=b.vy*dt; b.sx=b.lx+(b.tx-b.lx)*Math.min(1,b.t/0.9);
@@ -1135,10 +1135,10 @@ function updBoss(dt,onGround){
         b.waves.push({sx:b.sx-BOSS_W,d:-1},{sx:b.sx+BOSS_W,d:1}); }
       break;
     case 'slam': // волна идёт к грибу, босс ждёт: сначала перепрыгни волну, потом тычок
-      b.y=gy; if(b.t>0.95){ b.st='charge'; b.t=0; }
+      b.y=gy; if(b.t>1.1){ b.st='charge'; b.t=0; }
       break;
     case 'charge': // устал и прёт на гриб: окно для тычка
-      b.y=gy; b.sx-=(230+rage*40)*dt;
+      b.y=gy; b.sx-=(230+rage*30)*dt;
       if(b.sx<-120){ b.st='back'; b.t=0; b.sx=W+100; }
       break;
     case 'hurt': // отлетает после тычка
