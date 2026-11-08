@@ -49,13 +49,13 @@ ssh <vps> grib-lb ls            # every row
 ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for one
 ```
 
-Scores that fail to send wait in the browser and go out on the next visit.
+Scores that fail to send wait in the browser and go out on the next visit or when the network returns. With no network the menu shows the last board this browser saw.
 
-The page reads two sources and shows the best score per nickname: the server, and the public kvdb.io mirror of the same keys. The mirror exists because a public page cannot call a tailnet address — Chrome blocks it as local network access — so the top list stays visible either way. Writes go to both.
+The API is public HTTPS on the server's own address, not a tailnet name: a browser on a device inside the tailnet treats a tailnet address as local network and blocks it from a public page.
 
 ## Version
 
-Current build: **v28** (shown in the bottom-right corner of the game).
+Current build: **v29** (shown in the bottom-right corner of the game).
 
 ## Credits
 

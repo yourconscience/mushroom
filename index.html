@@ -162,7 +162,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v28';
+const VERSION='v29';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -264,32 +264,25 @@ const DEATH_LINES = [
 // --- Лидерборд ---
 // Лидерборд: одно место — свой сервер (SQLite на VPS, server/). Хранит максимум по нику;
 // удалить запись можно только на самом сервере (grib-lb rm).
-const LB_URL='https://vps.taila0218e.ts.net:8443/';
-// публичное зеркало на kvdb.io: браузер с публичной страницы (github.io) не может ходить
-// на tailnet-адрес — Chrome блокирует это как local network access, поэтому очки читаем и
-// из kvdb тоже, а показываем лучший результат по нику из обоих источников.
-const KV_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
+// Адрес публичный, не tailnet: иначе браузер на устройстве в tailnet считает его локальной сетью и блокирует.
+const LB_URL='https://207-180-207-128.sslip.io:8445/';
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }
 function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
 // таймаут, чтобы зависший сервер (или вопрос браузера про доступ к локальной сети) не держал топ вечно
 function tmo(ms){ return window.AbortSignal&&AbortSignal.timeout?AbortSignal.timeout(ms):undefined; }
 async function getJSON(u){ const r=await fetch(u,{signal:tmo(6000)}); if(!r.ok) throw new Error(r.status); return r.json(); }
+// keepalive: запрос доживает, даже если вкладку закрыли сразу после смерти
 async function postScore(key,s){
-  let ok=false;
-  try{ const r=await fetch(LB_URL+encodeURIComponent(key),{method:'POST',body:String(s),signal:tmo(8000)}); ok=r.ok; }catch(e){}
-  try{ const r=await fetch(KV_URL+encodeURIComponent(key),{method:'POST',body:String(s),signal:tmo(8000)}); ok=ok||r.ok; }catch(e){}
-  if(!ok) throw new Error('offline');
+  const r=await fetch(LB_URL+encodeURIComponent(key),{method:'POST',body:String(s),keepalive:true,signal:tmo(8000)});
+  if(!r.ok) throw new Error(r.status);
 }
 async function fetchScores(secret){
-  const pre=secret?'v2s:':'v2:';
-  const rows=[];
-  try{ rows.push(...await getJSON(LB_URL+'?prefix='+pre+'&_='+Date.now())); }catch(e){} // свой сервер
-  try{ rows.push(...await getJSON(KV_URL+'?prefix='+pre+'&values=true&format=json&_='+Date.now())); }catch(e){} // публичное зеркало
-  if(!rows.length) throw new Error('no scores');
-  const best=new Map();
-  for(const [k,v] of rows){ const n=String(k).slice(pre.length).toUpperCase(), s=+v||0; if(s>(best.get(n)??-1)) best.set(n,s); }
-  return [...best].map(([n,s])=>({n,s})).filter(r=>secret||!isSecret(r.n)).sort((a,b)=>b.s-a.s);
+  const pre=secret?'v2s:':'v2:', cache='gribTop'+pre;
+  let rows;
+  try{ rows=await getJSON(LB_URL+'?prefix='+pre+'&_='+Date.now()); try{ localStorage[cache]=JSON.stringify(rows); }catch(e){} }
+  catch(e){ rows=JSON.parse(localStorage[cache]||'null'); if(!rows) throw e; } // нет сети: последний виденный топ
+  return rows.map(([k,v])=>({n:String(k).slice(pre.length).toUpperCase(),s:+v||0})).filter(r=>secret||!isSecret(r.n)).sort((a,b)=>b.s-a.s);
 }
 // очки, которые не дошли до сервера, ждут в localStorage и уходят при следующей возможности
 function outbox(){ try{ return JSON.parse(localStorage.gribOutbox||'{}'); }catch(e){ return {}; } }
@@ -302,6 +295,7 @@ async function flushOutbox(){
   }
 }
 flushOutbox();
+addEventListener('online',flushOutbox);
 let playerName=''; // выбирается один раз за визит
 function myKey(){ return (playerName||'АНОНИМ').toUpperCase(); }
 function myBest(){ return sessBest[myKey()]||0; }
