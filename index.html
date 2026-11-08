@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v10';
+const VERSION='v11';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -250,6 +250,9 @@ const MODES={
   'ДУТЫЙ':  {k:'PUFF',  sm:1,   info:'дутая фигура: гриб надут, парит и прыгает трижды'},
   'МАРИО':  {k:'MARIO', sm:1.5, info:'Марио снова прыгает на грибы: сантехники скачут, их больше, очки x1.5'},
   'ГНОЙНЫЙ':{k:'GNOY',  sm:1,   info:'сразу в баттл: первый босс на 25-м уровне'},
+  'Z':      {k:'Z',     sm:1,   info:'казино крутится само каждые 5 с, бонусов нет'},
+  'X':      {k:'X',     sm:1,   info:'ч/б хардкор: только лут, все враги сразу'},
+  'V':      {k:'V',     sm:1,   info:'вечный джетпак, бонусов нет'},
 };
 let SM=1; // множитель очков режима
 function baseFilter(){ return charMode==='X'||charMode==='OKS'?'grayscale(1)':''; }
@@ -528,8 +531,8 @@ function reset(){
   if(charMode==='GNOY'){ dist=24*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
-  let x=800;
-  while(x<3000){ x=addPlat(x); }
+  if(charMode==='GNOY'){ arena=plats[0]; arena.w=1e7; arena.lvl=24; } // старт прямо на арене
+  else { let x=800; while(x<3000){ x=addPlat(x); } }
   gameOver=false;
   shufflePlaylist();
 }
@@ -634,7 +637,8 @@ function fillBonus(p){
   }
   p.append(list);
   p.append(el('div',null,'Сантехников и голубей дави сверху. Ежа только перепрыгнуть. От гаечных ключей уворачивайся.'));
-  p.append(el('div',null,'Секретные ники: Z — казино крутится само, X — ч/б хардкор, V — вечный джетпак. И ещё пять режимов прячутся в мемах про Окси и в самой игре: присмотрись к цитатам.'));
+  const M=MODES[nickEl.value.trim().toUpperCase()];
+  if(M) p.append(el('div','sect','Твой режим «'+nickEl.value.trim().toUpperCase()+'»: '+M.info+'.'));
 }
 function fillLevels(p){
   p.textContent='';
@@ -1090,9 +1094,10 @@ function startBoss(){
   enemies=enemies.filter(e=>e.x<player.x-40);
   showQuote('БОСС: '+boss.name,true); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
 }
+function bossGap(rage){ return 1.0-rage*0.06; } // пауза между ключами: дольше прыжка (0.73 с)
 function bossThrow(b){
   const tdx=Math.max(120,b.x-player.x), T=0.55+tdx/1600, x0=b.x-24, y0=b.y-BOSS_H*0.8;
-  const tx=player.x+speed*T+(Math.random()-.5)*40, ty=player.y-18;
+  const tx=player.x+speed*T+(Math.random()-.5)*40, ty=(arena?arena.y:b.y)-20;
   wrenches.push({x:x0,y:y0,vx:(tx-x0)/T,vy:(ty-y0-0.5*WG*T*T)/T,r:0,l:4});
   beep(420,.06,'triangle');
 }
@@ -1102,7 +1107,11 @@ function bossKill(b){
   for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
   showQuote('БОСС ПОВЕРЖЕН +5000 🏆',true);
   bossDone[b.lvl]=true;
-  if(arena){ arena.w=Math.max(200,camX+W*1.6-arena.x); arena=null; }
+  if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
+    arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
+    plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);
+    arena=null;
+  }
   dist=(zoneN+1)*ZONE_LEN+1; // следующий уровень и новый трек начинаются сразу
 }
 function updBoss(dt,onGround){
@@ -1111,12 +1120,14 @@ function updBoss(dt,onGround){
   switch(b.st){
     case 'enter':
       b.sx+=(anchor-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt;
-      if(b.y>=gy){ b.y=gy; b.vy=0; shake(12,.3); b.st='throw'; b.t=0; b.n=0; }
+      if(b.y>=gy){ b.y=gy; b.vy=0; shake(12,.3); b.st='throw'; b.t=0; b.n=0;
+        setTimeout(()=>{ if(boss&&boss.hp===BOSS_HP) showQuote('ПРЫГАЙ НА ГОЛОВУ, КОГДА ОН ПРЁТ ⭐',false); },900); }
       break;
     case 'throw':
       b.sx+=(anchor-b.sx)*Math.min(1,dt*4); b.y=gy;
-      if(b.t>0.62-rage*0.08){ b.t=0; b.n++; bossThrow(b);
-        if(b.n>=3+rage){ b.n=0; b.t=0; if(rage>0){ b.st='leap'; b.vy=-1250; b.lx=b.sx; b.tx=psx+320; } else b.st='charge'; } }
+      b.wind=b.t>bossGap(rage)-0.35; // замах: ключ над головой
+      if(b.t>bossGap(rage)){ b.t=0; b.n++; bossThrow(b);
+        if(b.n>=2+(rage>=2?1:0)){ b.n=0; b.t=0; if(rage>0){ b.st='leap'; b.vy=-1250; b.lx=b.sx; b.tx=psx+320; } else b.st='charge'; } }
       break;
     case 'leap':
       b.vy+=G*dt; b.y+=b.vy*dt; b.sx=b.lx+(b.tx-b.lx)*Math.min(1,b.t/0.9);
@@ -1175,6 +1186,7 @@ function drawBoss(t){
   // корона главного
   ctx.fillStyle='#ffd84d'; ctx.strokeStyle=OL; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(-10,-45); ctx.lineTo(-10,-53); ctx.lineTo(-5,-48); ctx.lineTo(0,-55); ctx.lineTo(5,-48); ctx.lineTo(10,-53); ctx.lineTo(10,-45); ctx.closePath(); ctx.fill(); ctx.stroke();
+  if(b.st==='throw'&&b.wind){ ctx.fillStyle='#b8bcc4'; ctx.strokeStyle=OL; ctx.lineWidth=1; ctx.fillRect(10,-66,4,20); ctx.strokeRect(10,-66,4,20); ctx.fillRect(7,-70,10,6); ctx.strokeRect(7,-70,10,6); }
   ctx.restore();
   // «устал»: звёздочки над головой — можно бить
   if(b.st==='charge'){
