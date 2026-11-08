@@ -6,12 +6,20 @@ import json, pathlib, urllib.request
 SERVER = 'https://vps.taila0218e.ts.net:8443/'
 KVDB = 'https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/?values=true&format=json'
 path = pathlib.Path('backup/scores.json')
-best = {k: int(v) for k, v in json.loads(path.read_text())} if path.exists() else {}
+def up(k):
+    pre, _, name = k.partition(':')
+    return pre + ':' + name.upper()
+
+best = {}
+if path.exists():
+    for k, v in json.loads(path.read_text()):
+        best[up(k)] = max(best.get(up(k), -1), int(v))
 
 def merge(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'grib-backup'})
     with urllib.request.urlopen(req, timeout=30) as r:
         for k, v in json.load(r):
+            k = up(k)
             if (k.startswith('v2:') or k.startswith('v2s:')) and int(v) > best.get(k, -1):
                 best[k] = int(v)
 

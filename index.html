@@ -54,6 +54,7 @@
   .field { display:flex; align-items:center; gap:10px; background:var(--fill); border:1px solid var(--line); border-radius:14px; padding:2px 6px 2px 14px; }
   .field span { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
   .field input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:var(--ink); font:600 16px var(--disp); padding:11px 4px; user-select:text; -webkit-user-select:text; }
+  #nick { text-transform:uppercase; }
   .field input::placeholder { color:var(--dim); }
   .primary { font-family:var(--disp); font-weight:900; font-size:18px; letter-spacing:.06em; padding:16px; border-radius:16px; background:var(--lime); color:var(--dark); box-shadow:0 8px 24px rgba(198,255,61,.22); transition:transform .12s; }
   .primary:active { transform:scale(.97); }
@@ -149,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v20';
+const VERSION='v21';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -243,6 +244,7 @@ const LB_URL='https://vps.taila0218e.ts.net:8443/';
 const KV_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
 const SNAP_URL='backup/scores.json';
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
+function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }
 function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
 // таймаут, чтобы зависший источник (сервер лежит, браузер спрашивает доступ к локальной сети) не держал топ
 function tmo(ms){ return window.AbortSignal&&AbortSignal.timeout?AbortSignal.timeout(ms):undefined; }
@@ -258,7 +260,7 @@ async function fetchScores(secret){
     for(const it of x.value){ // пары [key, value]
       const k=String(Array.isArray(it)?it[0]:it.key), s=+(Array.isArray(it)?it[1]:it.value)||0;
       if(!k.startsWith(pre))continue;
-      const n=k.slice(pre.length);
+      const n=k.slice(pre.length).toUpperCase(); // ники капсом, дубли по регистру сливаются по максимуму
       if(s>(best.get(n)??-1)) best.set(n,s);
       if(i===0) onServer.set(n,s);
     }
@@ -300,7 +302,7 @@ function maxJumps(){ return charMode==='PUFF'?3:2; }
 const nickEl=document.getElementById('nick');
 try{ nickEl.value=localStorage.gribName||''; }catch(e){}
 function applyName(){
-  const v=nickEl.value.trim().slice(0,8);
+  const v=upName(nickEl.value);
   playerName=v||'АНОНИМ';
   try{ localStorage.gribName=v; }catch(e){}
   const up=playerName.toUpperCase(), M=MODES[up];
@@ -712,7 +714,7 @@ function renderTop(p,scores,me,sec){
 }
 function fillTop(p){
   p.textContent='Загрузка…';
-  const me=nickEl.value.trim().slice(0,8)||'АНОНИМ';
+  const me=upName(nickEl.value)||'АНОНИМ';
   const sec=isSecret(me);
   fetchScores(sec).then(sc=>{ renderTop(p,sc,me,sec); if(!sec) checkPool(sc,me); }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
 }
@@ -726,7 +728,7 @@ function checkPool(scores,me){
   syncPoolChip(); return true;
 }
 syncPoolChip();
-try{ const me=localStorage.gribName; if(me&&!poolOpen()) fetchScores().then(sc=>checkPool(sc,me)).catch(()=>{}); }catch(e){}
+try{ const me=upName(localStorage.gribName); if(me&&!poolOpen()) fetchScores().then(sc=>checkPool(sc,me)).catch(()=>{}); }catch(e){}
 const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool()};
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
   const on=b.getAttribute('aria-pressed')!=='true';

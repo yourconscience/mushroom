@@ -93,8 +93,16 @@ func validKey(k string) bool {
 	return true
 }
 
+// upKey uppercases the name part, so "v2:дутый" and "v2:ДУТЫЙ" are one row.
+func upKey(k string) string {
+	if i := strings.IndexByte(k, ':'); i >= 0 {
+		return k[:i+1] + strings.ToUpper(k[i+1:])
+	}
+	return k
+}
+
 func put(w http.ResponseWriter, r *http.Request) {
-	k := strings.TrimPrefix(r.URL.Path, "/")
+	k := upKey(strings.TrimPrefix(r.URL.Path, "/"))
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 32))
 	s, err := strconv.ParseInt(strings.TrimSpace(string(body)), 10, 64)
 	if !validKey(k) || err != nil || s < 0 || s > 100_000_000 {
