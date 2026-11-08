@@ -21,6 +21,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ПОДЗЕМНЫЙ ЧЕРВЬ: burrows and surfaces next to you, chasing underground; stomp him only while he is up and crawling; 5 stomps
   - ЛЕТАЮЩАЯ ТАРЕЛКА: fans of discs, then a telegraphed beam from above; stomp while it vents; 5 stomps
   - ЦАРЬ ГРИБОВ: jumps and sends shockwaves plus falling spores, teleports, calls two walkers on rage; 6 stomps
+- Mini-bosses: from level 12 a level has a 30% chance of ОКСИ, ШОК, ГНОЙНЫЙ or ТАНЦОР; 3 stomps each, same gold-star rule
 - Z key -- spin the slot machine
 
 ## Features
@@ -50,7 +51,7 @@ The page reads two sources and shows the best score per nickname: the server, an
 
 ## Version
 
-Current build: **v25** (shown in the bottom-right corner of the game).
+Current build: **v26** (shown in the bottom-right corner of the game).
 
 ## Credits
 
