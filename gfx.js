@@ -176,6 +176,10 @@ function mist(r,sd,tw,lh,col,a,n){
     const bx=r(sd+i*3)*tw, by=lh*(.35+.3*r(sd+i*3+1)), rad=lh*(.9+.9*r(sd+i*3+2));
     for(const o of [-tw,0,tw]) if(bx+o+rad>0&&bx+o-rad<tw) glow(x,bx+o,by,rad,col,a,.4);
   }
+  // пятна больше высоты слоя: гасим верх и низ, иначе край полосы режется в линию
+  const g=x.createLinearGradient(0,0,0,lh);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(.3,'#000'); g.addColorStop(.7,'#000'); g.addColorStop(1,'rgba(0,0,0,0)');
+  x.globalCompositeOperation='destination-in'; x.fillStyle=g; x.fillRect(0,0,tw,lh); x.globalCompositeOperation='source-over';
   return {c};
 }
 function bokeh(r,sd,tw,lh,col,n,rMin,rMax,a){

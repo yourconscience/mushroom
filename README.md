@@ -5,7 +5,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
 
-![gameplay](screenshot.png?v=3)
+![gameplay](screenshot.png?v=4)
 
 ## How to play
 
