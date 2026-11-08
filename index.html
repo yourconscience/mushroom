@@ -238,7 +238,7 @@ const DEATH_LINES = [
 
 // --- Лидерборд ---
 // Лидерборд: одно место — свой сервер (SQLite на VPS, server/). Хранит максимум по нику;
-// удалить запись можно только на самом сервере (grib-lb rm). backup/scores.json — его зеркало, игра его не читает.
+// удалить запись можно только на самом сервере (grib-lb rm).
 const LB_URL='https://vps.taila0218e.ts.net:8443/';
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }

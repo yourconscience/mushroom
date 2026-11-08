@@ -39,10 +39,9 @@ Scores live in one place: a small Go + SQLite server (`server/`) that keeps the 
 ```
 ssh <vps> grib-lb ls            # every row
 ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for one
-gh workflow run backup-scores.yml   # refresh the backup right away
 ```
 
-A scheduled GitHub Action (`.github/workflows/backup-scores.yml`) mirrors the server into `backup/scores.json` once a day, so deleted rows leave the backup too and git history keeps older copies. To restore an empty server, POST each row of that file back to the server. Scores that fail to send wait in the browser and go out on the next visit.
+Scores that fail to send wait in the browser and go out on the next visit.
 
 ## Version
 
