@@ -1,6 +1,6 @@
 # Mushroom
 
-ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 200-track soundtrack and meets a random boss every 10 levels.
+ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 400-track soundtrack and meets a random boss every 10 levels.
 The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
@@ -13,16 +13,19 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
-- Bosses: every 10th level brings one of four at random (all four before any repeats, repeats get numbered II, III). The track loops until the boss goes down, and you can only hit a boss from above while it comes at you on the ground (gold stars over its head)
-  - ГЛАВНЫЙ САНТЕХНИК: dodge wrenches, jump the shockwave, 4 stomps
-  - ГОЛУБИНЫЙ КОРОЛЬ: jump the eggs, then stomp him while his beak is stuck in the ground, 4 stomps
-  - ДУТАЯ ФИГУРА: jump low bubbles, stay put under high ones, stomp it while it bounces, 4 stomps
-  - СТЕКЛЯННЫЙ ПЕТУХ: shards come in pairs (one jump) and triples (double jump), watch for feints, 5 stomps
+- Bosses: every 10th level brings one of seven at random (all seven before any repeats, repeats get numbered II, III). The track loops until the boss goes down; hit a boss from above only when gold stars are over its head
+  - ГЛАВНЫЙ САНТЕХНИК: wrenches in bursts, leap and shockwave on rage, then a charge; 5 stomps
+  - ГОЛУБИНЫЙ КОРОЛЬ: eggs, then a dive; stomp while the beak is stuck; 5 stomps
+  - ДУТАЯ ФИГУРА: low bubbles to jump, high ones to duck, then it sags down and rolls; 5 stomps
+  - СТЕКЛЯННЫЙ ПЕТУХ: shards in pairs and triples, feints on rage; 6 stomps
+  - ПОДЗЕМНЫЙ ЧЕРВЬ: burrows and surfaces next to you, chasing underground; stomp him only while he is up and crawling; 5 stomps
+  - ЛЕТАЮЩАЯ ТАРЕЛКА: fans of discs, then a telegraphed beam from above; stomp while it vents; 5 stomps
+  - ЦАРЬ ГРИБОВ: jumps and sends shockwaves plus falling spores, teleports, calls two walkers on rage; 6 stomps
 - Z key -- spin the slot machine
 
 ## Features
-- 15 zones on a loop with procedural backgrounds, 7 enemy types
-- A random boss every 10 levels, four kinds
+- 15 zones on a loop with procedural backgrounds, 7 enemy types, each with its own temper: speed, lunges, dips, bursts
+- A random boss every 10 levels, seven kinds, each with its own movement and hit window
 - Menu with nickname, music toggle, bonus and level info, online top-10
 - Share card for Telegram and other apps (the game link is copied for the next message)
 - Mobile-friendly (touch controls)
@@ -47,7 +50,7 @@ The page reads two sources and shows the best score per nickname: the server, an
 
 ## Version
 
-Current build: **v24** (shown in the bottom-right corner of the game).
+Current build: **v25** (shown in the bottom-right corner of the game).
 
 ## Credits
 
