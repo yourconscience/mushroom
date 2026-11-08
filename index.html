@@ -5,109 +5,138 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ГРИБ: Versus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&display=swap">
 <style>
-  @font-face { font-family: 'px'; src: local('Courier'); }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-  html,body { height:100%; overflow:hidden; background:#0b0b14; font-family:'Press Start 2P', monospace; }
-  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
-  canvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
-  #ui { position:fixed; inset:0; pointer-events:none; }
-  .quote {
-    position:fixed; left:50%; transform:translateX(-50%);
-    color:#ffe14d; font-weight:bold; font-size:clamp(14px,4vw,22px);
-    text-shadow:0 0 8px #ff2d78, 2px 2px 0 #000;
-    letter-spacing:1px; white-space:nowrap;
-    animation:quotePop 1.6s ease-out forwards;
-    font-family: monospace;
+  :root{
+    --ink:#f4f4f8; --muted:#a6a6bc; --dim:#71718a;
+    --glass:rgba(14,14,24,.74); --line:rgba(255,255,255,.09); --fill:rgba(255,255,255,.06);
+    --lime:#c6ff3d; --pink:#ff3d7f; --gold:#ffd84d; --dark:#0b0b14;
+    --disp:'Unbounded',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --text:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+  html,body { height:100%; overflow:hidden; background:var(--dark); font-family:var(--text); color:var(--ink); }
+  #wrap { position:fixed; inset:0; }
+  canvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
+  button { font:inherit; color:inherit; cursor:pointer; border:0; background:none; }
+  #ui { position:fixed; inset:0; pointer-events:none; z-index:4; }
+  .quote {
+    position:fixed; left:50%; transform:translateX(-50%); max-width:92vw; text-align:center;
+    font-family:var(--disp); font-weight:900; font-size:clamp(13px,3.8vw,20px); line-height:1.15; letter-spacing:.01em;
+    color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.55), 0 0 16px rgba(255,61,127,.6);
+    animation:quotePop 1.6s ease-out forwards;
+  }
+  .quote.big { color:var(--lime); font-size:clamp(15px,4.8vw,26px); text-shadow:0 2px 0 rgba(0,0,0,.6), 0 0 20px rgba(198,255,61,.45); }
   @keyframes quotePop {
     0% { opacity:0; transform:translateX(-50%) translateY(20px) scale(.6); }
-    15% { opacity:1; transform:translateX(-50%) translateY(0) scale(1.1); }
+    15% { opacity:1; transform:translateX(-50%) translateY(0) scale(1.08); }
     25% { transform:translateX(-50%) scale(1); }
     80% { opacity:1; }
     100% { opacity:0; transform:translateX(-50%) translateY(-40px); }
   }
   #overlay {
-    position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:rgba(5,5,15,.82); color:#fff; text-align:center; padding:24px; gap:18px;
-    font-family:monospace; backdrop-filter:blur(3px); z-index:10;
+    position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    background:radial-gradient(120% 90% at 50% 0%, rgba(8,8,16,.25), rgba(5,5,12,.75));
   }
-  #overlay h1 {
-    font-size:clamp(34px,10vw,64px); color:#7CFC00; letter-spacing:4px;
-    text-shadow:0 0 18px #39ff14, 4px 4px 0 #1a4d00;
+  .card {
+    width:min(420px,100%); max-height:100%; overflow-y:auto; display:flex; flex-direction:column; gap:14px;
+    padding:22px; border-radius:22px; background:var(--glass); border:1px solid var(--line);
+    backdrop-filter:blur(14px) saturate(1.2); -webkit-backdrop-filter:blur(14px) saturate(1.2);
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
   }
-  #overlay .sub { color:#ff2d78; font-size:clamp(13px,3.6vw,18px); text-shadow:2px 2px 0 #000; line-height:1.6; }
-  #overlay .score { color:#ffe14d; font-size:clamp(18px,5vw,28px); }
-  #overlay button {
-    pointer-events:auto; font-family:monospace; font-weight:bold;
-    font-size:clamp(16px,4.5vw,22px); padding:16px 36px; border:3px solid #7CFC00;
-    background:#10241a; color:#7CFC00; letter-spacing:2px; cursor:pointer;
-    box-shadow:0 0 16px rgba(124,252,0,.5), inset 0 0 12px rgba(124,252,0,.15);
-    animation:pulse 1.4s infinite;
-  }
-  @keyframes pulse { 50% { box-shadow:0 0 30px rgba(124,252,0,.9), inset 0 0 12px rgba(124,252,0,.3); } }
-  #overlay .hint { color:#8888aa; font-size:clamp(11px,3vw,14px); line-height:1.7; }
-  #overlay details { pointer-events:auto; width:min(680px,92vw); border:1px solid #2a2a44; background:rgba(8,8,20,.7); padding:8px 12px; border-radius:4px; }
-  #overlay summary { cursor:pointer; color:#ffe14d; font-size:clamp(12px,3.2vw,15px); letter-spacing:1px; }
-  #poolList { max-height:26vh; overflow:auto; text-align:left; margin-top:8px; font-size:clamp(10px,2.8vw,12px); line-height:1.55; color:#9a9ab8; }
-  #poolList .sp { color:#ff2d78; }
-  #overlay .btnrow { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
-  #overlay button.alt {
-    border-color:#ff2d78; color:#ff2d78; background:#240f1a;
-    box-shadow:0 0 16px rgba(255,45,120,.5), inset 0 0 12px rgba(255,45,120,.15);
-    animation:pulseAlt 1.4s infinite;
-  }
-  @keyframes pulseAlt { 50% { box-shadow:0 0 30px rgba(255,45,120,.9), inset 0 0 12px rgba(255,45,120,.3); } }
-  .record {
-    color:#ffe14d; font-size:clamp(16px,4.5vw,24px); letter-spacing:2px;
-    text-shadow:0 0 14px #ffd24d, 2px 2px 0 #000;
-    animation:recordZoom .9s cubic-bezier(.2,2,.4,1) both, recordGlow 1s infinite alternate .9s;
-  }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand h1 { font-family:var(--disp); font-weight:900; font-size:clamp(40px,13vw,58px); line-height:.9; letter-spacing:-.02em; }
+  .tag { font-family:var(--disp); font-weight:800; font-size:11px; letter-spacing:.16em; color:var(--dark); background:var(--lime); padding:5px 9px; border-radius:999px; }
+  .sub { color:var(--muted); font-size:14px; line-height:1.45; }
+  .field { display:flex; align-items:center; gap:10px; background:var(--fill); border:1px solid var(--line); border-radius:14px; padding:2px 6px 2px 14px; }
+  .field span { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
+  .field input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:var(--ink); font:600 16px var(--disp); padding:11px 4px; user-select:text; -webkit-user-select:text; }
+  .field input::placeholder { color:var(--dim); }
+  .primary { font-family:var(--disp); font-weight:900; font-size:18px; letter-spacing:.06em; padding:16px; border-radius:16px; background:var(--lime); color:var(--dark); box-shadow:0 8px 24px rgba(198,255,61,.22); transition:transform .12s; }
+  .primary:active { transform:scale(.97); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { font-size:13px; font-weight:600; padding:9px 13px; border-radius:999px; background:var(--fill); border:1px solid var(--line); }
+  .chip[aria-pressed="true"] { background:rgba(198,255,61,.13); border-color:rgba(198,255,61,.5); color:var(--lime); }
+  .panel { background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:14px; padding:12px 14px; font-size:13px; line-height:1.5; color:var(--muted); display:flex; flex-direction:column; gap:8px; }
+  .panel b { color:var(--ink); font-weight:600; }
+  .blist { display:grid; grid-template-columns:26px 1fr; gap:7px 8px; }
+  .blist .ic { font-size:17px; line-height:1.25; text-align:center; }
+  .top { display:grid; grid-template-columns:22px 1fr auto; gap:3px 10px; font-variant-numeric:tabular-nums; }
+  .top .rk { color:var(--dim); }
+  .top .me { color:var(--lime); }
+  .hint { color:var(--dim); font-size:12px; line-height:1.5; text-align:center; }
+  .over h1 { font-family:var(--disp); font-weight:900; font-size:clamp(34px,11vw,46px); color:var(--pink); line-height:1; }
+  .scores { display:flex; gap:22px; }
+  .scores .l { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:4px; }
+  .scores .n { font-family:var(--disp); font-weight:900; font-size:clamp(30px,10vw,42px); line-height:1; }
+  .scores .n.best { color:var(--muted); }
+  .record { align-self:flex-start; font-family:var(--disp); font-weight:800; font-size:12px; letter-spacing:.06em; color:var(--dark); background:var(--gold); padding:6px 11px; border-radius:999px; animation:recordZoom .7s cubic-bezier(.2,2,.4,1) both; }
   @keyframes recordZoom { 0% { transform:scale(0) rotate(-8deg); } 100% { transform:scale(1) rotate(0); } }
-  @keyframes recordGlow { from { text-shadow:0 0 8px #ffd24d,2px 2px 0 #000; } to { text-shadow:0 0 26px #ffec8a,2px 2px 0 #000; } }
-  .confetti {
-    position:fixed; top:-14px; pointer-events:none; z-index:11;
-    animation:confFall linear forwards;
-  }
+  .confetti { position:fixed; top:-14px; pointer-events:none; z-index:11; animation:confFall linear forwards; }
   @keyframes confFall {
     0% { transform:translateY(0) rotate(0deg); opacity:1; }
     85% { opacity:1; }
     100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
   }
   #hud {
-    position:fixed; top:env(safe-area-inset-top,8px); left:0; right:0; padding:10px 14px;
-    display:flex; justify-content:space-between; color:#fff; font-family:monospace;
-    font-size:clamp(13px,3.8vw,18px); font-weight:bold; text-shadow:2px 2px 0 #000; z-index:5;
+    position:fixed; top:0; left:0; right:0; z-index:5; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; pointer-events:none;
+    padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));
   }
-  #combo { color:#ff2d78; }
-  #fx { position:absolute; left:14px; top:100%; margin-top:-4px; font-size:clamp(12px,3.4vw,16px); white-space:nowrap; }
+  #hudL { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+  .pill { font-family:var(--disp); font-weight:800; font-size:clamp(12px,3.4vw,15px); padding:7px 12px; border-radius:999px; background:rgba(10,10,18,.5); border:1px solid var(--line); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); white-space:nowrap; }
+  #fx:empty, #combo:empty { display:none; }
+  #fx { font-family:var(--text); font-weight:600; }
+  #combo { color:var(--pink); }
   #slotBtn {
-    position:fixed; bottom:calc(env(safe-area-inset-bottom,10px) + 14px); left:50%; transform:translateX(-50%);
-    z-index:6; font-family:monospace; font-weight:bold; font-size:clamp(15px,4.2vw,20px);
-    padding:12px 26px; border:3px solid #ff2d78; background:#240f1a; color:#ff2d78;
-    letter-spacing:2px; cursor:pointer;
-    box-shadow:0 0 16px rgba(255,45,120,.6), inset 0 0 12px rgba(255,45,120,.15);
-    animation:pulseAlt 1.1s infinite;
+    position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 18px); left:50%; transform:translateX(-50%); z-index:6;
+    font-family:var(--disp); font-weight:900; font-size:clamp(14px,4vw,17px); letter-spacing:.06em; padding:13px 24px; border-radius:999px; color:#fff;
+    background:linear-gradient(135deg,#ff3d7f,#a93dff); box-shadow:0 8px 26px rgba(255,61,127,.45); animation:bob 1.1s ease-in-out infinite;
   }
-  #ver { position:fixed; right:12px; bottom:calc(env(safe-area-inset-bottom,10px) + 8px); z-index:6; font-family:monospace; font-size:11px; letter-spacing:.08em; color:#9a9a86; opacity:.75; text-shadow:1px 1px 0 #000; }
+  @keyframes bob { 50% { transform:translateX(-50%) translateY(-3px); } }
+  #ver { position:fixed; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); z-index:6; font-family:var(--disp); font-size:10px; letter-spacing:.1em; color:var(--muted); opacity:.6; }
+  #poolList { max-height:38vh; overflow-y:auto; font-size:12px; line-height:1.55; user-select:text; -webkit-user-select:text; }
+  #poolList .sp { color:var(--pink); }
   .hidden { display:none !important; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="cv"></canvas></div>
-<div id="hud" class="hidden"><span id="score">0</span><span id="combo"></span><div id="fx"></div></div>
+<div id="hud" class="hidden"><div id="hudL"><span id="score" class="pill">0</span><span id="fx" class="pill"></span></div><span id="combo" class="pill"></span></div>
 <button id="slotBtn" class="hidden">🎰 КРУТИТЬ</button>
 <div id="ui"></div>
 <div id="ver"></div>
 <div id="overlay">
-  <h1>ГРИБ</h1>
-  <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Versus 2017 продолжается.</div>
-  <button id="btn">ПОЕХАЛИ</button>
-  <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.<br><br>Секретные персонажи — введи букву как ник:<br>Z — без бонусов, но казино само крутится каждые 5 сек<br>X — чёрно-белый хардкор: только деньги, все враги сразу<br>V — вечный джетпак, но больше никаких бонусов<br><br>🍄 — станешь большим: переживёшь один удар<br>Ещё: 🦠 споры • 🌀 замедление • 🧲 магнит<br>🎞 нуар: зона в ч/б, бонусы сгорают (большой гриб остаётся)</div>
-  <details id="pool" open>
-    <summary>ПУЛ: <span id="poolCount">…</span> ТРЕКОВ</summary>
-    <div id="poolList"></div>
-  </details>
+  <div class="card" id="menu">
+    <div class="brand"><h1>ГРИБ</h1><span class="tag">VERSUS</span></div>
+    <p class="sub">Марио прыгал на грибы. Теперь гриб прыгает на сантехников. Versus 2017 продолжается.</p>
+    <label class="field"><span>Ник</span><input id="nick" maxlength="8" placeholder="ГРИБ" autocomplete="off" spellcheck="false" enterkeyhint="go"></label>
+    <button id="btn" class="primary">ИГРАТЬ</button>
+    <div class="row">
+      <button class="chip" id="musicBtn" aria-pressed="true">♪ Музыка: вкл</button>
+      <button class="chip" data-tab="bonus" aria-pressed="false">Бонусы</button>
+      <button class="chip" data-tab="levels" aria-pressed="false">Уровни</button>
+      <button class="chip" data-tab="top" aria-pressed="false">Топ</button>
+      <button class="chip hidden" id="poolChip" data-tab="pool" aria-pressed="false">🎧 Треки <span id="poolCount">…</span></button>
+    </div>
+    <div class="panel hidden" id="tab-bonus"></div>
+    <div class="panel hidden" id="tab-levels"></div>
+    <div class="panel hidden" id="tab-top"></div>
+    <div class="panel hidden" id="tab-pool"><b>Секретный пул: открыт за топ-5</b><div id="poolList"></div></div>
+    <p class="hint">Тап или пробел: прыжок, ещё раз в воздухе: двойной. Прыгай на врагов сверху.</p>
+  </div>
+  <div class="card over hidden" id="over">
+    <h1>RIP ГРИБ</h1>
+    <p class="sub" id="overLine"></p>
+    <div class="record hidden" id="overRec">🏆 НОВЫЙ РЕКОРД</div>
+    <div class="record hidden" id="overPool" style="background:var(--lime)">🎧 Ты в топ-5: в меню открылись треки</div>
+    <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l">Рекорд</div><div class="n best" id="overBest">0</div></div></div>
+    <button id="btn2" class="primary">ЕЩЁ РАЗ</button>
+    <div class="row"><button class="chip" id="btnShare">Шерануть 📸</button><button class="chip" id="btnMenu">Меню</button></div>
+    <div class="panel" id="overTop">Лидерборд грузится…</div>
+  </div>
 </div>
 <script src="zones.js"></script>
 <script src="gfx.js"></script>
@@ -118,7 +147,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v8';
+const VERSION='v9';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -205,12 +234,13 @@ async function fetchScores(){
 }
 let playerName=''; // выбирается один раз за визит
 let charMode=''; // секретные персонажи: ник 'z'/'Z' и 'x'/'X'
-function pickName(){
-  const def=localStorage.gribName||'ГРИБ';
-  playerName=(prompt('Имя для лидерборда (до 8 букв):',def)||'').trim().slice(0,8);
-  if(!playerName)playerName='АНОНИМ';
-  localStorage.gribName=playerName;
-  charMode=(playerName==='z'||playerName==='Z')?'Z':(playerName==='x'||playerName==='X')?'X':(playerName==='v'||playerName==='V')?'V':'';
+const nickEl=document.getElementById('nick');
+try{ nickEl.value=localStorage.gribName||''; }catch(e){}
+function applyName(){
+  const v=nickEl.value.trim().slice(0,8);
+  playerName=v||'АНОНИМ';
+  try{ localStorage.gribName=v; }catch(e){}
+  charMode=/^[zxv]$/i.test(playerName)?playerName.toUpperCase():'';
   document.body.style.filter=charMode==='X'?'grayscale(1)':'';
 }
 async function submitScore(s){
@@ -237,13 +267,14 @@ function showQuote(txt, big){
   quoteLanes[lane]=true;
   const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
   el.style.bottom=(H*(0.30+lane*0.075))+'px';
-  if(big){ el.style.fontSize='clamp(18px,6vw,30px)'; el.style.color='#7CFC00'; }
+  if(big) el.classList.add('big');
   ui.appendChild(el);
   setTimeout(()=>{ el.remove(); quoteLanes[lane]=false; },1700);
 }
 
 // --- Звук (WebAudio пиканья) ---
 let AC=null;
+let musicOn=true; try{ musicOn=localStorage.gribMusic!=='0'; }catch(e){}
 function beep(f,d,type='square',v=.12){ if(!AC)return; const o=AC.createOscillator(),g=AC.createGain();
   o.type=type;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
   o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d); }
@@ -255,7 +286,7 @@ function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>bee
 // фоновый рифф зоны
 let nextBeat=0, beatI=0;
 function tickMusic(){
-  if(!AC||!running||player.dead)return;
+  if(!AC||!musicOn||!running||player.dead)return;
   if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:fsT>0?1.4:1; return; } // играет живой трек
   const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:fsT>0?1/1.4:1); // восьмые
   if(AC.currentTime>=nextBeat){
@@ -338,6 +369,7 @@ async function playZone(zn){
   if(!AC)return;
   const token=++clipToken;
   stopClip();
+  if(!musicOn)return;
   const pick=pickFor(zn);
   if(pick===-1){ sJingle(ZONES[zoneI]); return; }
   let buf=null;
@@ -485,21 +517,97 @@ function jump(){
 }
 addEventListener('pointerdown',e=>{ if(e.target.tagName!=='BUTTON') jump(); });
 addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
   if(e.code==='Space'||e.code==='ArrowUp'){
-    const again=document.getElementById('btn2');
-    if(!running&&again){ e.preventDefault(); again.click(); return; } // рестарт после смерти
+    if(!running){ e.preventDefault(); if(!overlay.classList.contains('hidden')) startGame(); return; } // старт/рестарт с клавиатуры
     jump();
   }
   if(e.code==='KeyZ') spinSlot(); // казино с клавиатуры
 });
 
-btn.addEventListener('click',()=>{
+function startGame(){
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
-  if(!playerName) pickName();
+  if(AC&&AC.state==='suspended')AC.resume();
+  applyName();
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
   if(AC)playZone(zoneN);
+}
+btn.addEventListener('click',startGame);
+nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); nickEl.blur(); startGame(); } });
+
+// --- Меню: музыка, вкладки ---
+const menuEl=document.getElementById('menu'), overEl=document.getElementById('over'), musicBtn=document.getElementById('musicBtn');
+function syncMusicBtn(){ musicBtn.setAttribute('aria-pressed',musicOn); musicBtn.textContent='♪ Музыка: '+(musicOn?'вкл':'выкл'); }
+syncMusicBtn();
+musicBtn.addEventListener('click',()=>{
+  musicOn=!musicOn; try{ localStorage.gribMusic=musicOn?'1':'0'; }catch(e){}
+  syncMusicBtn(); if(!musicOn&&AC)stopClip();
 });
+const BONUS_INFO={
+  big:['Большой гриб','переживёт один удар'],
+  jet:['Джетпак','4 с прыгаешь без лимита'],
+  spore:['Споры','6 с стреляешь во врагов, даже в ежа'],
+  hypno:['Гипногриб','5 с всё медленнее, потом 3 с быстрее'],
+  magnet:['Магнит','8 с тянет бонусы к тебе'],
+  loot:['Лут','+500 очков'],
+  slot:['Казино','заряд для кнопки КРУТИТЬ (или Z)'],
+  noir:['Нуар','зона в ч/б, бонусы сгорают, большой гриб остаётся'],
+};
+function el(tag,cls,txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function fillBonus(p){
+  p.textContent='';
+  const list=el('div','blist');
+  for(const k in BONUS_INFO){
+    if(!BONUSES[k])continue;
+    list.append(el('div','ic',BONUSES[k].icon));
+    const d=el('div'); d.append(el('b',null,BONUS_INFO[k][0]),' — '+BONUS_INFO[k][1]); list.append(d);
+  }
+  p.append(list);
+  p.append(el('div',null,'Сантехников и голубей дави сверху. Ежа только перепрыгнуть. От гаечных ключей уворачивайся.'));
+  p.append(el('div',null,'Секретные ники: Z — казино крутится само, X — ч/б хардкор, V — вечный джетпак.'));
+}
+function fillLevels(p){
+  p.textContent='';
+  const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее.'); p.append(a);
+  const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок. Каждый 10-й уровень играет особый трек.'); p.append(b);
+}
+function renderTop(p,scores,me){
+  p.textContent='';
+  if(!scores.length){ p.append(el('div',null,'Пока пусто. Будь первым.')); return; }
+  p.append(el('b',null,'Топ-10 грибов'));
+  const g=el('div','top');
+  scores.slice(0,10).forEach((r,i)=>{
+    const cls=r.n===me?'me':'';
+    g.append(el('div','rk',String(i+1)),el('div',cls,r.n),el('div',cls,String(r.s)));
+  });
+  p.append(g);
+}
+function fillTop(p){
+  p.textContent='Загрузка…';
+  const me=nickEl.value.trim().slice(0,8)||'АНОНИМ';
+  fetchScores().then(sc=>{ renderTop(p,sc,me); checkPool(sc,me); }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
+}
+// секретный пул треков: открывается, когда ник попал в топ-5 лидерборда
+function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return false; } }
+function syncPoolChip(){ document.getElementById('poolChip').classList.toggle('hidden',!poolOpen()); }
+function checkPool(scores,me){
+  if(poolOpen()||!me||me==='АНОНИМ')return false;
+  if(!scores.slice(0,5).some(r=>r.n===me))return false;
+  try{ localStorage.gribPool='1'; }catch(e){}
+  syncPoolChip(); return true;
+}
+syncPoolChip();
+try{ const me=localStorage.gribName; if(me&&!poolOpen()) fetchScores().then(sc=>checkPool(sc,me)).catch(()=>{}); }catch(e){}
+const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool()};
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+  const on=b.getAttribute('aria-pressed')!=='true';
+  document.querySelectorAll('[data-tab]').forEach(o=>{ o.setAttribute('aria-pressed','false'); document.getElementById('tab-'+o.dataset.tab).classList.add('hidden'); });
+  if(on){ b.setAttribute('aria-pressed','true'); const p=document.getElementById('tab-'+b.dataset.tab); FILL[b.dataset.tab](p); p.classList.remove('hidden'); }
+}));
+document.getElementById('btn2').addEventListener('click',startGame);
+document.getElementById('btnMenu').addEventListener('click',()=>{ overEl.classList.add('hidden'); menuEl.classList.remove('hidden'); });
 
 // --- Слот-машина ---
 const slotBtn=document.getElementById('slotBtn');
@@ -918,36 +1026,25 @@ function die(){
     const newRecord=s>best&&s>0;
     best=Math.max(best,s); localStorage.gribBest=best;
     const line=DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
-    overlay.innerHTML=`<h1 style="color:#ff2d78;text-shadow:0 0 18px #ff2d78,4px 4px 0 #4d0022">RIP ГРИБ</h1>
-      <div class="sub">${line}</div>
-      ${newRecord?'<div class="record">🏆 НОВЫЙ РЕКОРД! 🏆</div>':''}
-      <div class="score" id="scoreLine">СЧЁТ: ${s}<br>РЕКОРД: ${best}</div>
-      <div class="btnrow">
-        <button id="btn2">ЕЩЁ РАЗ</button>
-        <button id="btnShare" class="alt">ШЕРАНУТЬ 📸</button>
-      </div>
-      <div id="lbx" class="hint">лидерборд грузится…</div>`;
-    overlay.classList.remove('hidden');
+    const overTop=document.getElementById('overTop'), overBest=document.getElementById('overBest');
+    document.getElementById('overLine').textContent=line;
+    document.getElementById('overScore').textContent=s;
+    overBest.textContent=best;
+    document.getElementById('overRec').classList.toggle('hidden',!newRecord);
+    document.getElementById('overPool').classList.add('hidden');
+    menuEl.classList.add('hidden'); overEl.classList.remove('hidden'); overlay.classList.remove('hidden');
     confetti(newRecord?120:45);
     if(newRecord){ sJingle(ZONES[0]); }
-    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); if(AC)playZone(zoneN); };
     document.getElementById('btnShare').onclick=()=>shareScore(s,line);
+    overTop.textContent='Лидерборд грузится…';
     submitScore(s).then(res=>{
-      const el=document.getElementById('lbx'); if(!el)return;
-      if(!res){ el.textContent='лидерборд недоступен (нет сети)'; return; }
+      if(!res){ overTop.textContent='Лидерборд недоступен (нет сети)'; return; }
       lastScores=res.scores;
       // рекорд на устройстве отстаёт от лидерборда (играл с другого браузера) — подтягиваем
       const mine=res.scores.find(r=>r.n===res.name);
-      if(mine&&mine.s>best){
-        best=mine.s; localStorage.gribBest=best;
-        const sl=document.getElementById('scoreLine');
-        if(sl)sl.innerHTML=`СЧЁТ: ${s}<br>РЕКОРД: ${best}`;
-      }
-      const rows=res.scores.slice(0,10).map((r,i)=>{
-        const me=r.n===res.name?' style="color:#7CFC00"':'';
-        return `<div${me}>${String(i+1).padStart(2,' ')}. ${r.n} — ${r.s}</div>`;
-      }).join('');
-      el.innerHTML=`<div style="color:#ffe14d;margin-bottom:6px">ТОП-10 ГРИБОВ</div><div style="text-align:left;display:inline-block">${rows}</div>`;
+      if(mine&&mine.s>best){ best=mine.s; localStorage.gribBest=best; overBest.textContent=best; }
+      renderTop(overTop,res.scores,res.name);
+      if(checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
     });
   },900);
 }
