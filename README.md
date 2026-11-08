@@ -55,7 +55,7 @@ The page reads two sources and shows the best score per nickname: the server, an
 
 ## Version
 
-Current build: **v27** (shown in the bottom-right corner of the game).
+Current build: **v28** (shown in the bottom-right corner of the game).
 
 ## Credits
 

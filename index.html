@@ -102,6 +102,13 @@
   @keyframes bob { 50% { transform:translateX(-50%) translateY(-3px); } }
   #ver { position:fixed; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 8px); z-index:6; font-family:var(--disp); font-size:10px; letter-spacing:.1em; color:var(--muted); opacity:.6; }
   #poolList { max-height:38vh; overflow-y:auto; font-size:12px; line-height:1.55; user-select:text; -webkit-user-select:text; }
+  .stamp { position:fixed; left:50%; top:26%; z-index:8; pointer-events:none; white-space:nowrap; font-family:var(--disp); font-weight:900; font-size:clamp(30px,10vw,72px); color:var(--gold); -webkit-text-stroke:2px #10060c; text-shadow:0 6px 0 rgba(0,0,0,.4), 0 0 40px rgba(255,216,77,.55); animation:stampIn 1.1s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes stampIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(3) rotate(-14deg); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-6deg); } 80% { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-6deg); } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.1) rotate(-6deg); } }
+  .vs { position:fixed; inset:0; z-index:7; pointer-events:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; font-family:var(--disp); font-weight:900; background:linear-gradient(105deg,transparent 30%,rgba(255,61,127,.4) 50%,transparent 70%); animation:vsIn 1.6s ease-out forwards; }
+  .vs div { -webkit-text-stroke:1.5px #10060c; text-shadow:0 4px 0 rgba(0,0,0,.45); color:#fff; font-size:clamp(20px,6.6vw,46px); padding:0 16px; }
+  .vs .rd { color:var(--lime); font-size:clamp(13px,3.6vw,20px); letter-spacing:.3em; -webkit-text-stroke:0; }
+  .vs .v { color:var(--pink); font-size:clamp(28px,9vw,62px); }
+  @keyframes vsIn { 0% { opacity:0; } 12% { opacity:1; } 75% { opacity:1; } 100% { opacity:0; } }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -155,7 +162,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v27';
+const VERSION='v28';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -218,6 +225,12 @@ const QUOTES = [
   'СТО ОЧКОВ ЗА КРАСОТУ 💯',          // оригинал
   'ПОДОШВА ПРОТИВ ШЛЯПКИ 👟',         // оригинал
   'ШЛЯПКА В ПОРЯДКЕ 🎩',              // оригинал
+  // баттл-сленг и мемы
+  'ЭЩКЕРЕ 🔥', 'АУФ 🐺', 'БАЗА 🧱', 'ФЛОУ НА МЕСТЕ 🌊', 'ЭТО ПАНЧ 🥊', 'БИТ КАЧАЕТ 🔊', 'ЛЮТЫЙ БЭНГЕР 💥',
+  'ФРИСТАЙЛ С ЛИСТА 📝', 'ДИСС ВЫШЕЛ В 3 НОЧИ 🌙', 'КРИНЖ НЕ ПРОЙДЁТ 🚫', 'СЛОВИЛ ВАЙБ ✨', 'ФЛЕКС ЗАСЧИТАН 💪',
+  'ХАЙП ПОШЁЛ 📈', 'ЧЕКНИ МОЙ ПОТОК 💧', 'ТЫ ЧЁ, ПЁС? 🐕', 'РЕСПЕКТ И УВАЖУХА 🤝', 'МИКРОФОН НА ПОЛ 🎤',
+  'ДАЙТЕ МИНУС ПОГРОМЧЕ 🎛', 'КТО НЕ С НАМИ, ТОТ ПЛАМБЕР 🪠', 'ТРЕК ГОДА 🏆', 'СЕМПЛ ОПЛАЧЕН 💿', 'РАУНД ЗА МНОЙ 🥇',
+  'ДЖАДЖИ В ШОКЕ 👀', 'ИЗИ КАТКА 🎮', 'ГГ ВП 🏁', 'СТОНКС 📈', 'ЭТО ДРУГОЕ ☝️', 'ДОРОГО-БОГАТО 💎', 'ПЛАМБЕР, ТЫ ОТКУДА? 🗺', 'ГРИБ НА БИТЕ 🍄',
 ];
 const DEATH_LINES = [
   'Сдохну ноунеймом, но не стану тобой.',
@@ -239,6 +252,13 @@ const DEATH_LINES = [
   'Начальник недоволен.',
   'Как у всех: упал.',
   'Кто-то потерял шляпку.',
+  'Микрофон упал.',
+  'Джаджи проголосовали не за тебя.',
+  'Минус кончился.',
+  'Скилл ишью.',
+  'Это был последний куплет.',
+  'Гриб ушёл в андеграунд.',
+  'Фит не состоялся.',
 ];
 
 // --- Лидерборд ---
@@ -353,6 +373,8 @@ function sJump(){ beep(330,.12); setTimeout(()=>beep(520,.1),60); }
 function sStomp(){ beep(620,.08); setTimeout(()=>beep(880,.12),50); }
 function sHurt(){ beep(260,.15,'sawtooth'); setTimeout(()=>beep(170,.25,'sawtooth'),90); }
 function sDie(){ beep(220,.2,'sawtooth'); setTimeout(()=>beep(140,.35,'sawtooth'),120); }
+function airhorn(){ [0,170,340].forEach(d=>setTimeout(()=>{ beep(466,.15,'sawtooth',.11); beep(698,.15,'sawtooth',.07); },d)); }
+function scratch(){ if(!AC)return; const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime; o.type='sawtooth'; o.frequency.setValueAtTime(900,n); o.frequency.exponentialRampToValueAtTime(120,n+.24); g.gain.setValueAtTime(.12,n); g.gain.exponentialRampToValueAtTime(.001,n+.26); o.connect(g); g.connect(AC.destination); o.start(); o.stop(n+.26); }
 function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>beep(f,dur,z.wave,.16),d*1000); d+=dur; } }
 // фоновый рифф зоны
 let nextBeat=0, beatI=0;
@@ -459,6 +481,25 @@ function firework(x,y){
   for(let i=0;i<26;i++){
     const a=i/26*Math.PI*2, sp=180+Math.random()*260;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-120,l:.7+Math.random()*.4,c:'hsl('+((hue+i*9)%360)+',90%,65%)'});
+  }
+}
+function stamp(txt,c){ const d=document.createElement('div'); d.className='stamp'; d.textContent=txt; if(c)d.style.color=c; document.body.appendChild(d); setTimeout(()=>d.remove(),1150); }
+const COMBO_STAMPS={3:['ПАНЧ!','#ffd84d'],5:['ДАБЛ-ТАЙМ!','#c6ff3d'],7:['БЭНГЕР!','#ff3d7f'],10:['ЛЕГЕНДАРНО!','#7ad7ff'],15:['ОСТАНОВИТЕ ЕГО','#ffffff']};
+const BOSS_KO=['НОКАУТ ПАНЧЕМ','ДЖАДЖИ: 3-0','MIC DROP','СЛИТ','ГРИБ ЗАБРАЛ РАУНД'];
+let roundN=0;
+function vsCard(name,mini){
+  roundN++;
+  const d=document.createElement('div'); d.className='vs';
+  const line=(cls,t)=>{ const e=document.createElement('div'); if(cls)e.className=cls; e.textContent=t; d.append(e); };
+  line('rd',(mini?'МИНИ-РАУНД ':'РАУНД ')+roundN); line('','ГРИБ'); line('v','VS'); line('',name);
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1650);
+}
+function emojiRain(list,n){
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div'); d.className='confetti';
+    d.textContent=list[(Math.random()*list.length)|0]; d.style.fontSize=(18+Math.random()*18)+'px';
+    d.style.left=(Math.random()*100)+'vw'; d.style.animationDuration=(1.8+Math.random()*2)+'s'; d.style.animationDelay=(Math.random()*.8)+'s';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),4500);
   }
 }
 function confetti(n){
@@ -669,7 +710,7 @@ function startGame(){
   if(charMode==='EZ'||charMode==='LEG')player.big=true;
   if(!charMode) applyPerks();
   player.jumps=maxJumps();
-  runUnlocks=[]; renderRunUnlocks();
+  runUnlocks=[]; renderRunUnlocks(); roundN=0;
   if(isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
   const M=MODES[playerName.toUpperCase()];
   if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
@@ -1152,6 +1193,7 @@ function loop(ts){
         e.dead=0.01; player.vy=JUMP*0.7; player.jumps=maxJumps();
         combo++; comboT=2.2;
         const pts=100*combo; score+=pts; sStomp();
+        if(COMBO_STAMPS[combo]){ stamp(...COMBO_STAMPS[combo]); if(combo>=5) airhorn(); }
         popText(e.x,e.y-60,'+'+pts, combo>1?'#ff2d78':'#ffe14d');
         shake(3+Math.min(combo*1.5,8),.18);
         if(combo>=3) firework(e.x,e.y-80);
@@ -1269,6 +1311,7 @@ function startBoss(){
   showQuote((d.mini?'МИНИ-БОСС: ':'БОСС: ')+boss.name,true); if(d.line) showQuote(d.line,false); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
   const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },1800);
   metaEvent(d.mini?'mini':'boss',d.kind);
+  vsCard(boss.name,d.mini); airhorn();
 }
 function bossGap(rage){ return 0.9-rage*0.07; } // пауза между ключами: дольше прыжка (0.73 с)
 function bossThrow(b){
@@ -1285,6 +1328,7 @@ function bossKill(b){
   if(b.kind==='balloon') beep(160,.8,'sawtooth',.14);
   for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
   showQuote(b.mini?'МИНИ-БОСС СЛИТ +1500 🎤':'БОСС ПОВЕРЖЕН +5000 🏆',true);
+  stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],b.mini?14:30);
   bossDone[b.lvl]=true;
   if(!b.mini) metaEvent('beat',b.kind);
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
@@ -1861,7 +1905,7 @@ function hit(){
 }
 function die(){
   if(player.dead)return;
-  player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); shake(14,.5);
+  player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{
     running=false; hud.classList.add('hidden'); slotBtn.classList.add('hidden');
