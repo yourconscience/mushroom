@@ -233,15 +233,29 @@ async function fetchScores(){
           .sort((a,b)=>b.s-a.s);
 }
 let playerName=''; // выбирается один раз за визит
-let charMode=''; // секретные персонажи: ник 'z'/'Z' и 'x'/'X'
+let charMode=''; // секретные персонажи: ник Z / X / V и пять режимов ниже
+// Секретные ники-режимы: отсылки к мемам про Окси (Versus 2017) и к самой игре.
+// sm — множитель очков; режим включается, если ник совпал (регистр не важен).
+const MODES={
+  'ОКСАНА': {k:'OKS',   sm:2,   info:'вечный нуар: всё ч/б, бонусов нет, очки x2'},
+  'ПЕТУШОК':{k:'GLASS', sm:3,   info:'стеклянный гриб: не вырастет, одно касание и всё, очки x3'},
+  'ИЗИ':    {k:'EZ',    sm:0.5, info:'изи: мир медленнее, гриб большой и отрастает каждую зону, очки x0.5'},
+  'ДУТЫЙ':  {k:'PUFF',  sm:1,   info:'дутая фигура: гриб надут, парит и прыгает трижды'},
+  'МАРИО':  {k:'MARIO', sm:1.5, info:'Марио снова прыгает на грибы: сантехники скачут, их больше, очки x1.5'},
+};
+let SM=1; // множитель очков режима
+function baseFilter(){ return charMode==='X'||charMode==='OKS'?'grayscale(1)':''; }
+function maxJumps(){ return charMode==='PUFF'?3:2; }
 const nickEl=document.getElementById('nick');
 try{ nickEl.value=localStorage.gribName||''; }catch(e){}
 function applyName(){
   const v=nickEl.value.trim().slice(0,8);
   playerName=v||'АНОНИМ';
   try{ localStorage.gribName=v; }catch(e){}
-  charMode=/^[zxv]$/i.test(playerName)?playerName.toUpperCase():'';
-  document.body.style.filter=charMode==='X'?'grayscale(1)':'';
+  const up=playerName.toUpperCase(), M=MODES[up];
+  charMode=M?M.k:/^[ZXV]$/.test(up)?up:'';
+  SM=M?M.sm:1;
+  document.body.style.filter=baseFilter();
 }
 async function submitScore(s){
   const name=playerName||'АНОНИМ';
@@ -473,9 +487,12 @@ async function prepShare(s,line){
 }
 function shareNote(t){ const b=document.getElementById('btnShare'), o=b.dataset.t||b.textContent; b.dataset.t=o; b.textContent=t; setTimeout(()=>{ b.textContent=o; },1800); }
 async function shareScore(s,line){
+  // ссылка на картинке не кликается: кладём её в буфер ещё в момент клика, чтобы вставить следующим сообщением
+  let linkCopied=false;
+  try{ navigator.clipboard.writeText('https://'+GAME_URL+'/').then(()=>{ linkCopied=true; },()=>{}); }catch(e){}
   if(!shareFile) await prepShare(s,line);
   try{
-    if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){ await navigator.share({files:[shareFile]}); return; }
+    if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){ await navigator.share({files:[shareFile]}); if(linkCopied) shareNote('Ссылка в буфере: вставь следом'); return; }
   }catch(e){ if(e.name==='AbortError')return; }
   // нет шеринга файлов (десктоп без Web Share) — картинка в буфер
   try{ await navigator.clipboard.write([new ClipboardItem({'image/png':shareBlob})]); shareNote('Картинка в буфере ✓'); return; }catch(e){}
@@ -492,7 +509,7 @@ const G=2400, JUMP=-880, WG=1400;
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
-  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=charMode==='X'?'grayscale(1)':''; spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
+  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   let x=800;
@@ -511,18 +528,18 @@ function addPlat(afterX){
   const p={x:afterX+gap,y,w};
   plats.push(p);
   // враг
-  if(Math.random()<0.45+lap*0.1 && w>150){
+  if(Math.random()<0.45+lap*0.1+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
-    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:ZONES[zoneI].enemies;
+    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[zoneI].enemies;
     const type=types[(Math.random()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y,cd:0.15+Math.random()*0.3});
   }
   // бонус (Z и V не видят ничего, X — только деньги)
-  if(charMode!=='Z'&&charMode!=='V'&&p.x-120>=noirTo){ // нуар: бонусов нет до конца
+  if(charMode!=='Z'&&charMode!=='V'&&charMode!=='OKS'&&p.x-120>=noirTo){ // нуар: бонусов нет до конца
     const roll=Math.random(); let acc=0;
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
-      if(k==='big'&&(player.big||zoneAt(p.x)===0))continue; // один уровень роста, не в первой зоне
+      if(k==='big'&&(player.big||zoneAt(p.x)===0||charMode==='GLASS'||charMode==='EZ'))continue; // один уровень роста, не в первой зоне
       acc+=BONUSES[k].chance;
       if(roll<acc){ pickups.push({x:p.x+w*(0.2+Math.random()*0.6),y:p.y-52,kind:k,t:Math.random()*6}); break; }
     }
@@ -535,7 +552,7 @@ function jump(){
   if(!running){ return; }
   if(player.dead) return;
   if(player.jumps>0||jetT>0){
-    player.vy=jetT>0?JUMP*0.75:JUMP*(player.jumps===2?1:0.88);
+    player.vy=(jetT>0?JUMP*0.75:JUMP*(player.jumps===maxJumps()?1:0.88))*(charMode==='PUFF'?0.775:1);
     if(jetT<=0)player.jumps--;
     player.squish=-0.25; sJump();
     for(let i=0;i<6;i++) parts.push({x:player.x,y:player.y,vx:(Math.random()-.5)*200,vy:100+Math.random()*100,l:.4,c:'#9be564'});
@@ -557,6 +574,10 @@ function startGame(){
   applyName();
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
+  if(charMode==='EZ')player.big=true;
+  player.jumps=maxJumps();
+  const M=MODES[playerName.toUpperCase()];
+  if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
 }
 btn.addEventListener('click',startGame);
@@ -591,7 +612,7 @@ function fillBonus(p){
   }
   p.append(list);
   p.append(el('div',null,'Сантехников и голубей дави сверху. Ежа только перепрыгнуть. От гаечных ключей уворачивайся.'));
-  p.append(el('div',null,'Секретные ники: Z — казино крутится само, X — ч/б хардкор, V — вечный джетпак.'));
+  p.append(el('div',null,'Секретные ники: Z — казино крутится само, X — ч/б хардкор, V — вечный джетпак. И ещё пять режимов прячутся в мемах про Окси и в самой игре: присмотрись к цитатам.'));
 }
 function fillLevels(p){
   p.textContent='';
@@ -619,7 +640,7 @@ function fillTop(p){
 function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return false; } }
 function syncPoolChip(){ document.getElementById('poolChip').classList.toggle('hidden',!poolOpen()); }
 function checkPool(scores,me){
-  if(poolOpen()||!me||me==='АНОНИМ')return false;
+  if(poolOpen()||!me||me==='АНОНИМ'||MODES[me.toUpperCase()]||/^[zxv]$/i.test(me))return false;
   if(!scores.slice(0,5).some(r=>r.n===me))return false;
   try{ localStorage.gribPool='1'; }catch(e){}
   syncPoolChip(); return true;
@@ -695,6 +716,8 @@ function fs(c){ ctx.fillStyle=c; ctx.fill(); ctx.stroke(); } // заливка +
 function drawGrib(p,t){
   if(p.inv>0&&((t*20)|0)%2)return; // мигаем при неуязвимости
   ctx.save(); ctx.translate(p.x-camX,p.y);
+  if(charMode==='GLASS')ctx.globalAlpha=0.55;
+  if(charMode==='PUFF')ctx.scale(1.18,1.1);
   if(p.big)ctx.scale(1.35,1.35);
   const sq=p.squish; ctx.scale(1-sq*.6,1+sq);
   const blink=(t%3.6)<0.12;
@@ -806,7 +829,7 @@ let lt=0;
 function loop(ts){
   requestAnimationFrame(loop);
   const t=ts/1000, rdt=Math.min((ts-lt)/1000,0.033); lt=ts;
-  const dt=rdt*(hyT>0?0.5:fsT>0?1.4:1); // гипногриб: вдвое медленнее, потом отходняк x1.4; таймеры бонусов в реальном времени
+  const dt=rdt*(hyT>0?0.5:fsT>0?1.4:1)*(charMode==='EZ'?0.8:1); // гипногриб: вдвое медленнее, потом отходняк x1.4; таймеры бонусов в реальном времени
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(running&&hyT>0){ ctx.translate(W/2,H/2); ctx.transform(1,Math.sin(t*2.3)*.015,Math.sin(t*1.9)*.015,1,0,0); ctx.translate(-W/2,-H/2); }
   if(shakeT>0){ shakeT-=rdt; const a=shakeA*Math.min(1,shakeT*4); ctx.translate((Math.random()-.5)*2*a,(Math.random()-.5)*2*a); if(shakeT<=0)shakeA=0; }
@@ -815,7 +838,7 @@ function loop(ts){
 
   if(!player.dead){
     jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
-    if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=charMode==='X'?'grayscale(1)':''; showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
+    if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
     speed=Math.min(560,speed+dt*3); dist+=speed*dt;
     player.x+=speed*dt;
@@ -825,6 +848,7 @@ function loop(ts){
     const zn=(dist/ZONE_LEN)|0;
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
+      if(charMode==='EZ'&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
       speed+=10;
       const Z=ZONES[zoneI];
       const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
@@ -845,14 +869,14 @@ function loop(ts){
     }
   }
   // физика
-  player.vy+=G*dt; player.y+=player.vy*dt;
+  player.vy+=G*(charMode==='PUFF'?0.6:1)*dt; player.y+=player.vy*dt;
   player.squish+= (0-player.squish)*Math.min(1,dt*10);
 
   // платформы
   let onGround=false; const edge=player.big?30:14;
   for(const p of plats){
     if(player.x>p.x-edge&&player.x<p.x+p.w+edge&&player.vy>=0&&player.y>=p.y-6&&player.y<=p.y+Math.max(26,player.vy*dt+8)){
-      player.y=p.y; player.vy=0; if(player.jumps<2&&!onGround){ player.squish=0.22; } player.jumps=2; onGround=true;
+      player.y=p.y; player.vy=0; if(player.jumps<maxJumps()&&!onGround){ player.squish=0.22; } player.jumps=maxJumps(); onGround=true;
     }
   }
   if(onGround) { combo>0&&(comboT-=dt); if(comboT<=0) combo=0; }
@@ -935,7 +959,7 @@ function loop(ts){
         player.vy=JUMP*0.6; hit();
       } else if(player.vy>140&&player.y<e.y-14){
         // СТОМП
-        e.dead=0.01; player.vy=JUMP*0.7; player.jumps=2;
+        e.dead=0.01; player.vy=JUMP*0.7; player.jumps=maxJumps();
         combo++; comboT=2.2;
         const pts=100*combo; score+=pts; sStomp();
         popText(e.x,e.y-60,'+'+pts, combo>1?'#ff2d78':'#ffe14d');
@@ -1020,7 +1044,7 @@ function loop(ts){
   ctx.textAlign='left';
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
-  scoreEl.textContent='СЧЁТ: '+(score|0);
+  scoreEl.textContent='СЧЁТ: '+((score*SM)|0);
   const fx=[player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
   fxEl.textContent=fx;
   if(hyT>0){ ctx.fillStyle='hsla('+((t*90)%360|0)+',90%,60%,0.14)'; ctx.fillRect(-20,-20,W+40,H+40); }
@@ -1048,7 +1072,7 @@ function die(){
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{
     running=false; hud.classList.add('hidden'); slotBtn.classList.add('hidden');
-    const s=score|0;
+    const s=(score*SM)|0;
     const newRecord=s>best&&s>0;
     best=Math.max(best,s); localStorage.gribBest=best;
     const line=DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
@@ -1059,7 +1083,7 @@ function die(){
     document.getElementById('overRec').classList.toggle('hidden',!newRecord);
     document.getElementById('overPool').classList.add('hidden');
     menuEl.classList.add('hidden'); overEl.classList.remove('hidden'); overlay.classList.remove('hidden');
-    document.body.style.filter=charMode==='X'?'grayscale(1)':''; // нуар не тянем на экран смерти
+    document.body.style.filter=baseFilter(); // нуар не тянем на экран смерти
     shareFile=null; shareKey=''; prepShare(s,line);
     confetti(newRecord?120:45);
     if(newRecord){ sJingle(ZONES[0]); }
