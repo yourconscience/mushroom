@@ -40,7 +40,7 @@ To restore an empty server, start the game once: it re-sends every score it sees
 
 ## Version
 
-Current build: **v19** (shown in the bottom-right corner of the game).
+Current build: **v20** (shown in the bottom-right corner of the game).
 
 ## Credits
 

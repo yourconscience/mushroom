@@ -45,6 +45,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	h.Set("Access-Control-Allow-Origin", "*")
 	h.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	h.Set("Cache-Control", "no-store")
+	h.Set("Access-Control-Allow-Private-Network", "true") // Chrome preflight for pages reaching a tailnet address
 	switch {
 	case r.Method == http.MethodOptions:
 		w.WriteHeader(http.StatusNoContent)
