@@ -150,7 +150,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v23';
+const VERSION='v24';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -641,6 +641,12 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyZ') spinSlot(); // казино с клавиатуры
 });
 
+function announceZone(zn){
+  const Z=ZONES[zn%ZONES.length], lapN=(zn/ZONES.length)|0;
+  const mark=lapN?' '+(['II','III','IV','V','VI'][lapN-1]||'∞'):'';
+  showQuote('ЗОНА '+(zn+1)+': '+(trackTitle(zn)||Z.name)+mark, true);
+}
+
 function startGame(){
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } // звук включаем ещё в жесте
   if(AC&&AC.state==='suspended')AC.resume();
@@ -655,6 +661,9 @@ function startGame(){
   const M=MODES[playerName.toUpperCase()];
   if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
+  let tries=0;
+  const sayStart=()=>{ if(!playlist.length&&tries++<10){ setTimeout(sayStart,300); return; } announceZone(0); };
+  setTimeout(sayStart,350);
 }
 btn.addEventListener('click',startGame);
 nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); startGame(); } });
@@ -929,10 +938,7 @@ function loop(ts){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
       if(charMode==='EZ'&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
       speed+=10;
-      const Z=ZONES[zoneI];
-      const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
-      const tt=trackTitle(zn);
-      showQuote('ЗОНА '+(zn+1)+': '+(tt||Z.name)+mark, true);
+      announceZone(zn);
       playZone(zn);
     }
   }
