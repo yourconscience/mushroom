@@ -149,7 +149,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v18';
+const VERSION='v19';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -236,19 +236,45 @@ const DEATH_LINES = [
 ];
 
 // --- Лидерборд ---
-const LB_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
+// Лидерборд: свой сервер (SQLite на VPS, server/), хранит максимум по ключу и ничего не удаляет.
+// kvdb — старое хранилище: пока живы старые клиенты, читаем и пишем в оба, берём максимум по нику.
+// backup/scores.json — ежедневный снапшот сервера в репо (GitHub Action), запасной источник для чтения.
+const LB_URL='https://vps.taila0218e.ts.net:8443/';
+const KV_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
+const SNAP_URL='backup/scores.json';
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
+async function getJSON(u){ const r=await fetch(u); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function postScore(base,key,s){ const r=await fetch(base+encodeURIComponent(key),{method:'POST',body:String(s)}); if(!r.ok) throw new Error(r.status); }
 async function fetchScores(secret){
-  const pre=secret?'v2s:':'v2:';
-  // _= обходит cloudflare-кеш kvdb (cache-control: public)
-  const r=await fetch(LB_URL+'?prefix='+pre+'&values=true&format=json&_='+Date.now());
-  const d=await r.json();
-  // kvdb отдаёт массив пар [key, value]
-  return d.map(it=>Array.isArray(it)?{n:String(it[0]).slice(pre.length),s:+it[1]||0}:{n:String(it.key).slice(pre.length),s:+it.value||0})
-          .filter(r=>secret||!isSecret(r.n))
-          .sort((a,b)=>b.s-a.s);
+  const pre=secret?'v2s:':'v2:', q='?prefix='+pre+'&values=true&format=json&_='+Date.now(); // _= обходит кеш
+  const res=await Promise.allSettled([getJSON(LB_URL+q),getJSON(KV_URL+q),getJSON(SNAP_URL+'?_='+Date.now())]);
+  if(res.every(x=>x.status!=='fulfilled')) throw new Error('offline');
+  const best=new Map(), onServer=new Map();
+  res.forEach((x,i)=>{
+    if(x.status!=='fulfilled'||!Array.isArray(x.value))return;
+    for(const it of x.value){ // пары [key, value]
+      const k=String(Array.isArray(it)?it[0]:it.key), s=+(Array.isArray(it)?it[1]:it.value)||0;
+      if(!k.startsWith(pre))continue;
+      const n=k.slice(pre.length);
+      if(s>(best.get(n)??-1)) best.set(n,s);
+      if(i===0) onServer.set(n,s);
+    }
+  });
+  // мост: очки, которые старые клиенты записали только в kvdb, переносим на сервер
+  if(res[0].status==='fulfilled') for(const [n,s] of best) if(s>(onServer.get(n)??-1)) postScore(LB_URL,pre+n,s).catch(()=>{});
+  return [...best].map(([n,s])=>({n,s})).filter(r=>secret||!isSecret(r.n)).sort((a,b)=>b.s-a.s);
 }
+// очки, которые не дошли до сервера, ждут в localStorage и уходят при следующей возможности
+function outbox(){ try{ return JSON.parse(localStorage.gribOutbox||'{}'); }catch(e){ return {}; } }
+function saveOutbox(o){ try{ localStorage.gribOutbox=JSON.stringify(o); }catch(e){} }
+function queueScore(key,s){ const o=outbox(); if(s>(o[key]??-1)){ o[key]=s; saveOutbox(o); } }
+async function flushOutbox(){
+  for(const [k,s] of Object.entries(outbox())){
+    try{ await postScore(LB_URL,k,s); const o=outbox(); if(o[k]===s){ delete o[k]; saveOutbox(o); } }catch(e){ return; }
+  }
+}
+flushOutbox();
 let playerName=''; // выбирается один раз за визит
 function myKey(){ return (playerName||'АНОНИМ').toUpperCase(); }
 function myBest(){ return sessBest[myKey()]||0; }
@@ -281,17 +307,17 @@ function applyName(){
   document.body.style.filter=baseFilter();
 }
 async function submitScore(s){
-  const name=playerName||'АНОНИМ', sec=isSecret(name);
-  try{
-    let scores=await fetchScores(sec);
-    const mine=scores.find(r=>r.n===name);
-    if(!mine||s>mine.s){
-      // POST с текстовым телом — простой запрос, без CORS preflight
-      await fetch(LB_URL+encodeURIComponent((sec?'v2s:':'v2:')+name),{method:'POST',body:String(s)});
-      scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
-    }
-    return {scores,name,sec,rec:s>0&&(!mine||s>mine.s)};
-  }catch(e){ return null; }
+  const name=playerName||'АНОНИМ', sec=isSecret(name), key=(sec?'v2s:':'v2:')+name;
+  let scores=null; try{ scores=await fetchScores(sec); }catch(e){}
+  const mine=scores&&scores.find(r=>r.n===name);
+  if(!mine||s>mine.s){
+    // POST с текстовым телом — простой запрос, без CORS preflight
+    queueScore(key,s); await flushOutbox();
+    try{ await postScore(KV_URL,key,s); }catch(e){} // старые клиенты читают только kvdb
+  }
+  if(!scores) return null;
+  if(!mine||s>mine.s) scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
+  return {scores,name,sec,rec:s>0&&(!mine||s>mine.s)};
 }
 
 // Зоны: см. zones.js (ZONES, ZONE_LEN)

@@ -1,0 +1,13 @@
+[Unit]
+Description=ГРИБ: Versus leaderboard
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/grib-lb -addr 127.0.0.1:8790 -db /var/lib/grib-lb/scores.db
+DynamicUser=yes
+StateDirectory=grib-lb
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

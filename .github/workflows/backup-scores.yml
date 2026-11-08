@@ -1,0 +1,19 @@
+name: backup scores
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: merge
+        run: python3 tools/backup-scores.py
+      - if: always()
+        run: |
+          git diff --quiet && exit 0
+          git -c user.name="Kirill Korikov" -c user.email=korikov.kirill@gmail.com commit -qam "backup scores $(date -u +%F)"
+          git pull -q --rebase && git push -q

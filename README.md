@@ -32,9 +32,15 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: picks from the @psyterrormagazine channel (posts from the last three years) plus the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник). Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
 
+## Leaderboard
+
+Scores live in a small Go + SQLite server (`server/`) that keeps the best score per nickname and has no delete endpoint. A scheduled GitHub Action (`.github/workflows/backup-scores.yml`) merges it into `backup/scores.json` every day, and the game also reads that file, so the board still shows when the server is down. Scores that fail to send wait in the browser and go out on the next visit. The old kvdb.io bucket is still read and written during the switch, so older open tabs keep working.
+
+To restore an empty server, start the game once: it re-sends every score it sees in the backup.
+
 ## Version
 
-Current build: **v18** (shown in the bottom-right corner of the game).
+Current build: **v19** (shown in the bottom-right corner of the game).
 
 ## Credits
 
