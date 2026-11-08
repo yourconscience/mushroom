@@ -67,6 +67,9 @@
   .top { display:grid; grid-template-columns:22px 1fr auto; gap:3px 10px; font-variant-numeric:tabular-nums; }
   .top .rk { color:var(--dim); }
   .top .me { color:var(--lime); }
+  .sect { color:var(--gold); }
+  .top.sec div:not(.rk) { color:var(--gold); }
+  .top.sec .me { color:var(--lime); }
   .hint { color:var(--dim); font-size:12px; line-height:1.5; text-align:center; }
   .over h1 { font-family:var(--disp); font-weight:900; font-size:clamp(34px,11vw,46px); color:var(--pink); line-height:1; }
   .scores { display:flex; gap:22px; }
@@ -224,12 +227,16 @@ const DEATH_LINES = [
 
 // --- Лидерборд ---
 const LB_URL='https://kvdb.io/A2EYg5Q1vde6wu5QJEAnbe/';
-async function fetchScores(){
+// секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
+function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
+async function fetchScores(secret){
+  const pre=secret?'v2s:':'v2:';
   // _= обходит cloudflare-кеш kvdb (cache-control: public)
-  const r=await fetch(LB_URL+'?prefix=v2:&values=true&format=json&_='+Date.now());
+  const r=await fetch(LB_URL+'?prefix='+pre+'&values=true&format=json&_='+Date.now());
   const d=await r.json();
   // kvdb отдаёт массив пар [key, value]
-  return d.map(it=>Array.isArray(it)?{n:String(it[0]).replace(/^v2:/,''),s:+it[1]||0}:{n:String(it.key).replace(/^v2:/,''),s:+it.value||0})
+  return d.map(it=>Array.isArray(it)?{n:String(it[0]).slice(pre.length),s:+it[1]||0}:{n:String(it.key).slice(pre.length),s:+it.value||0})
+          .filter(r=>secret||!isSecret(r.n))
           .sort((a,b)=>b.s-a.s);
 }
 let playerName=''; // выбирается один раз за визит
@@ -258,16 +265,16 @@ function applyName(){
   document.body.style.filter=baseFilter();
 }
 async function submitScore(s){
-  const name=playerName||'АНОНИМ';
+  const name=playerName||'АНОНИМ', sec=isSecret(name);
   try{
-    let scores=await fetchScores();
+    let scores=await fetchScores(sec);
     const mine=scores.find(r=>r.n===name);
     if(!mine||s>mine.s){
       // POST с текстовым телом — простой запрос, без CORS preflight
-      await fetch(LB_URL+encodeURIComponent('v2:'+name),{method:'POST',body:String(s)});
+      await fetch(LB_URL+encodeURIComponent((sec?'v2s:':'v2:')+name),{method:'POST',body:String(s)});
       scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
     }
-    return {scores,name};
+    return {scores,name,sec};
   }catch(e){ return null; }
 }
 
@@ -462,7 +469,7 @@ function buildShareCard(s,line){
   }
   // топ-5
   if(lastScores&&lastScores.length){
-    x.font='600 30px '+T; x.fillStyle='#71718a'; x.fillText('ТОП ГРИБОВ',pad,990);
+    const sec=isSecret(me); x.font='600 30px '+T; x.fillStyle=sec?'#ffd84d':'#71718a'; x.fillText(sec?'СЕКРЕТНЫЙ ТОП':'ТОП ГРИБОВ',pad,990);
     lastScores.slice(0,5).forEach((r,i)=>{
       const y=1040+i*44, mine=r.n===me;
       x.font=(mine?'700 ':'500 ')+'32px '+T; x.fillStyle=mine?'#c6ff3d':'#d6d6e4';
@@ -620,11 +627,12 @@ function fillLevels(p){
   const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок. Каждый 10-й уровень играет особый трек.'); p.append(b);
 }
-function renderTop(p,scores,me){
+function renderTop(p,scores,me,sec){
   p.textContent='';
+  if(sec) p.append(el('b','sect','Секретный топ: только тайные ники'));
   if(!scores.length){ p.append(el('div',null,'Пока пусто. Будь первым.')); return; }
-  p.append(el('b',null,'Топ-10 грибов'));
-  const g=el('div','top');
+  if(!sec) p.append(el('b',null,'Топ-10 грибов'));
+  const g=el('div','top'+(sec?' sec':''));
   scores.slice(0,10).forEach((r,i)=>{
     const cls=r.n===me?'me':'';
     g.append(el('div','rk',String(i+1)),el('div',cls,r.n),el('div',cls,String(r.s)));
@@ -634,7 +642,8 @@ function renderTop(p,scores,me){
 function fillTop(p){
   p.textContent='Загрузка…';
   const me=nickEl.value.trim().slice(0,8)||'АНОНИМ';
-  fetchScores().then(sc=>{ renderTop(p,sc,me); checkPool(sc,me); }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
+  const sec=isSecret(me);
+  fetchScores(sec).then(sc=>{ renderTop(p,sc,me,sec); if(!sec) checkPool(sc,me); }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
 }
 // секретный пул треков: открывается, когда ник попал в топ-5 лидерборда
 function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return false; } }
@@ -1095,7 +1104,7 @@ function die(){
       // рекорд на устройстве отстаёт от лидерборда (играл с другого браузера) — подтягиваем
       const mine=res.scores.find(r=>r.n===res.name);
       if(mine&&mine.s>best){ best=mine.s; localStorage.gribBest=best; overBest.textContent=best; }
-      renderTop(overTop,res.scores,res.name);
+      renderTop(overTop,res.scores,res.name,res.sec);
       prepShare(s,line); // пересобрать картинку уже с топом
       if(checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
     });
