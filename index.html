@@ -251,15 +251,16 @@ function tickMusic(){
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
 }
-// живые треки: music/clips.json + music/*.mp3 собирает tools/cut-clips.py, в git они не попадают.
-// нет файлов — играет чиптюн зоны.
+// клипы зон: clips/manifest.json + clips/NN.mp3 — 15-секундные фрагменты без тегов и названий.
+// порядок файлов = порядок зон; нет файлов — играет чиптюн зоны.
 const clipBuf={}; let clipSrc=null, clipGain=null, clipsLoading=false;
 async function loadClips(){
   try{
-    const list=await (await fetch('music/clips.json')).json();
-    for(const c of list){
-      try{ clipBuf[c.zone]=await AC.decodeAudioData(await (await fetch('music/'+c.file)).arrayBuffer()); }catch(e){}
-      if(running&&!player.dead&&!clipSrc&&ZONES[zoneI].name===c.zone) playClip();
+    const list=await (await fetch('clips/manifest.json')).json();
+    for(let i=0;i<list.length;i++){
+      const f=list[i], name=ZONES[i]&&ZONES[i].name; if(!f||!name)continue;
+      try{ clipBuf[name]=await AC.decodeAudioData(await (await fetch('clips/'+f)).arrayBuffer()); }catch(e){}
+      if(running&&!player.dead&&!clipSrc&&ZONES[zoneI].name===name) playClip();
     }
   }catch(e){}
 }

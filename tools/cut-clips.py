@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Cut a short loop from each zone's real track for local play.
+"""Cut a short loop from each zone's real track.
 
-Reads music/sources.json:
-  {"ДРОЗД": {"src": "~/Music/favourite/Kunteynir - Дрозд.mp3", "start": null, "len": 15}, ...}
+Reads music/sources.json (private, gitignored):
+  {"ДРОЗД": {"src": "~/Music/favourite/Kunteynir - Дрозд.mp3", "start": 9, "len": 15}, ...}
 "start": null picks the loudest window of "len" seconds (usually the chorus).
-Writes music/NN.mp3 and music/clips.json, which index.html loads if present.
-music/ is gitignored: the clips are copyrighted and must not be published.
+
+Writes clips/NN.mp3 with every metadata tag stripped, plus clips/manifest.json
+(an ordered list of file names, no titles). index.html loads that manifest.
+The artist/track mapping goes to music/TRACKLIST.md, which stays gitignored:
+it is the only place the real names live.
 Needs ffmpeg.
 """
 import json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUSIC = os.path.join(ROOT, "music")
+CLIPS = os.path.join(ROOT, "clips")
 
 
 def rms_per_second(src):
@@ -35,12 +39,14 @@ def loudest_start(power, length):
 
 def main():
     sources = json.load(open(os.path.join(MUSIC, "sources.json"), encoding="utf8"))
-    clips = []
+    os.makedirs(CLIPS, exist_ok=True)
+    manifest, tracklist = [], ["| # | zone | source | start |", "|---|------|--------|-------|"]
     for i, (zone, cfg) in enumerate(sources.items(), 1):
         src = os.path.expanduser(cfg["src"])
         length = int(cfg.get("len") or 15)
         if not os.path.exists(src):
             print(f"skip {zone}: no file {src}", file=sys.stderr)
+            manifest.append(None)
             continue
         start = cfg.get("start")
         if start is None:
@@ -49,10 +55,14 @@ def main():
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-ss", str(start), "-t", str(length), "-i", src,
              "-af", f"afade=t=in:d=0.25,afade=t=out:st={length - 0.4}:d=0.4",
-             "-ac", "2", "-b:a", "128k", os.path.join(MUSIC, name)], check=True)
-        clips.append({"zone": zone, "file": name, "start": start})
+             "-ac", "2", "-b:a", "128k", "-map", "0:a:0", "-map_metadata", "-1",
+             "-id3v2_version", "0", "-write_id3v1", "0", os.path.join(CLIPS, name)], check=True)
+        manifest.append(name)
+        track = os.path.basename(src)[:-4]
+        tracklist.append(f"| {i} | {zone} | {track} | {start}s |")
         print(f"{zone}: {name} from {start}s, {length}s")
-    json.dump(clips, open(os.path.join(MUSIC, "clips.json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)
+    json.dump(manifest, open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0)
+    open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
 
 
 if __name__ == "__main__":

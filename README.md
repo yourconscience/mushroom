@@ -21,6 +21,10 @@ A tongue-in-cheek role reversal of classic Mario.
 - Mobile-friendly (touch controls)
 - Russian hip-hop quotes as kill banners
 
+## Audio
+
+Each zone plays its own bundled 15-second clip from `clips/`, matched to the zone by position (`clips/manifest.json`). The files carry no titles, artists or tags. `tools/cut-clips.py` cuts them from a private `music/` folder that stays out of git.
+
 ## Credits
 
 Built in half a day with [Claude Fable](https://claude.ai). Single-file, zero dependencies.
