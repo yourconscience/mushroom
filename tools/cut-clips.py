@@ -55,31 +55,33 @@ def cut(src, start, length, out):
 def main():
     data = json.load(open(os.path.join(MUSIC, "sources.json"), encoding="utf8"))
     os.makedirs(CLIPS, exist_ok=True)
-    files, tracklist = [], ["| # | source | start |", "|---|--------|-------|"]
+    files, titles, tracklist = [], [], ["| # | source | start |", "|---|--------|-------|"]
     for i, cfg in enumerate(data.get("pool") or [], 1):
         src = os.path.expanduser(cfg["src"])
         if not os.path.exists(src):
             print(f"skip {src}", file=sys.stderr)
             files.append(None)
+            titles.append(None)
             continue
         name = f"{i:02d}.mp3"
         start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, name))
         files.append(name)
+        titles.append(os.path.basename(src)[:-4])
         tracklist.append(f"| {i} | {os.path.basename(src)[:-4]} | {start}s |")
         print(f"{name} {start}s  {os.path.basename(src)}")
-    special = None
+    special, special_title = None, None
     cfg = data.get("special")
     if cfg:
         src = os.path.expanduser(cfg["src"])
         if os.path.exists(src):
             start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, "special.mp3"))
-            special = "special.mp3"
+            special, special_title = "special.mp3", os.path.basename(src)[:-4]
             tracklist.append(f"| special | {os.path.basename(src)[:-4]} | {start}s |")
             print(f"special {start}s  {os.path.basename(src)}")
         else:
             print(f"skip special: no file {src}", file=sys.stderr)
-    json.dump({"files": files, "special": special},
-              open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0)
+    json.dump({"files": files, "titles": titles, "special": special, "specialTitle": special_title},
+              open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0, ensure_ascii=False)
     open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
 
 

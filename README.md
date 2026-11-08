@@ -23,11 +23,11 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 ## Audio
 
-The game ships 200 unnamed 15-second clips in `clips/` — no titles, artists or tags. Every run shuffles the pool, so each zone gets a different track; every 10th level plays a dedicated `clips/special.mp3` at 1.2x volume. `clips/manifest.json` lists the files. `tools/cut-clips.py` cuts them from a private `music/` folder that stays out of git.
+The game ships 200 15-second clips in `clips/`, with titles in `clips/manifest.json`. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name; every 10th level plays `clips/special.mp3` at 1.2x volume. The start screen lists the whole pool. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
 
 ## Version
 
-Current build: **v7** (shown in the bottom-right corner of the game).
+Current build: **v8** (shown in the bottom-right corner of the game).
 
 ## Credits
 

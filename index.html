@@ -47,6 +47,10 @@
   }
   @keyframes pulse { 50% { box-shadow:0 0 30px rgba(124,252,0,.9), inset 0 0 12px rgba(124,252,0,.3); } }
   #overlay .hint { color:#8888aa; font-size:clamp(11px,3vw,14px); line-height:1.7; }
+  #overlay details { pointer-events:auto; width:min(680px,92vw); border:1px solid #2a2a44; background:rgba(8,8,20,.7); padding:8px 12px; border-radius:4px; }
+  #overlay summary { cursor:pointer; color:#ffe14d; font-size:clamp(12px,3.2vw,15px); letter-spacing:1px; }
+  #poolList { max-height:26vh; overflow:auto; text-align:left; margin-top:8px; font-size:clamp(10px,2.8vw,12px); line-height:1.55; color:#9a9ab8; }
+  #poolList .sp { color:#ff2d78; }
   #overlay .btnrow { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
   #overlay button.alt {
     border-color:#ff2d78; color:#ff2d78; background:#240f1a;
@@ -100,6 +104,10 @@
   <div class="sub">Марио прыгал на грибы.<br>Теперь гриб прыгает на сантехников.<br>Versus 2017 продолжается.</div>
   <button id="btn">ПОЕХАЛИ</button>
   <div class="hint">ТАП — прыжок &nbsp;•&nbsp; ТАП в воздухе — двойной<br>Прыгай НА врагов. Не дай себя пнуть.<br>С клавиатуры: SPACE — прыжок/рестарт, Z — казино.<br><br>Секретные персонажи — введи букву как ник:<br>Z — без бонусов, но казино само крутится каждые 5 сек<br>X — чёрно-белый хардкор: только деньги, все враги сразу<br>V — вечный джетпак, но больше никаких бонусов<br><br>🍄 — станешь большим: переживёшь один удар<br>Ещё: 🦠 споры • 🌀 замедление • 🧲 магнит<br>🎞 нуар: зона в ч/б, бонусы сгорают (большой гриб остаётся)</div>
+  <details id="pool" open>
+    <summary>ПУЛ: <span id="poolCount">…</span> ТРЕКОВ</summary>
+    <div id="poolList"></div>
+  </details>
 </div>
 <script src="zones.js"></script>
 <script src="gfx.js"></script>
@@ -110,7 +118,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v7';
+const VERSION='v8';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -264,12 +272,21 @@ const clipDecoded=new Map(), clipCache={};
 let playlist=[], lastFirst=-1, clipToken=0, clipsLoading=false;
 const CLIP_GAIN=0.7, SPECIAL_GAIN=0.84;
 
+function renderPool(){
+  const box=document.getElementById('poolList'); if(!box||!clipMeta)return;
+  const t=clipMeta.titles||[];
+  box.textContent='';
+  t.forEach((n,i)=>{ if(!n)return; const d=document.createElement('div'); d.textContent=(i+1)+'. '+n; box.appendChild(d); });
+  if(clipMeta.specialTitle){ const d=document.createElement('div'); d.className='sp'; d.textContent='★ '+clipMeta.specialTitle; box.appendChild(d); }
+  const c=document.getElementById('poolCount'); if(c)c.textContent=t.length;
+}
 async function loadClips(){
   clipsLoading=true;
   try{
     clipMeta=await (await fetch('clips/manifest.json')).json();
     const files=(clipMeta.files||[]).filter(Boolean);
     clipBytes=new Array(files.length);
+    renderPool();
     shufflePlaylist();
     const ready=()=>running&&!player.dead&&!clipSrc;
     let next=0;
@@ -310,6 +327,12 @@ function pickFor(zn){
   if(zn%10===9&&(specialBytes||clipCache.special))return 'special';
   if(!playlist.length)return -1;
   return playlist[zn%playlist.length];
+}
+function trackTitle(zn){
+  const p=pickFor(zn);
+  if(p==='special')return (clipMeta&&clipMeta.specialTitle)||'SPECIAL';
+  if(p<0||!clipMeta||!clipMeta.titles)return '';
+  return clipMeta.titles[p]||'';
 }
 async function playZone(zn){
   if(!AC)return;
@@ -671,7 +694,8 @@ function loop(ts){
       speed+=10;
       const Z=ZONES[zoneI];
       const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
-      showQuote('ЗОНА: '+Z.name+mark, true);
+      const tt=trackTitle(zn);
+      showQuote('ЗОНА '+(zn+1)+': '+(tt||Z.name)+mark, true);
       playZone(zn);
     }
   }
