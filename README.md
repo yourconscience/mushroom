@@ -34,7 +34,7 @@ The game ships 200 15-second clips in `clips/`. Their titles are kept in `clips/
 
 ## Version
 
-Current build: **v14** (shown in the bottom-right corner of the game).
+Current build: **v15** (shown in the bottom-right corner of the game).
 
 ## Credits
 

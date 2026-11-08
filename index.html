@@ -19,7 +19,7 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
   html,body { height:100%; overflow:hidden; background:var(--dark); font-family:var(--text); color:var(--ink); }
   #wrap { position:fixed; inset:0; }
-  canvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
+  canvas { position:fixed; inset:0; display:block; width:100%; height:100%; image-rendering:pixelated; }
   button { font:inherit; color:inherit; cursor:pointer; border:0; background:none; }
   #ui { position:fixed; inset:0; pointer-events:none; z-index:4; }
   .quote {
@@ -150,12 +150,23 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v14';
+const VERSION='v15';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
-function resize(){ DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
-addEventListener('resize',resize); resize();
+// Размер берём с самого холста на экране, а не из innerWidth/innerHeight: на iPhone (Brave, Safari)
+// 100vh и innerHeight расходятся, а после клавиатуры (ввод ника) innerHeight остаётся устаревшим —
+// картинка растягивалась. ResizeObserver ловит любые изменения, даже без события resize.
+function resize(){
+  const r=cv.getBoundingClientRect(), w=Math.round(r.width)||innerWidth, h=Math.round(r.height)||innerHeight;
+  DPR=Math.min(devicePixelRatio||1,2);
+  if(w===W&&h===H&&cv.width===Math.round(w*DPR))return;
+  W=w; H=h; cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,250));
+if(window.visualViewport) visualViewport.addEventListener('resize',resize);
+if(window.ResizeObserver) new ResizeObserver(resize).observe(cv);
+resize();
 
 // --- Цитаты (отсылки) ---
 const QUOTES = [
@@ -598,8 +609,11 @@ addEventListener('keydown',e=>{
 });
 
 function startGame(){
-  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } // звук включаем ещё в жесте
   if(AC&&AC.state==='suspended')AC.resume();
+  // клавиатура после ввода ника: сначала убираем её и ждём, пока экран вернёт полный размер
+  if(document.activeElement===nickEl){ nickEl.blur(); setTimeout(startGame,350); return; }
+  resize();
   applyName();
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
@@ -610,7 +624,7 @@ function startGame(){
   if(AC)playZone(zoneN);
 }
 btn.addEventListener('click',startGame);
-nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); nickEl.blur(); startGame(); } });
+nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); startGame(); } });
 
 // --- Меню: музыка, вкладки ---
 const menuEl=document.getElementById('menu'), overEl=document.getElementById('over'), musicBtn=document.getElementById('musicBtn');
