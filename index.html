@@ -243,12 +243,37 @@ function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>bee
 let nextBeat=0, beatI=0;
 function tickMusic(){
   if(!AC||!running||player.dead)return;
+  if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:1; return; } // играет живой трек
   const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:1); // восьмые
   if(AC.currentTime>=nextBeat){
     const f=z.loop[beatI%z.loop.length];
     if(f)beep(f,spb*0.9,z.wave,.045);
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
+}
+// живые треки: music/clips.json + music/*.mp3 собирает tools/cut-clips.py, в git они не попадают.
+// нет файлов — играет чиптюн зоны.
+const clipBuf={}; let clipSrc=null, clipGain=null, clipsLoading=false;
+async function loadClips(){
+  try{
+    const list=await (await fetch('music/clips.json')).json();
+    for(const c of list){
+      try{ clipBuf[c.zone]=await AC.decodeAudioData(await (await fetch('music/'+c.file)).arrayBuffer()); }catch(e){}
+      if(running&&!player.dead&&!clipSrc&&ZONES[zoneI].name===c.zone) playClip();
+    }
+  }catch(e){}
+}
+function stopClip(){
+  if(!clipSrc)return;
+  const s=clipSrc; clipGain.gain.setTargetAtTime(0,AC.currentTime,0.15);
+  setTimeout(()=>{ try{ s.stop(); }catch(e){} },700);
+  clipSrc=null;
+}
+function playClip(){
+  stopClip();
+  const buf=AC&&clipBuf[ZONES[zoneI].name]; if(!buf)return;
+  clipGain=AC.createGain(); clipGain.gain.value=0; clipGain.gain.setTargetAtTime(0.7,AC.currentTime,0.2); clipGain.connect(AC.destination);
+  clipSrc=AC.createBufferSource(); clipSrc.buffer=buf; clipSrc.loop=true; clipSrc.connect(clipGain); clipSrc.start();
 }
 
 // --- Спецэффекты ---
@@ -396,7 +421,9 @@ addEventListener('keydown',e=>{
 btn.addEventListener('click',()=>{
   if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
   if(!playerName) pickName();
+  if(AC&&!clipsLoading){ clipsLoading=true; loadClips(); }
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
+  if(AC)playClip();
 });
 
 // --- Слот-машина ---
@@ -675,7 +702,7 @@ function loop(ts){
       const Z=ZONES[zoneI];
       const mark=lap?' '+(['II','III','IV','V','VI'][lap-1]||'∞'):'';
       showQuote('ЗОНА: '+Z.name+mark+' • '+Z.sub, true);
-      sJingle(Z);
+      if(clipBuf[Z.name])playClip(); else { if(AC)stopClip(); sJingle(Z); }
     }
   }
   tickMusic();
@@ -889,7 +916,7 @@ function hit(){
 }
 function die(){
   if(player.dead)return;
-  player.dead=true; player.vy=-500; sDie(); shake(14,.5);
+  player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{
     running=false; hud.classList.add('hidden'); slotBtn.classList.add('hidden');
@@ -909,7 +936,7 @@ function die(){
     overlay.classList.remove('hidden');
     confetti(newRecord?120:45);
     if(newRecord){ sJingle(ZONES[0]); }
-    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); };
+    document.getElementById('btn2').onclick=()=>{ reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden'); if(AC)playClip(); };
     document.getElementById('btnShare').onclick=()=>shareScore(s,line);
     submitScore(s).then(res=>{
       const el=document.getElementById('lbx'); if(!el)return;
