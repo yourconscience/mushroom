@@ -15,115 +15,60 @@ function miniAt(z){
 }
 Object.assign(BOSS_SIZE,{oxy:[28,88],shock:[28,88],gnoy:[28,88],dancer:[28,96]});
 Object.assign(BOSS_TIP,{
-  oxy:'НИЗКОЕ СЛОВО — ПРЫГАЙ, ВЫСОКОЕ — СТОЙ ⭐',
-  shock:'РАЗРЯДЫ НА ЗЕМЛЕ ПЕРЕПРЫГИВАЙ, ПОТОМ БЕЙ ⭐',
-  gnoy:'ЛУЖИ ПЕРЕПРЫГИВАЙ, БЕЖИТ — ПРЫГАЙ НА ГОЛОВУ ⭐',
-  dancer:'ДИСКИ И ВОЛНУ ПЕРЕЖДИ, ЛУННАЯ ПОХОДКА — БЕЙ ⭐',
+  oxy:'НИЗКОЕ СЛОВО — ПРЫГАЙ, ВЫСОКОЕ — СТОЙ. ПОШЁЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
+  shock:'РАЗРЯДЫ ПЕРЕПРЫГИВАЙ. ПОШЁЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
+  gnoy:'ЛУЖИ ПЕРЕПРЫГИВАЙ. ПОБЕЖАЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
+  dancer:'ДИСКИ И ВОЛНУ ПЕРЕЖДИ. ПОЕХАЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
 });
 const MINI_PHASE2={
-  oxy:'СДУЛСЯ И ЧИТАЕТ ПАРАМИ: ДВОЙНОЙ ПРЫЖОК 📖',
+  oxy:'СДУЛСЯ И ЧИТАЕТ ВРАЗНОБОЙ 📖',
   shock:'МАЛЕНЬКИЙ, НО ПОЛ ПОД ТОКОМ: ВСПЫШКА — В ПРЫЖОК ⚡',
-  gnoy:'СДУЛСЯ И ПУСКАЕТ ГАЗЫ: ПРЫГАЙ РАНЬШЕ 💨',
-  dancer:'МЕНЬШЕ И БЫСТРЕЕ: ВОЛНЫ В РИТМ 🕺',
+  gnoy:'СДУЛСЯ И ПУСКАЕТ ГАЗЫ 💨',
+  dancer:'МЕНЬШЕ, НО ЗЛЕЕ: ДИСКИ И ВОЛНЫ 🕺',
 };
 const MINI_WORDS=['ФЛОУ','ПАНЧ','РИФМА','БИФ','ДИСС','ХАЙП','СМЫСЛ','ВЕРСУС'];
-function miniEnter(b,dt,gy,next){ b.sx+=(W*.72-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt; if(b.y>=gy){ b.y=gy; b.vy=0; shake(10,.25); b.st=next; b.t=0; b.n=0; } }
-function miniHurt(b,dt,gy){ b.sx+=b.vsx*dt; b.vsx*=Math.pow(.08,dt); b.vy+=G*dt; b.y+=b.vy*dt; if(b.y>=gy){ b.y=gy; b.vy=0; } if(b.t>.8){ b.st='rise'; b.t=0; } }
-function miniRise(b,dt,gy,next){ b.y=gy; b.sx+=(W*.72-b.sx)*Math.min(1,dt*3); if(b.t>.7){ b.st=next; b.t=0; b.n=0; } }
-function miniRun(b,dt,psx,v){ b.sx-=v*dt; if(b.sx<psx-110){ b.st='rise'; b.t=0; } }
-const miniAnchor=(b,dt)=>{ b.sx+=(Math.min(W*.72,player.x-camX+560)-b.sx)*Math.min(1,dt*4); };
-function miniWord(b,low){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-300,vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
-// ОКСИ читает: слова на двух высотах. После тычка низкие слова идут парами, нужен двойной прыжок
-function updOxy(b,dt,psx,gy,rage){
+// Приёмы: от каждого хватает одного прыжка, паузы между ними длиннее прыжка (0.73 с)
+function miniWord(b,low){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(240,340),vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
+function miniSpark(b){ b.obs.push({x:camX+W+rand(20,120),y:b.gy-14,vx:0,vy:0,r:14,kind:'spark'}); shake(4,.1); beep(1800,.06,'sawtooth',.06); }
+function miniPulse(b){ b.st='pulse'; b.t=0; }
+function miniGoo(b){ b.obs.push({x:b.x,y:b.y-b.hh*.8,vx:rand(-50,50),vy:rand(-470,-360),r:13,kind:'goo',grav:1}); beep(240,.08,'sawtooth',.08); }
+function miniGas(b){ b.obs.push({x:b.x-b.hw,y:b.gy-36,vx:speed-rand(220,300),vy:0,r:28,kind:'gas'}); beep(160,.2,'sawtooth',.08); }
+function miniDisc(b){ const low=chance(.55); b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(260,340),vy:0,r:16,kind:low?'ringL':'ringH'}); beep(low?660:990,.08,'square',.08); }
+function miniWave(b){ b.waves.push({sx:b.sx-b.hw,d:-1}); b.rot=6; shake(6,.15); beep(90,.2,'square',.14); }
+const MINI_MOVES={ // [до тычка, после тычка]
+  oxy:   [[b=>miniWord(b,true),b=>miniWord(b,false)],[b=>miniWord(b,true),b=>miniWord(b,true),b=>miniWord(b,false)]],
+  shock: [[miniSpark],[miniSpark,miniSpark,miniPulse]],
+  gnoy:  [[miniGoo],[miniGoo,miniGas,miniGas]],
+  dancer:[[miniDisc,miniDisc,miniWave],[miniDisc,miniWave,miniWave]],
+};
+const miniAnchor=(b,dt)=>{ b.sx+=(Math.min(W*(b.ax||.72),player.x-camX+560)-b.sx)*Math.min(1,dt*4); };
+function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=chance(.25)?0:randi(1,2); b.gap=rand(.5,1); b.ax=rand(.66,.78); } // иногда сразу идёт на гриб
+// Мини-босс телом не бьёт: упал сверху — тычок, не попал — пробежит насквозь, уйдёт за экран и вернётся справа.
+function updMini(b,dt,psx,gy,rage){
+  if(b.rot>0) b.rot=Math.max(0,b.rot-dt*14);
   switch(b.st){
-    case 'enter': miniEnter(b,dt,gy,'read'); break;
-    case 'read':
-      b.y=gy; miniAnchor(b,dt);
-      if(b.t>.95){ b.t=0; b.n++; miniWord(b,b.n===1||Math.random()<.55); if(b.n>=3){ b.st='wait'; b.t=0; } }
+    case 'enter':
+      b.sx+=(W*.72-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt;
+      if(b.y>=gy){ b.y=gy; b.vy=0; shake(10,.25); miniRound(b); }
       break;
-    case 'fast':
-      b.y=gy; miniAnchor(b,dt);
-      if(b.t>(b.n%2?.55:1.2)){ b.t=0; b.n++; miniWord(b,true); if(b.n>=4){ b.st='wait'; b.t=0; } } // пары: одним прыжком не перекрыть
+    case 'act':
+      miniAnchor(b,dt); b.y=b.kind==='dancer'?gy-Math.abs(Math.sin(b.t*6))*20:gy;
+      if(b.n>=b.cnt){ b.y=gy; b.st='wait'; b.t=0; b.rdy=rand(.3,.8); break; }
+      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.05,1.6); const pool=MINI_MOVES[b.kind][rage?1:0]; pool[(Math.random()*pool.length)|0](b); }
       break;
-    case 'wait': b.y=gy; if(b.t>.4&&!obsAhead()){ b.st='run'; b.t=0; } break;
-    case 'run': b.y=gy; miniRun(b,dt,psx,rage?320:250); break;
-    case 'hurt': miniHurt(b,dt,gy); break;
-    case 'rise': miniRise(b,dt,gy,rage?'fast':'read'); break;
+    case 'pulse': // весь пол под током: на вспышке надо быть в воздухе
+      b.y=gy; miniAnchor(b,dt); b.live=b.t>.85&&b.t<1.1;
+      if(b.t>.97&&b.t<1.1&&player.vy===0) hit();
+      if(b.t>1.35){ b.live=false; b.st='act'; b.t=0; b.gap=rand(.9,1.4); shake(5,.12); beep(1500,.08,'sawtooth',.08); }
+      break;
+    case 'wait': b.y=gy; if(b.t>b.rdy&&!obsAhead()&&!b.waves.length){ b.st='run'; b.t=0; rushStart(b,205,psx); b.fk=chance(.35); } break;
+    case 'run': b.y=gy; bossRush(b,dt); if(b.sx<psx-110){ b.st='rise'; b.t=0; b.sx=W+80; } break;
+    case 'hurt': b.rot=0; b.sx+=b.vsx*dt; b.vsx*=Math.pow(.08,dt); b.vy+=G*dt; b.y+=b.vy*dt; if(b.y>=gy){ b.y=gy; b.vy=0; } if(b.t>.8){ b.st='rise'; b.t=0; } break;
+    case 'rise': b.y=gy; miniAnchor(b,dt); if(b.t>.7) miniRound(b); break;
   }
-  b.vuln=b.st==='run'; b.solid=b.st!=='enter';
+  b.vuln=b.st==='run'; b.solid=b.vuln;
 }
-// ШОК: разряды лежат на земле. После тычка весь пол бьёт током по вспышке
-function updShock(b,dt,psx,gy,rage){
-  switch(b.st){
-    case 'enter': miniEnter(b,dt,gy,'zap'); break;
-    case 'zap':
-      b.y=gy; miniAnchor(b,dt);
-      if(b.t>.9){ b.t=0; b.n++; b.obs.push({x:camX+W+40,y:gy-14,vx:0,vy:0,r:14,kind:'spark'}); shake(4,.1); beep(1800,.06,'sawtooth',.06);
-        if(b.n>=3){ b.st='wait'; b.t=0; } }
-      break;
-    case 'pulse':
-      b.y=gy; miniAnchor(b,dt); b.live=b.t>.7&&b.t<.95;
-      if(b.t>.82&&b.t<.95&&player.vy===0) hit(); // сама вспышка видна с .7, первые кадры прощаем
-      if(b.t>1.2){ b.t=0; b.n++; b.live=false; shake(5,.12); beep(1500,.08,'sawtooth',.08); if(b.n>=3){ b.st='wait'; b.t=0; } }
-      break;
-    case 'wait': b.y=gy; if(b.t>.4&&!obsAhead()){ b.st='run'; b.t=0; } break;
-    case 'run': b.y=gy; miniRun(b,dt,psx,rage?330:270); break;
-    case 'hurt': miniHurt(b,dt,gy); break;
-    case 'rise': miniRise(b,dt,gy,rage?'pulse':'zap'); break;
-  }
-  b.vuln=b.st==='run'; b.solid=b.st!=='enter';
-}
-// ГНОЙНЫЙ: лужи лежат на земле, бежит с финтом. После тычка пускает высокие облака газа
-function updGnoy(b,dt,psx,gy,rage){
-  switch(b.st){
-    case 'enter': miniEnter(b,dt,gy,'lob'); break;
-    case 'lob':
-      b.y=gy; miniAnchor(b,dt);
-      if(b.t>.9){ b.t=0; b.n++; b.obs.push({x:b.x,y:b.y-b.hh*.8,vx:0,vy:-420,r:13,kind:'goo',grav:1}); beep(240,.08,'sawtooth',.08);
-        if(b.n>=3){ b.st='wait'; b.t=0; } }
-      break;
-    case 'gas':
-      b.y=gy; miniAnchor(b,dt);
-      if(b.t>1.15){ b.t=0; b.n++; b.obs.push({x:b.x-b.hw,y:gy-44,vx:speed-260,vy:0,r:38,kind:'gas'}); beep(160,.2,'sawtooth',.08);
-        if(b.n>=3){ b.st='wait'; b.t=0; } }
-      break;
-    case 'wait': b.y=gy; if(b.t>.4&&!obsAhead()){ b.st='run'; b.t=0; b.fdone=rage<1; } break;
-    case 'run':
-      b.y=gy;
-      if(!b.fdone&&b.sx<psx+320){ b.st='feint'; b.t=0; b.fdone=true; break; }
-      miniRun(b,dt,psx,rage?340:280);
-      break;
-    case 'feint': b.y=gy; if(b.t>.5){ b.st='run'; b.t=0; } break;
-    case 'hurt': miniHurt(b,dt,gy); break;
-    case 'rise': miniRise(b,dt,gy,rage?'gas':'lob'); break;
-  }
-  b.vuln=b.st==='run'||b.st==='feint'; b.solid=b.st!=='enter';
-}
-// ТАНЦОР: диски на двух высотах и волна. После тычка только волны в ритме
-function updDancer(b,dt,psx,gy,rage){
-  switch(b.st){
-    case 'enter': miniEnter(b,dt,gy,'dance'); break;
-    case 'dance':
-      miniAnchor(b,dt); b.y=gy-Math.abs(Math.sin(b.t*6))*26;
-      if((b.lt=(b.lt||0)+dt)>.95){ b.lt=0; b.n++; const low=b.n%2===1;
-        b.obs.push({x:b.x-b.hw,y:low?gy-20:gy-100,vx:speed-320,vy:0,r:16,kind:low?'ringL':'ringH'}); beep(low?660:990,.08,'square',.08);
-        if(b.n>=3){ b.st='spin'; b.t=0; b.y=gy; } }
-      break;
-    case 'spin': b.y=gy; b.rot=b.t*18;
-      if(b.t>.7){ b.rot=0; b.waves.push({sx:b.sx-b.hw,d:-1},{sx:b.sx+b.hw,d:1}); shake(8,.2); beep(90,.2,'square',.14); b.st='wait'; b.t=0; }
-      break;
-    case 'groove':
-      miniAnchor(b,dt); b.y=gy-Math.abs(Math.sin(b.t*9))*14;
-      if(b.t>.95){ b.t=0; b.n++; b.waves.push({sx:b.sx-b.hw,d:-1}); shake(6,.15); beep(90,.2,'square',.14); if(b.n>=3){ b.y=gy; b.st='wait'; b.t=0; } }
-      break;
-    case 'wait': b.y=gy; if(b.t>.5&&!obsAhead()&&!b.waves.length){ b.st='moon'; b.t=0; } break;
-    case 'moon': b.y=gy; miniRun(b,dt,psx,rage?320:240); break;
-    case 'hurt': b.rot=0; miniHurt(b,dt,gy); break;
-    case 'rise': miniRise(b,dt,gy,rage?'groove':'dance'); break;
-  }
-  b.vuln=b.st==='moon'; b.solid=b.st!=='enter';
-}
-Object.assign(BOSS_UPD,{oxy:updOxy,shock:updShock,gnoy:updGnoy,dancer:updDancer});
+Object.assign(BOSS_UPD,{oxy:updMini,shock:updMini,gnoy:updMini,dancer:updMini});
 // рисовка: общий человечек, поверх него приметы каждого
 function miniDude(body,skin,label,t){
   const bob=Math.sin(t*9)*1.5;
