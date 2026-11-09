@@ -5,30 +5,33 @@ const MINI_KINDS=[
   {name:'ШОК',    kind:'shock', hp:2,mini:1,line:'ШОК-КОНТЕНТ ⚡'},
   {name:'ГНОЙНЫЙ',kind:'gnoy',  hp:2,mini:1,line:'ГНОЙНЫЙ НА СВЯЗИ 🟢'},
   {name:'ТАНЦОР', kind:'dancer',hp:2,mini:1,line:'ТАНЦПОЛ ОТКРЫТ 🕺'},
+  {name:'РИКИ Ф', kind:'ricky', hp:2,mini:1,line:'РИКИ Ф НА БИТЕ 🎧'},
 ];
 let miniPlan={}, miniBag=[], miniR=null;
 function miniAt(z){
   if(z in miniPlan) return miniPlan[z];
   const on=z%10!==9&&(charMode==='BATTLE'?z%4===3:z%10===4);
-  if(on&&!miniBag.length){ miniBag=[0,1,2,3]; const R=miniR||(miniR=rngFor('mini')); for(let j=3;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
+  if(on&&!miniBag.length){ miniBag=MINI_KINDS.map((_,i)=>i); const R=miniR||(miniR=rngFor('mini')); for(let j=miniBag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
   return miniPlan[z]=on?MINI_KINDS[miniBag.pop()]:null;
 }
-Object.assign(BOSS_SIZE,{oxy:[28,88],shock:[28,88],gnoy:[28,88],dancer:[28,96]});
+Object.assign(BOSS_SIZE,{oxy:[28,88],shock:[28,88],gnoy:[28,88],dancer:[28,96],ricky:[28,88]});
 Object.assign(BOSS_TIP,{
   oxy:'НИЗКОЕ СЛОВО — ПРЫГАЙ, ВЫСОКОЕ — СТОЙ. ПОШЁЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
   shock:'РАЗРЯДЫ ПЕРЕПРЫГИВАЙ. ПОШЁЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
   gnoy:'ЛУЖИ ПЕРЕПРЫГИВАЙ. ПОБЕЖАЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
   dancer:'ДИСКИ И ВОЛНУ ПЕРЕЖДИ. ПОЕХАЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
+  ricky:'ФФФ НИЗКО — ПРЫГАЙ, ВЫСОКО — СТОЙ. ПОШЁЛ НА ГРИБ — ПРЫГАЙ НА ГОЛОВУ ⭐',
 });
 const MINI_PHASE2={
   oxy:'СДУЛСЯ И ЧИТАЕТ ВРАЗНОБОЙ 📖',
   shock:'МАЛЕНЬКИЙ, НО ПОЛ ПОД ТОКОМ: ВСПЫШКА — В ПРЫЖОК ⚡',
   gnoy:'СДУЛСЯ И ПУСКАЕТ ГАЗЫ 💨',
   dancer:'МЕНЬШЕ, НО ЗЛЕЕ: ДИСКИ И ВОЛНЫ 🕺',
+  ricky:'СДУЛСЯ И КАЧАЕТ ПОЛ: ВОЛНЫ 🎧',
 };
 const MINI_WORDS=['ФЛОУ','ПАНЧ','РИФМА','БИФ','ДИСС','ХАЙП','СМЫСЛ','ВЕРСУС'];
 // Приёмы: от каждого хватает одного прыжка, паузы между ними длиннее прыжка (0.73 с)
-function miniWord(b,low){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(240,340),vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
+function miniWord(b,low,txt){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(240,340),vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:txt||MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
 function miniSpark(b){ b.obs.push({x:camX+W+rand(20,120),y:b.gy-14,vx:0,vy:0,r:14,kind:'spark'}); shake(4,.1); beep(1800,.06,'sawtooth',.06); }
 function miniPulse(b){ b.st='pulse'; b.t=0; }
 function miniGoo(b){ b.obs.push({x:b.x,y:b.y-b.hh*.8,vx:rand(-50,50),vy:rand(-470,-360),r:13,kind:'goo',grav:1}); beep(240,.08,'sawtooth',.08); }
@@ -40,6 +43,7 @@ const MINI_MOVES={ // [до тычка, после тычка]
   shock: [[miniSpark],[miniSpark,miniSpark,miniPulse]],
   gnoy:  [[miniGoo],[miniGoo,miniGas,miniGas]],
   dancer:[[miniDisc,miniDisc,miniWave],[miniDisc,miniWave,miniWave]],
+  ricky: [[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ')],[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ'),miniWave]],
 };
 const miniAnchor=(b,dt)=>{ b.sx+=(Math.min(W*(b.ax||.72),player.x-camX+560)-b.sx)*Math.min(1,dt*4); };
 function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=chance(.25)?0:randi(1,2); b.gap=rand(.5,1); b.ax=rand(.66,.78); } // иногда сразу идёт на гриб
@@ -68,7 +72,7 @@ function updMini(b,dt,psx,gy,rage){
   }
   b.vuln=b.st==='run'; b.solid=b.vuln;
 }
-Object.assign(BOSS_UPD,{oxy:updMini,shock:updMini,gnoy:updMini,dancer:updMini});
+Object.assign(BOSS_UPD,{oxy:updMini,shock:updMini,gnoy:updMini,dancer:updMini,ricky:updMini});
 // рисовка: общий человечек, поверх него приметы каждого
 function miniDude(body,skin,label,t){
   const bob=Math.sin(t*9)*1.5;
@@ -104,7 +108,13 @@ function drawDancer(b,t){
   ctx.fillStyle='#d0d6e0'; ctx.beginPath(); ctx.arc(0,-124,10,0,7); ctx.fill();          // диско-шар
   ctx.fillStyle='hsl('+((t*200)%360|0)+',90%,65%)'; for(let i=0;i<4;i++) ctx.fillRect(Math.cos(t*4+i*1.57)*7-1.5,-124+Math.sin(t*4+i*1.57)*7-1.5,3,3);
 }
-Object.assign(BOSS_DRAW,{oxy:drawOxy,shock:drawShock,gnoy:drawGnoy,dancer:drawDancer});
+function drawRicky(b,t){
+  const y=miniDude('#2b2f8f','#e8c3a0','РИКИ Ф',t);
+  ctx.strokeStyle='#111'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(0,-78+y,20,Math.PI,0); ctx.stroke();  // наушники
+  ob(-24,-82+y,8,16,'#ffd84d'); ob(16,-82+y,8,16,'#ffd84d');
+  ctx.strokeStyle='#ffd84d'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(0,-58+y,13,.25,Math.PI-.25); ctx.stroke();  // цепь
+}
+Object.assign(BOSS_DRAW,{oxy:drawOxy,shock:drawShock,gnoy:drawGnoy,dancer:drawDancer,ricky:drawRicky});
 function drawMiniObs(o,x,t){
   if(o.kind==='spark'){ ctx.strokeStyle='#ffe14d'; ctx.lineWidth=3; const j=Math.sin(t*40+o.x)*4; ctx.beginPath(); ctx.moveTo(x-12,o.y+14); ctx.lineTo(x-3+j,o.y-4); ctx.lineTo(x+2-j,o.y+6); ctx.lineTo(x+12,o.y-14); ctx.stroke(); ctx.fillStyle='rgba(122,215,255,.35)'; ctx.beginPath(); ctx.arc(x,o.y,o.r+4,0,7); ctx.fill(); return; }
   if(o.kind==='gas'){ ctx.globalAlpha=.75; ctx.fillStyle='#9fd64a'; for(const [dx,dy,r] of [[-18,6,22],[14,8,24],[0,-14,28]]){ ctx.beginPath(); ctx.arc(x+dx,o.y+dy+Math.sin(t*5+dx)*3,r,0,7); ctx.fill(); } ctx.globalAlpha=1; return; }

@@ -22,7 +22,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when the mound reaches you, then stomp the real head, not the thorny one
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
-- Mini-bosses: every 5th level (every 4th in БАТТЛ) brings ОКСИ, ШОК, ГНОЙНЫЙ or ТАНЦОР; 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
+- Mini-bosses: every 5th level (every 4th in БАТТЛ) brings ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
 - Z key -- spin the slot machine
 
 ## Features
