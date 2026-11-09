@@ -13,14 +13,15 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
+- The first ten levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9, and hoppers and wrench throwers only appear after level 10
 - Bosses: every 10th level brings one of seven at random (all seven before any repeats, repeats get numbered II, III). The track loops until the boss goes down; hit a boss from above only when gold stars are over its head
   - ГЛАВНЫЙ САНТЕХНИК: wrenches in bursts, leap and shockwave on rage, then a charge; 5 stomps
   - ГОЛУБИНЫЙ КОРОЛЬ: eggs, then a dive; stomp while the beak is stuck; 5 stomps
   - ДУТАЯ ФИГУРА: low bubbles to jump, high ones to duck, then it sags down and rolls; 5 stomps
   - СТЕКЛЯННЫЙ ПЕТУХ: shards in pairs and triples, feints on rage; 6 stomps
   - ПОДЗЕМНЫЙ ЧЕРВЬ: burrows and surfaces next to you, chasing underground; stomp him only while he is up and crawling; 5 stomps
-  - ЛЕТАЮЩАЯ ТАРЕЛКА: fans of discs, then a telegraphed beam from above; stomp while it vents; 5 stomps
-  - ЦАРЬ ГРИБОВ: jumps and sends shockwaves plus falling spores, teleports, calls two walkers on rage; 6 stomps
+  - ЛЕТАЮЩАЯ ТАРЕЛКА: fans of discs, then a telegraphed beam that burns the ground (be in the air); stomp when it lands low and crawls at you; 5 stomps
+  - ЦАРЬ ГРИБОВ: jumps and sends shockwaves plus falling spores, teleports, calls two walkers on rage; stomp when he squats and crawls after a jump; 6 stomps
 - Mini-bosses: from level 12 a level has a 30% chance of ОКСИ, ШОК, ГНОЙНЫЙ or ТАНЦОР; 3 stomps each, same gold-star rule
 - Z key -- spin the slot machine
 
@@ -55,7 +56,7 @@ The API is public HTTPS on the server's own address, not a tailnet name: a brows
 
 ## Version
 
-Current build: **v29** (shown in the bottom-right corner of the game).
+Current build: **v30** (shown in the bottom-right corner of the game).
 
 ## Credits
 

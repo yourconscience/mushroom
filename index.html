@@ -131,6 +131,7 @@
       <button class="chip" data-tab="top" aria-pressed="false">Топ</button>
       <button class="chip hidden" id="poolChip" data-tab="pool" aria-pressed="false">🎧 Треки <span id="poolCount">…</span></button>
       <button class="chip" data-tab="prog" aria-pressed="false">Прогресс <span id="progCount"></span></button>
+      <button class="chip hidden" id="bossChip" data-tab="bosses" aria-pressed="false">👹 Боссы <span id="bossCount"></span></button>
       <button class="chip hidden" id="secChip" data-tab="secrets" aria-pressed="false">🔓 Секреты</button>
     </div>
     <div class="panel hidden" id="tab-bonus"></div>
@@ -138,6 +139,7 @@
     <div class="panel hidden" id="tab-top"></div>
     <div class="panel hidden" id="tab-pool"><b>Секретный пул: открыт за топ-5</b><div id="poolList"></div></div>
     <div class="panel hidden" id="tab-prog"></div>
+    <div class="panel hidden" id="tab-bosses"></div>
     <div class="panel hidden" id="tab-secrets"></div>
     <p class="hint">Тап или пробел: прыжок, ещё раз в воздухе: двойной. Прыгай на врагов сверху.</p>
   </div>
@@ -162,7 +164,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), btn = document.getElementById('btn');
 const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), fxEl = document.getElementById('fx');
 const ui = document.getElementById('ui');
-const VERSION='v29';
+const VERSION='v30';
 document.getElementById('ver').textContent=VERSION;
 
 let W=0,H=0,DPR=1;
@@ -591,7 +593,7 @@ const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
 // пока босс жив (клип просто крутится по кругу). Босс на каждом 10-м уровне (индексы 9, 19, 29...):
-// случайный из четырёх, каждые 4 босса — все разные, повторы получают номер (II, III...).
+// случайный из семи, каждые 7 боссов — все разные, повторы получают номер (II, III...).
 const BOSS_KINDS=[
   {name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:5},
   {name:'ГОЛУБИНЫЙ КОРОЛЬ', kind:'pigeon', hp:5},
@@ -606,21 +608,21 @@ let bossOrder=[];
 function bossAt(z){
   if(z%10!==9)return null;
   const i=(z-9)/10;
-  while(bossOrder.length<=i){ // мешок из четырёх боссов, без повтора на стыке мешков
+  while(bossOrder.length<=i){ // мешок из всех боссов, без повтора на стыке мешков
     const bag=[0,1,2,3,4,5,6];
-    for(let j=3;j>0;j--){ const r=(Math.random()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
+    for(let j=bag.length-1;j>0;j--){ const r=(Math.random()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
     if(bag[0]===bossOrder[bossOrder.length-1]) bag.push(bag.shift());
     bossOrder.push(...bag);
   }
   const k=bossOrder[i], d=BOSS_KINDS[k], c=bossOrder.slice(0,i).filter(x=>x===k).length;
   return c?{...d,name:d.name+' '+(ROMAN[c]||c+1)}:d;
 }
-let boss=null, arena=null, bossDone={};
+let boss=null, arena=null, bossDone={}, bigGiven={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={}; bossOrder=[]; miniPlan={}; miniBag=[];
+  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[];
   if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
@@ -645,10 +647,15 @@ function addPlat(afterX){
   y=Math.max(H*0.35,Math.min(H*0.82,y));
   const p={x:afterX+gap,y,w};
   plats.push(p);
+  // начало 3-й, 6-й и 9-й сцены: гриб всегда и без врага рядом
+  if((pz===2||pz===5||pz===8)&&!bigGiven[pz]&&!charMode){
+    bigGiven[pz]=1; pickups.push({x:p.x+w*0.5,y:p.y-52,kind:'big',t:0});
+    return p.x+w;
+  }
   // враг
   if(Math.random()<0.45+lap*0.1+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
-    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[zoneI].enemies;
+    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[zoneI].enemies.filter(t=>pz>=10||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 10-го уровня
     const type=types[(Math.random()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y,cd:0.15+Math.random()*0.3});
   }
@@ -751,7 +758,7 @@ function fillBonus(p){
 function fillLevels(p){
   p.textContent='';
   const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
-  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, после круга всё злее. Случайный босс на каждом 10-м уровне.'); p.append(a);
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. В начале 3-го, 6-го и 9-го уровня всегда лежит гриб. Случайный босс на каждом 10-м уровне.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок, боссы тоже под случайный трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec){
@@ -809,6 +816,8 @@ function renderRunUnlocks(){
 function syncMeta(){
   document.getElementById('secChip').classList.toggle('hidden',!goalDone('found'));
   document.getElementById('progCount').textContent=GOALS.filter(g=>g.ok()).length+'/'+GOALS.length;
+  document.getElementById('bossChip').classList.toggle('hidden',!(cnt(meta.seen)+cnt(meta.minis)));
+  document.getElementById('bossCount').textContent=cnt(meta.seen)+'/'+BOSS_KINDS.length;
 }
 function metaEvent(type,key){
   const before=GOALS.filter(g=>!g.ok());
@@ -836,6 +845,37 @@ function fillProg(p){
   }
   p.append(list);
 }
+const BOSS_INFO={
+  plumber:['🔧','Кидает ключи очередями. С первого тычка прыгает и пускает волну по земле.','когда прёт на гриб'],
+  pigeon:['🐦','Несёт яйца, они остаются лежать на земле. Потом целится и пикирует.','пока клюв застрял в земле'],
+  balloon:['🎈','Пускает пузыри: низкий перепрыгни, под высоким стой. От тычков сдувается.','когда сдулся и скачет по земле'],
+  rooster:['🐓','Осколки бегут очередью, третий берётся двойным прыжком. В ярости кукарекает кольцами и финтит.','когда бежит на гриб или замер в финте'],
+  worm:['🪱','Роется под землёй за грибом и вылезает прямо перед ним.','пока ползёт по поверхности'],
+  ufo:['🛸','Стреляет веером дисков. Потом луч по метке: он жжёт землю, будь в прыжке.','когда села низко и ползёт на гриб'],
+  king:['👑','Прыгает с волной и спорами, исчезает и появляется перед грибом, в ярости зовёт грибов-солдат.','когда сел после прыжка и ползёт'],
+  oxy:['📖','Читает: слова летят на двух высотах. Низкое перепрыгни, под высоким стой.','когда идёт на гриб с микрофоном'],
+  shock:['⚡','Разряды ложатся на землю, их надо перепрыгивать.','когда разрядился и идёт на гриб'],
+  gnoy:['🟢','Лужи гноя лежат на земле. С первого тычка финтит и бежит быстрее.','когда бежит или замер в финте'],
+  dancer:['🕺','Качается, пускает диски на двух высотах, потом крутится и даёт волну.','когда уезжает лунной походкой на гриб'],
+};
+function fillBosses(p){
+  p.textContent='';
+  const sect=(title,kinds,seen,beat)=>{
+    const met=kinds.filter(k=>seen[k.kind]);
+    p.append(el('b','sect',title+': '+met.length+'/'+kinds.length));
+    const list=el('div','blist');
+    for(const k of met){
+      const [ic,what,how]=BOSS_INFO[k.kind], d=el('div');
+      list.append(el('div','ic',ic));
+      d.append(el('b',null,k.name+(beat[k.kind]?' ✅':'')),' — '+k.hp+(k.hp<5?' тычка. ':' тычков. ')+what+' Бить: '+how+'.');
+      list.append(d);
+    }
+    p.append(list);
+    if(met.length<kinds.length) p.append(el('div',null,'Ещё не встречено: '+(kinds.length-met.length)));
+  };
+  sect('Боссы',BOSS_KINDS,meta.seen,meta.beat);
+  sect('Мини-боссы',MINI_KINDS,meta.minis,{});
+}
 function fillSecrets(p){
   p.textContent='';
   p.append(el('b','sect','Тапни ник и жми ИГРАТЬ. У тайных ников свой топ.'));
@@ -851,7 +891,7 @@ function fillSecrets(p){
   let own=''; try{ own=localStorage.gribOwnName||''; }catch(e){}
   if(isSecret(cur)&&own){ const b=el('button','chip','← Вернуть ник '+own); b.addEventListener('click',()=>{ nickEl.value=own; fillSecrets(p); }); p.append(b); }
 }
-const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool(),prog:fillProg,secrets:fillSecrets};
+const FILL={bonus:fillBonus,levels:fillLevels,top:fillTop,pool:()=>renderPool(),prog:fillProg,bosses:fillBosses,secrets:fillSecrets};
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
   const on=b.getAttribute('aria-pressed')!=='true';
   document.querySelectorAll('[data-tab]').forEach(o=>{ o.setAttribute('aria-pressed','false'); document.getElementById('tab-'+o.dataset.tab).classList.add('hidden'); });
@@ -1046,7 +1086,7 @@ function loop(ts){
     jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
     if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
-    speed=Math.min(560,speed+dt*3); if(!boss) dist+=speed*dt; // пока жив босс, зона стоит
+    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<10?1.2:2)); dist+=speed*dt; } // пока жив босс, зона и скорость стоят
     player.x+=speed*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
@@ -1055,7 +1095,7 @@ function loop(ts){
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
       if((charMode==='EZ'||charMode==='LEG')&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
-      speed+=10;
+      speed+=zn<10?5:8;
       announceZone(zn);
       playZone(zn);
     }
@@ -1293,8 +1333,8 @@ const BOSS_TIP={
   balloon:'НИЗКИЙ ПУЗЫРЬ — ПРЫГАЙ, ВЫСОКИЙ — СТОЙ ⭐',
   rooster:'ОСКОЛКИ — ПРЫЖОК (ДВОЙНОЙ), ФИНТ — ЖДИ ⭐',
   worm:'ОН ПОД ЗЕМЛЁЙ: БЕГИ, НА ПОВЕРХНОСТИ — ПРЫГАЙ НА ГОЛОВУ ⭐',
-  ufo:'ЛУЧ СВЕРХУ НЕ ЛОВИ; ОСТЫЛ — БЕЙ ⭐',
-  king:'ПОСЛЕ ПРЫЖКА ЦАРЬ САДИТСЯ НА КОРТОЧКИ — ПРЫГАЙ НА ШЛЯПКУ ⭐',
+  ufo:'ЛУЧ ЖЖЁТ ЗЕМЛЮ — БУДЬ В ПРЫЖКЕ; СЕЛА И ПОЛЗЁТ — БЕЙ ⭐',
+  king:'ПОСЛЕ ПРЫЖКА ЦАРЬ СЕЛ И ПОЛЗЁТ — ПРЫГАЙ НА ШЛЯПКУ ⭐',
 };
 function startBoss(){
   const d=bossAt(arena.lvl)||miniAt(arena.lvl), sz=BOSS_SIZE[d.kind];
@@ -1464,11 +1504,11 @@ function updWorm(b,dt,psx,gy,rage){
     case 'dig':
       b.y=gy+b.hh+14; b.sx+=(psx+Math.sin(b.t*2.4)*70-b.sx)*Math.min(1,dt*1.7);
       if(Math.random()<dt*22) parts.push({x:camX+b.sx+(Math.random()-.5)*36,y:gy-2,vx:(Math.random()-.5)*120,vy:-80-Math.random()*120,l:.5,c:'#8a6a4a'});
-      if(b.t>0.8-rage*0.06){ b.st='rise'; b.t=0; b.rx=psx+40+Math.random()*120; b.sx=b.rx; beep(130,.22,'sawtooth',.1); }
+      if(b.t>0.8-rage*0.06){ b.st='rise'; b.t=0; b.rx=psx+90+Math.random()*90; b.sx=b.rx; beep(130,.22,'sawtooth',.1); }
       break;
     case 'rise':
       b.y+=(gy-b.y)*Math.min(1,dt*6);
-      if(gy-b.y<3){ b.y=gy; b.st='surface'; b.t=0; shake(11,.28); beep(90,.2,'square',.12); }
+      if(Math.abs(gy-b.y)<3){ b.y=gy; b.st='surface'; b.t=0; shake(11,.28); beep(90,.2,'square',.12); }
       break;
     case 'surface':
       b.sx-=(110+rage*25)*dt;
@@ -1482,7 +1522,7 @@ function updWorm(b,dt,psx,gy,rage){
   b.vuln=b.st==='surface'; b.solid=b.st==='surface'||b.st==='rise';
 }
 // №6 ЛЕТАЮЩАЯ ТАРЕЛКА: висит зигзагом, стреляет веером дисков и жжёт лучом сверху.
-// Луч заряжается по метке, после выстрела тарелка остывает — в это время её можно бить.
+// Луч заряжается по метке и жжёт землю, после выстрела тарелка садится низко и ползёт на гриб — в это время её можно бить.
 function updUfo(b,dt,psx,gy,rage){
   const ax=W*0.68, ay=H*0.2;
   switch(b.st){
@@ -1500,27 +1540,32 @@ function updUfo(b,dt,psx,gy,rage){
         if(b.n>=2+Math.min(rage,2)){ b.n=0; b.st='charge'; b.t=0; b.beamX=psx+40; } }
       break;
     case 'charge':
-      b.sx+=(psx+40-b.sx)*Math.min(1,dt*3); b.y+=(ay-20-b.y)*Math.min(1,dt*3); b.beamX=b.sx;
+      b.sx+=(psx-b.sx)*Math.min(1,dt*6); b.y+=(ay-20-b.y)*Math.min(1,dt*3); b.beamX=b.sx;
       if(b.t>0.8){ b.st='beam'; b.t=0; beep(300,.5,'sawtooth',.12); }
       break;
-    case 'beam':
+    case 'beam': // жжёт землю: увернуться можно только прыжком
       b.y=ay-20;
-      if(Math.abs(psx-b.beamX)<26&&player.y>gy-H*0.9) hit();
-      if(b.t>0.55+rage*0.05){ b.st='vent'; b.t=0; }
+      if(b.t>0.12&&player.vy===0&&Math.abs(psx-b.beamX)<26) hit();
+      if(b.t>0.55){ b.st='drop'; b.t=0; }
       break;
-    case 'vent':
-      b.y+=(ay+40-b.y)*Math.min(1,dt*3);
-      if(b.t>1.1){ b.st='hover'; b.t=0; b.n=0; }
+    case 'drop': // отстрелялась: отлетает вперёд и садится низко
+      b.sx+=(psx+360-b.sx)*Math.min(1,dt*3); b.y+=(gy-30-b.y)*Math.min(1,dt*3);
+      if(b.t>0.9&&!obsAhead()){ b.st='vent'; b.t=0; }
       break;
+    case 'vent': // остывает и ползёт на гриб
+      b.y=gy-30+Math.sin(b.t*5)*4; b.sx-=(220+rage*25)*dt;
+      if(b.sx<psx-120){ b.st='rise'; b.t=0; }
+      break;
+    case 'rise': b.sx+=(ax-b.sx)*Math.min(1,dt*2.5); b.y+=(ay-b.y)*Math.min(1,dt*2.5); if(b.t>0.8){ b.st='hover'; b.t=0; b.n=0; } break;
     case 'hurt':
       b.sx+=b.vsx*dt; b.vsx*=Math.pow(.08,dt); b.y+=(ay-b.y)*Math.min(1,dt*3);
       if(b.t>.8){ b.st='hover'; b.t=0; }
       break;
   }
-  b.vuln=b.st==='vent'; b.solid=b.st!=='enter';
+  b.vuln=b.st==='vent'; b.solid=b.st==='vent';
 }
 // №7 ЦАРЬ ГРИБОВ: прыгает и бьёт волнами, сыплет спорами, телепортируется к грибу и зовёт миньонов.
-// Уязвим на корточках после приземления и во время призыва.
+// Уязвим, когда сел после прыжка и ползёт на гриб.
 function updKing(b,dt,psx,gy,rage){
   switch(b.st){
     case 'enter':
@@ -1535,18 +1580,18 @@ function updKing(b,dt,psx,gy,rage){
       b.vy+=G*dt; b.y+=b.vy*dt; b.sx+=(psx+180-b.sx)*Math.min(1,dt*1.2);
       if(b.y>=gy&&b.vy>0){ b.y=gy; b.vy=0; b.st='land'; b.t=0; shake(18,.45); beep(60,.4,'square',.22);
         b.waves.push({sx:b.sx-b.hw,d:-1},{sx:b.sx+b.hw,d:1});
-        for(let i=0;i<3;i++) b.obs.push({x:b.x+(Math.random()-.5)*260,y:b.y-120,vy:-200-Math.random()*220,vx:(Math.random()-.5)*120,r:12,kind:'egg',grav:1}); }
+        for(let i=0;i<3;i++) b.obs.push({x:b.x+280+Math.random()*320,y:b.y-120,vy:-200-Math.random()*220,vx:(Math.random()-.5)*120,r:12,kind:'egg',grav:1}); }
       break;
-    case 'land':
-      b.y=gy;
-      if(b.t>1.4-rage*0.08){ b.st=rage>=2&&Math.random()<0.5?'summon':'vanish'; b.t=0; }
+    case 'land': // сел и ползёт на гриб: прыжок через волну как раз приходится на шляпку
+      b.y=gy; b.sx-=240*dt;
+      if(b.sx<psx-110){ b.st='vanish'; b.t=0; }
       break;
     case 'summon':
       b.y=gy;
       if(b.t>0.5&&!b.sdid){ b.sdid=1;
         for(let i=0;i<2;i++) spawnMinion(b.x+(i?70:-70),gy,arena);
         showQuote('ЦАРЬ ЗОВЁТ ГРИБОВ 🍄',false); beep(300,.2,'triangle',.1); }
-      if(b.t>1.3){ b.st='vanish'; b.t=0; }
+      if(b.t>1.3){ b.st='charge'; b.t=0; }
       break;
     case 'vanish':
       b.y=gy; b.alpha=Math.max(0,1-b.t*3);
@@ -1554,7 +1599,7 @@ function updKing(b,dt,psx,gy,rage){
       break;
     case 'appear':
       b.y=gy; b.alpha=Math.min(1,b.t*4);
-      if(b.t>0.35){ b.alpha=1; b.st='charge'; b.t=0; }
+      if(b.t>0.35){ b.alpha=1; b.st=rage>=2&&Math.random()<0.5?'summon':'charge'; b.t=0; }
       break;
     case 'charge':
       b.y=gy; b.sx-=(270+rage*40)*dt;
@@ -1562,12 +1607,13 @@ function updKing(b,dt,psx,gy,rage){
       break;
     case 'hurt':
       b.sx+=b.vsx*dt; b.vsx*=Math.pow(.08,dt); b.y+=(gy-b.y)*Math.min(1,dt*4);
-      if(b.t>.7){ b.st='land'; b.t=0; }
+      if(b.t>.7){ b.st='vanish'; b.t=0; } // после тычка весь круг заново, а не цепочка ударов
       break;
+    case 'rise': b.y=gy; b.sx+=(psx+320-b.sx)*Math.min(1,dt*3); if(b.t>.7){ b.st='stomp'; b.t=0; } break;
   }
   if(b.st!=='summon') b.sdid=0;
-  b.vuln=b.st==='land'||b.st==='summon';
-  b.solid=b.st!=='enter'&&b.st!=='vanish';
+  b.vuln=b.st==='land';
+  b.solid=b.st!=='enter'&&b.st!=='vanish'&&b.st!=='rise';
 }
 function spawnMinion(x,y,p){
   enemies.push({x,y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type:'walk',vy:0,baseY:y,cd:0.2});
@@ -1599,7 +1645,7 @@ function updBoss(dt,onGround){
     if(player.vy>60&&player.y<top+30){
       player.vy=JUMP*0.78; player.jumps=maxJumps();
       if(b.vuln) bossHit(b,top); else beep(900,.05,'square',.08); // не время: дзынь
-    } else if(b.st!=='hurt'){ hit(); b.st=(b.kind==='plumber'||b.kind==='rooster')?'back':'rise'; b.t=0; }
+    } else if(b.st!=='hurt'){ hit(); b.st=(b.kind==='plumber'||b.kind==='rooster')?'back':b.kind==='worm'?'dig':'rise'; b.t=0; }
   }
 }
 function bossHit(b,top){
