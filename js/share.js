@@ -58,6 +58,7 @@ async function prepShare(s,line){
 }
 function shareNote(t){ const b=document.getElementById('btnShare'), o=b.dataset.t||b.textContent; b.dataset.t=o; b.textContent=t; setTimeout(()=>{ b.textContent=o; },1800); }
 async function shareScore(s,line){
+  track('share');
   // ссылка на картинке не кликается: кладём её в буфер ещё в момент клика, чтобы вставить следующим сообщением
   let linkCopied=false;
   try{ navigator.clipboard.writeText('https://'+GAME_URL+'/').then(()=>{ linkCopied=true; },()=>{}); }catch(e){}

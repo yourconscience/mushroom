@@ -18,6 +18,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +35,7 @@ var db *sql.DB
 const adminAddr = "127.0.0.1:8789"
 
 func main() {
-	if len(os.Args) > 1 && (os.Args[1] == "ls" || os.Args[1] == "rm") {
+	if len(os.Args) > 1 && (os.Args[1] == "ls" || os.Args[1] == "rm" || os.Args[1] == "stats") {
 		os.Exit(cli(os.Args[1], os.Args[2:]))
 	}
 	addr := flag.String("addr", "127.0.0.1:8790", "listen address")
@@ -49,6 +51,10 @@ func main() {
 	}
 	db.SetMaxOpenConns(1)
 	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS scores(k TEXT PRIMARY KEY, s INTEGER NOT NULL, t INTEGER NOT NULL)`); err != nil {
+		log.Fatal(err)
+	}
+	// anonymous run counter: only (UTC day, event) -> count, no ids or addresses
+	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS ev(day TEXT NOT NULL, k TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY(day, k))`); err != nil {
 		log.Fatal(err)
 	}
 	srv := &http.Server{Addr: *addr, Handler: http.HandlerFunc(handle), ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
@@ -74,6 +80,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	case r.Method == http.MethodGet && r.URL.Path == "/":
 		list(w, r.URL.Query().Get("prefix"))
+	case r.Method == http.MethodPost && r.URL.Path == "/ev":
+		count(w, r)
 	case r.Method == http.MethodPost:
 		put(w, r)
 	default:
@@ -141,7 +149,43 @@ func put(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "ok")
 }
 
+var evRe = regexp.MustCompile(`^[a-z]{2,8}(:[a-z0-9]{1,12}){0,2}$`)
+
+// count adds one to today's counter for an event like "start:first" or "end:12:pit".
+func count(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 64))
+	k := strings.TrimSpace(string(body))
+	if !evRe.MatchString(k) {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	day := time.Now().UTC().Format("2006-01-02")
+	if _, err := db.Exec(`INSERT INTO ev(day, k, n) VALUES(?1, ?2, 1) ON CONFLICT(day, k) DO UPDATE SET n = n + 1`, day, k); err != nil {
+		http.Error(w, "db", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func admin(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/ev" {
+		rows, err := db.Query(`SELECT day, k, n FROM ev WHERE day >= ?1 ORDER BY day, k`, r.URL.Query().Get("since"))
+		if err != nil {
+			http.Error(w, "db", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+		out := [][3]any{}
+		for rows.Next() {
+			var d, k string
+			var n int64
+			if rows.Scan(&d, &k, &n) == nil {
+				out = append(out, [3]any{d, k, n})
+			}
+		}
+		json.NewEncoder(w).Encode(out)
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		list(w, "")
@@ -160,6 +204,9 @@ func admin(w http.ResponseWriter, r *http.Request) {
 
 func cli(cmd string, args []string) int {
 	base := "http://" + adminAddr + "/"
+	if cmd == "stats" {
+		return stats(base, args)
+	}
 	if cmd == "ls" {
 		resp, err := http.Get(base)
 		if err != nil {
@@ -198,4 +245,79 @@ func cli(cmd string, args []string) int {
 		}
 	}
 	return code
+}
+
+// stats prints the funnel for the last N days (default 7): runs by player kind,
+// shares, and where runs end (level and cause).
+func stats(base string, args []string) int {
+	days := 7
+	if len(args) > 0 {
+		if n, err := strconv.Atoi(args[0]); err == nil && n > 0 {
+			days = n
+		}
+	}
+	since := time.Now().UTC().AddDate(0, 0, -days+1).Format("2006-01-02")
+	resp, err := http.Get(base + "ev?since=" + since)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	defer resp.Body.Close()
+	var rows [][3]any
+	json.NewDecoder(resp.Body).Decode(&rows)
+	type dayRow struct{ first, ret, same, daily, share int }
+	perDay := map[string]*dayRow{}
+	var order []string
+	lvl := map[int]int{}
+	cause := map[string]int{}
+	ends := 0
+	for _, r := range rows {
+		d, k, n := r[0].(string), r[1].(string), int(r[2].(float64))
+		if perDay[d] == nil {
+			perDay[d] = &dayRow{}
+			order = append(order, d)
+		}
+		p := strings.Split(k, ":")
+		switch {
+		case k == "start:first":
+			perDay[d].first += n
+		case k == "start:ret":
+			perDay[d].ret += n
+		case k == "start:same":
+			perDay[d].same += n
+		case k == "share":
+			perDay[d].share += n
+		case p[0] == "daily":
+			perDay[d].daily += n
+		case p[0] == "end" && len(p) == 3:
+			l, _ := strconv.Atoi(p[1])
+			lvl[l] += n
+			cause[p[2]] += n
+			ends += n
+		}
+	}
+	fmt.Printf("since %s (UTC days)\n\nday         new  back  again  daily  shares\n", since)
+	for _, d := range order {
+		r := perDay[d]
+		fmt.Printf("%s  %4d  %4d  %5d  %5d  %6d\n", d, r.first, r.ret, r.same, r.daily, r.share)
+	}
+	fmt.Printf("\nruns ended: %d\nlevel reached:\n", ends)
+	var ls []int
+	for l := range lvl {
+		ls = append(ls, l)
+	}
+	sort.Ints(ls)
+	for _, l := range ls {
+		fmt.Printf("  %3d  %5d  %s\n", l, lvl[l], strings.Repeat("#", (lvl[l]*40+ends-1)/max(ends, 1)))
+	}
+	fmt.Println("cause:")
+	var cs []string
+	for c := range cause {
+		cs = append(cs, c)
+	}
+	sort.Slice(cs, func(i, j int) bool { return cause[cs[i]] > cause[cs[j]] })
+	for _, c := range cs {
+		fmt.Printf("  %-8s %5d\n", c, cause[c])
+	}
+	return 0
 }

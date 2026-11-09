@@ -38,6 +38,7 @@ function startGame(){
   if(!charMode) applyPerks();
   player.jumps=maxJumps();
   runUnlocks=[]; renderRunUnlocks(); roundN=0;
+  trackStart();
   if(isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
   const M=MODES[playerName.toUpperCase()];
   if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);

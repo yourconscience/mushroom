@@ -48,7 +48,10 @@ Scores live in one place: a small Go + SQLite server (`server/`) that keeps the 
 ```
 ssh <vps> grib-lb ls            # every row
 ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for one
+ssh <vps> grib-lb stats [DAYS]  # anonymous run counter: new and returning players, shares, where runs end
 ```
+
+The run counter stores only a UTC day, an event name and a count: run start (new browser, back on another day, again today), run end (level and cause: pit, enemy or the boss kind) and share clicks. No ids, nicknames or addresses.
 
 Scores that fail to send wait in the browser and go out on the next visit or when the network returns. With no network the menu shows the last board this browser saw.
 
@@ -60,7 +63,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v32** (shown in the bottom-right corner of the game).
+Current build: **v33** (shown in the bottom-right corner of the game).
 
 ## Credits
 

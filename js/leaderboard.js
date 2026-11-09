@@ -3,6 +3,13 @@
 // удалить запись можно только на самом сервере (grib-lb rm).
 // Адрес публичный, не tailnet: иначе браузер на устройстве в tailnet считает его локальной сетью и блокирует.
 const LB_URL='https://207-180-207-128.sslip.io:8445/';
+// анонимный счётчик: на сервере только (день, событие) -> сколько раз, без id и адресов. Ответ не нужен.
+function track(k){ try{ if(!(navigator.sendBeacon&&navigator.sendBeacon(LB_URL+'ev',k))) fetch(LB_URL+'ev',{method:'POST',body:k,keepalive:true}).catch(()=>{}); }catch(e){} }
+function today(){ return new Date(Date.now()+3*3600e3).toISOString().slice(0,10); } // день по Москве
+function trackStart(){ // новый браузер, вернулся в другой день или снова сегодня
+  let last=''; try{ last=localStorage.gribDay||''; localStorage.gribDay=today(); }catch(e){}
+  track('start:'+(!last?'first':last!==today()?'ret':'same'));
+}
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }
 function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
