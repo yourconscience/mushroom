@@ -63,8 +63,9 @@ async function loadClips(){
 function shufflePlaylist(){
   const n=clipBytes.length; if(!n)return;
   playlist=Array.from({length:n},(_,i)=>i);
-  for(let i=n-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=playlist[i]; playlist[i]=playlist[j]; playlist[j]=t; }
-  if(n>1&&playlist[0]===lastFirst){ const t=playlist[0]; playlist[0]=playlist[1]; playlist[1]=t; }
+  const R=rngFor('tracks'); // забег дня: одинаковый порядок у всех
+  for(let i=n-1;i>0;i--){ const j=(R()*(i+1))|0; const t=playlist[i]; playlist[i]=playlist[j]; playlist[j]=t; }
+  if(n>1&&!daily&&playlist[0]===lastFirst){ const t=playlist[0]; playlist[0]=playlist[1]; playlist[1]=t; }
   lastFirst=playlist[0];
 }
 async function clipBuffer(pick){

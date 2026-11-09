@@ -21,12 +21,12 @@ async function postScore(key,s){
   const r=await fetch(LB_URL+encodeURIComponent(key),{method:'POST',body:String(s),keepalive:true,signal:tmo(8000)});
   if(!r.ok) throw new Error(r.status);
 }
-async function fetchScores(secret){
-  const pre=secret?'v2s:':'v2:', cache='gribTop'+pre;
+async function fetchScores(secret,board){
+  const pre=board||(secret?'v2s:':'v2:'), cache='gribTop'+pre;
   let rows;
   try{ rows=await getJSON(LB_URL+'?prefix='+pre+'&_='+Date.now()); try{ localStorage[cache]=JSON.stringify(rows); }catch(e){} }
   catch(e){ rows=JSON.parse(localStorage[cache]||'null'); if(!rows) throw e; } // нет сети: последний виденный топ
-  return rows.map(([k,v])=>({n:String(k).slice(pre.length).toUpperCase(),s:+v||0})).filter(r=>secret||!isSecret(r.n)).sort((a,b)=>b.s-a.s);
+  return rows.map(([k,v])=>({n:String(k).slice(pre.length).toUpperCase(),s:+v||0})).filter(r=>secret||pre!=='v2:'||!isSecret(r.n)).sort((a,b)=>b.s-a.s);
 }
 // очки, которые не дошли до сервера, ждут в localStorage и уходят при следующей возможности
 function outbox(){ try{ return JSON.parse(localStorage.gribOutbox||'{}'); }catch(e){ return {}; } }
@@ -41,6 +41,6 @@ async function flushOutbox(){
 flushOutbox();
 addEventListener('online',flushOutbox);
 let playerName=''; // выбирается один раз за визит
-function myKey(){ return (playerName||'АНОНИМ').toUpperCase(); }
+function myKey(){ return (daily?'D:':'')+(playerName||'АНОНИМ').toUpperCase(); } // забег дня считается отдельно
 function myBest(){ return sessBest[myKey()]||0; }
 let charMode=''; // секретные персонажи: ник Z / X / V и пять режимов ниже

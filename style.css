@@ -47,6 +47,9 @@ button { font:inherit; color:inherit; cursor:pointer; border:0; background:none;
 .field input::placeholder { color:var(--dim); }
 .primary { font-family:var(--disp); font-weight:900; font-size:18px; letter-spacing:.06em; padding:16px; border-radius:16px; background:var(--lime); color:var(--dark); box-shadow:0 8px 24px rgba(198,255,61,.22); transition:transform .12s; }
 .primary:active { transform:scale(.97); }
+.daily { font-family:var(--disp); font-weight:800; font-size:14px; letter-spacing:.05em; padding:12px; border-radius:14px; background:transparent; color:var(--lime); border:1.5px solid var(--lime); }
+.daily:active { transform:scale(.97); }
+.daytop { margin-top:14px; }
 .row { display:flex; flex-wrap:wrap; gap:8px; }
 .chip { font-size:13px; font-weight:600; padding:9px 13px; border-radius:999px; background:var(--fill); border:1px solid var(--line); }
 .chip[aria-pressed="true"] { background:rgba(198,255,61,.13); border-color:rgba(198,255,61,.5); color:var(--lime); }

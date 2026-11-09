@@ -33,6 +33,10 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Mobile-friendly (touch controls)
 - Hip-hop quotes as kill banners
 
+## Daily run
+
+The «Забег дня» button starts the run of the day (Moscow date): the same platforms, enemies, bonuses, boss, mini-boss and track order for everyone that day. Secret nicknames play as plain mushrooms and start perks are off, so the daily top (keys `day:YYYY-MM-DD:NAME`) compares like with like. Boss attacks stay random. Playing on consecutive days builds a streak shown on the button and the share card.
+
 ## Progress
 
 Reaching the first boss opens a Секреты tab in the menu with every secret nickname. Seven goals (first boss, beating a boss, meeting and beating all seven, all mini-bosses, top 10, every secret hero) unlock start perks, the БАТТЛ mode and the ЛЕГЕНДА hero. Progress lives in the browser.
@@ -47,7 +51,7 @@ Scores live in one place: a small Go + SQLite server (`server/`) that keeps the 
 
 ```
 ssh <vps> grib-lb ls            # every row
-ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME for one
+ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME / day:YYYY-MM-DD:NAME for one
 ssh <vps> grib-lb stats [DAYS]  # anonymous run counter: new and returning players, shares, where runs end
 ```
 
@@ -63,7 +67,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v33** (shown in the bottom-right corner of the game).
+Current build: **v34** (shown in the bottom-right corner of the game).
 
 ## Credits
 

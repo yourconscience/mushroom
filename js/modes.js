@@ -28,8 +28,8 @@ function applyName(){
   document.body.style.filter=baseFilter();
 }
 async function submitScore(s){
-  const name=playerName||'АНОНИМ', sec=isSecret(name), key=(sec?'v2s:':'v2:')+name;
-  let scores=null; try{ scores=await fetchScores(sec); }catch(e){}
+  const name=playerName||'АНОНИМ', sec=!daily&&isSecret(name), pre=daily?dayPrefix():sec?'v2s:':'v2:', key=pre+name;
+  let scores=null; try{ scores=await fetchScores(sec,pre); }catch(e){}
   const mine=scores&&scores.find(r=>r.n===name);
   if(!mine||s>mine.s){
     // POST с текстовым телом — простой запрос, без CORS preflight
@@ -37,7 +37,7 @@ async function submitScore(s){
   }
   if(!scores) return null;
   if(!mine||s>mine.s) scores=scores.filter(r=>r.n!==name).concat({n:name,s}).sort((a,b)=>b.s-a.s);
-  return {scores,name,sec,rec:s>0&&(!mine||s>mine.s)};
+  return {scores,name,sec,day:daily,rec:s>0&&(!mine||s>mine.s)};
 }
 
 // Зоны: см. zones.js (ZONES, ZONE_LEN)

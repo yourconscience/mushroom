@@ -36,11 +36,11 @@ function fillLevels(p){
   const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. В начале 3-го, 6-го и 9-го уровня всегда лежит гриб. Босс на каждом 10-м уровне, Царь последним в круге из семи, мини-босс на каждом 5-м.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок, боссы тоже под случайный трек.'); p.append(b);
 }
-function renderTop(p,scores,me,sec){
+function renderTop(p,scores,me,sec,title){
   p.textContent='';
   if(sec) p.append(el('b','sect','Секретный топ: только тайные ники'));
+  else p.append(el('b',null,title||'Топ-10 грибов'));
   if(!scores.length){ p.append(el('div',null,'Пока пусто. Будь первым.')); return; }
-  if(!sec) p.append(el('b',null,'Топ-10 грибов'));
   const g=el('div','top'+(sec?' sec':''));
   scores.slice(0,10).forEach((r,i)=>{
     const cls=r.n===me?'me':'';
@@ -52,7 +52,10 @@ function fillTop(p){
   p.textContent='Загрузка…';
   const me=upName(nickEl.value)||'АНОНИМ';
   const sec=isSecret(me);
-  fetchScores(sec).then(sc=>{ renderTop(p,sc,me,sec); if(!sec) checkPool(sc,me); }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
+  fetchScores(sec).then(sc=>{ renderTop(p,sc,me,sec); if(!sec) checkPool(sc,me);
+    const d=el('div','daytop'); p.append(d); // ниже — топ сегодняшнего забега дня
+    fetchScores(false,dayPrefix(today())).then(ds=>renderTop(d,ds,me,false,'Забег дня · '+dayLabel(today()))).catch(()=>d.remove());
+  }).catch(()=>{ p.textContent='Лидерборд недоступен (нет сети)'; });
 }
 // секретный пул треков: открывается, когда ник попал в топ-5 лидерборда
 function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return false; } }

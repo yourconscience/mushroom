@@ -6,11 +6,11 @@ const MINI_KINDS=[
   {name:'ГНОЙНЫЙ',kind:'gnoy',  hp:2,mini:1,line:'ГНОЙНЫЙ НА СВЯЗИ 🟢'},
   {name:'ТАНЦОР', kind:'dancer',hp:2,mini:1,line:'ТАНЦПОЛ ОТКРЫТ 🕺'},
 ];
-let miniPlan={}, miniBag=[];
+let miniPlan={}, miniBag=[], miniR=null;
 function miniAt(z){
   if(z in miniPlan) return miniPlan[z];
   const on=z%10!==9&&(charMode==='BATTLE'?z%4===3:z%10===4);
-  if(on&&!miniBag.length){ miniBag=[0,1,2,3]; for(let j=3;j>0;j--){ const r=(Math.random()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
+  if(on&&!miniBag.length){ miniBag=[0,1,2,3]; const R=miniR||(miniR=rngFor('mini')); for(let j=3;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
   return miniPlan[z]=on?MINI_KINDS[miniBag.pop()]:null;
 }
 Object.assign(BOSS_SIZE,{oxy:[28,88],shock:[28,88],gnoy:[28,88],dancer:[28,96]});

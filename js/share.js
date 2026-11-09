@@ -22,18 +22,18 @@ function buildShareCard(s,line){
   // итог забега
   x.fillStyle='#ff3d7f'; x.font='900 64px '+D; x.fillText('RIP ГРИБ',pad,360);
   x.fillStyle='#c9c9da'; x.font='500 38px '+T; x.fillText(line,pad,420);
-  x.fillStyle='#71718a'; x.font='600 30px '+T; x.fillText('СЧЁТ',pad,540);
+  x.fillStyle='#71718a'; x.font='600 30px '+T; x.fillText(daily?'ЗАБЕГ ДНЯ · '+dayLabel(daily):'СЧЁТ',pad,540);
   x.fillStyle='#ffffff'; x.font='900 190px '+D; x.fillText(String(s),pad-6,720);
-  x.fillStyle='#a6a6bc'; x.font='800 40px '+D; x.fillText('ЛУЧШЕЕ ЗА СЕССИЮ '+myBest(),pad,800);
+  x.fillStyle='#a6a6bc'; x.font='800 40px '+D; x.fillText(daily?'ЛУЧШЕЕ СЕГОДНЯ '+myBest()+' · СЕРИЯ '+streakNow():'ЛУЧШЕЕ ЗА СЕССИЮ '+myBest(),pad,800);
   const me=playerName||'АНОНИМ', rank=lastScores?lastScores.findIndex(r=>r.n===me):-1;
   if(rank>=0&&rank<10){
-    const lbl='#'+(rank+1)+(isSecret(me)?' В СЕКРЕТНОМ ТОПЕ':' В ТОПЕ'); x.font='800 32px '+D; const lw=x.measureText(lbl).width+48;
+    const lbl='#'+(rank+1)+(daily?' ЗА ДЕНЬ':isSecret(me)?' В СЕКРЕТНОМ ТОПЕ':' В ТОПЕ'); x.font='800 32px '+D; const lw=x.measureText(lbl).width+48;
     x.fillStyle='#ffd84d'; x.beginPath(); x.roundRect(pad,840,lw,60,30); x.fill();
     x.fillStyle='#0b0b14'; x.fillText(lbl,pad+24,882);
   }
   // топ-5
   if(lastScores&&lastScores.length){
-    const sec=isSecret(me); x.font='600 30px '+T; x.fillStyle=sec?'#ffd84d':'#71718a'; x.fillText(sec?'СЕКРЕТНЫЙ ТОП':'ТОП ГРИБОВ',pad,990);
+    const sec=!daily&&isSecret(me); x.font='600 30px '+T; x.fillStyle=sec?'#ffd84d':'#71718a'; x.fillText(daily?'ТОП ДНЯ':sec?'СЕКРЕТНЫЙ ТОП':'ТОП ГРИБОВ',pad,990);
     lastScores.slice(0,5).forEach((r,i)=>{
       const y=1040+i*44, mine=r.n===me;
       x.font=(mine?'700 ':'500 ')+'32px '+T; x.fillStyle=mine?'#c6ff3d':'#d6d6e4';

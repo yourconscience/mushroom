@@ -32,20 +32,24 @@ function startGame(){
   if(document.activeElement===nickEl){ nickEl.blur(); setTimeout(startGame,350); return; }
   resize();
   applyName();
+  if(daily){ daily=today(); charMode=''; SM=1; markDaily(); syncDailyBtn(); track('daily:start'); } // у всех одинаковые условия
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
   if(charMode==='EZ'||charMode==='LEG')player.big=true;
-  if(!charMode) applyPerks();
+  if(!charMode&&!daily) applyPerks();
   player.jumps=maxJumps();
   runUnlocks=[]; renderRunUnlocks(); roundN=0;
   trackStart();
-  if(isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
-  const M=MODES[playerName.toUpperCase()];
-  if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
+  if(!daily&&isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
+  const M=!daily&&MODES[playerName.toUpperCase()];
+  if(daily) setTimeout(()=>showQuote('ЗАБЕГ ДНЯ '+dayLabel(daily)+': У ВСЕХ ОДИНАКОВЫЙ',true),400);
+  else if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
   let tries=0;
   const sayStart=()=>{ if(!playlist.length&&tries++<10){ setTimeout(sayStart,300); return; } announceZone(0); };
   setTimeout(sayStart,350);
 }
-btn.addEventListener('click',startGame);
-nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); startGame(); } });
+btn.addEventListener('click',()=>{ daily=''; startGame(); });
+document.getElementById('dailyBtn').addEventListener('click',()=>{ daily=today(); startGame(); });
+syncDailyBtn();
+nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); daily=''; startGame(); } });

@@ -16,13 +16,13 @@ const BOSS_KINDS=[
   {name:'ЦАРЬ ГРИБОВ',      kind:'king',   hp:5},
 ];
 const ROMAN=['','II','III','IV','V'];
-let bossOrder=[];
+let bossOrder=[], bossR=null, zoneIdx={};
 function bossAt(z){
   if(z%10!==9)return null;
   const i=(z-9)/10;
   while(bossOrder.length<=i){ // Царь всегда последний в круге
-    const bag=[0,1,2,3,4,5];
-    for(let j=bag.length-1;j>0;j--){ const r=(Math.random()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
+    const bag=[0,1,2,3,4,5], R=bossR||(bossR=rngFor('boss'));
+    for(let j=bag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
     bossOrder.push(...bag,6);
   }
   const k=bossOrder[i], d=BOSS_KINDS[k], c=bossOrder.slice(0,i).filter(x=>x===k).length;
@@ -33,7 +33,7 @@ let boss=null, arena=null, bossDone={}, bigGiven={};
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[];
+  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; zoneIdx={}; bossR=null; miniR=null;
   if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
@@ -45,8 +45,10 @@ function reset(){
 // зона по мировой координате (dist == player.x-120)
 function zoneAt(x){ return (((x-120)/ZONE_LEN)|0)%ZONES.length; }
 function addPlat(afterX){
-  const gap=60+Math.random()*100+speed*0.08;
-  const w=200+Math.random()*260;
+  // забег дня: случайность по ключу (зона, номер платформы в зоне), скорость в зазоре тоже по зоне
+  const z0=((dist+afterX-player.x)/ZONE_LEN)|0, R=rngFor('p',z0,zoneIdx[z0]=(zoneIdx[z0]||0)+1);
+  const gap=60+R()*100+(daily?Math.min(560,230+z0*(z0<10?16:20)):speed)*0.08;
+  const w=200+R()*260;
   const last=plats[plats.length-1];
   // арена босса: одна длинная ровная платформа без врагов и бонусов
   const pz=((dist+afterX+gap-player.x)/ZONE_LEN)|0;
@@ -54,7 +56,7 @@ function addPlat(afterX){
     const a={x:afterX+gap,y:Math.max(H*0.55,Math.min(H*0.74,last.y)),w:1e7,lvl:pz};
     plats.push(a); arena=a; return a.x+a.w;
   }
-  let y=last.y+(Math.random()*220-110);
+  let y=last.y+(R()*220-110);
   y=Math.max(H*0.35,Math.min(H*0.82,y));
   const p={x:afterX+gap,y,w};
   plats.push(p);
@@ -64,20 +66,20 @@ function addPlat(afterX){
     return p.x+w;
   }
   // враг
-  if(Math.random()<0.45+lap*0.1+(charMode==='MARIO'?0.2:0) && w>150){
+  if(R()<0.45+lap*0.1+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
     const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[zoneI].enemies.filter(t=>pz>=10||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 10-го уровня
-    const type=types[(Math.random()*types.length)|0];
-    enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:Math.random()<.5?-1:1,p,dead:0,t:Math.random()*6,type,vy:0,baseY:p.y,cd:0.15+Math.random()*0.3});
+    const type=types[(R()*types.length)|0];
+    enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:R()<.5?-1:1,p,dead:0,t:R()*6,type,vy:0,baseY:p.y,cd:0.15+R()*0.3});
   }
   // бонус (Z и V не видят ничего, X — только деньги)
   if(charMode!=='Z'&&charMode!=='V'&&charMode!=='OKS'&&p.x-120>=noirTo){ // нуар: бонусов нет до конца
-    const roll=Math.random(); let acc=0;
+    const roll=R(); let acc=0;
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
       if(k==='big'&&(player.big||zoneAt(p.x)===0||charMode==='GLASS'||charMode==='EZ'))continue; // один уровень роста, не в первой зоне
       acc+=BONUSES[k].chance;
-      if(roll<acc){ pickups.push({x:p.x+w*(0.2+Math.random()*0.6),y:p.y-52,kind:k,t:Math.random()*6}); break; }
+      if(roll<acc){ pickups.push({x:p.x+w*(0.2+R()*0.6),y:p.y-52,kind:k,t:R()*6}); break; }
     }
   }
   return p.x+w;

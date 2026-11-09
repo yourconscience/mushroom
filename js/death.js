@@ -27,6 +27,7 @@ function die(){
     document.getElementById('overLine').textContent=line;
     document.getElementById('overScore').textContent=s;
     overBest.textContent=sessBest[key];
+    document.getElementById('overBestL').textContent=daily?'Лучшее сегодня':'Лучшее за сессию';
     document.getElementById('overRec').classList.add('hidden');
     document.getElementById('overPool').classList.add('hidden');
     menuEl.classList.add('hidden'); overEl.classList.remove('hidden'); overlay.classList.remove('hidden');
@@ -38,11 +39,13 @@ function die(){
     submitScore(s).then(res=>{
       if(!res){ overTop.textContent='Лидерборд недоступен (нет сети)'; return; }
       lastScores=res.scores;
+      const mine=res.day&&res.scores.find(r=>r.n===res.name); // забег дня: лучшее сегодня берём из топа дня, не из сессии
+      if(mine&&mine.s>sessBest[key]){ sessBest[key]=mine.s; overBest.textContent=mine.s; }
       // личный рекорд = побил свою строку в своём топе (общем или секретном)
       if(res.rec){ document.getElementById('overRec').classList.remove('hidden'); confetti(120); sJingle(ZONES[0]); }
-      renderTop(overTop,res.scores,res.name,res.sec);
+      renderTop(overTop,res.scores,res.name,res.sec,res.day?'Забег дня · '+dayLabel(res.day):'');
       prepShare(s,line); // пересобрать картинку уже с топом
-      if(checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
+      if(!res.day&&checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
     });
   },900);
 }

@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&display=swap">
-<script>const VERSION='v33'; document.write('<link rel="stylesheet" href="style.css?'+VERSION+'">');</script>
+<script>const VERSION='v34'; document.write('<link rel="stylesheet" href="style.css?'+VERSION+'">');</script>
 </head>
 <body>
 <div id="wrap"><canvas id="cv"></canvas></div>
@@ -31,6 +31,7 @@
     <p class="sub">Марио прыгал на грибы. Теперь гриб прыгает на сантехников. Versus 2017 продолжается.</p>
     <label class="field"><span>Ник</span><input id="nick" maxlength="8" placeholder="ГРИБ" autocomplete="off" spellcheck="false" enterkeyhint="go"></label>
     <button id="btn" class="primary">ИГРАТЬ</button>
+    <button id="dailyBtn" class="daily">Забег дня</button>
     <div class="row">
       <button class="chip" id="musicBtn" aria-pressed="true">♪ Музыка: вкл</button>
       <button class="chip" data-tab="bonus" aria-pressed="false">Бонусы</button>
@@ -56,12 +57,12 @@
     <div class="record hidden" id="overRec">🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД</div>
     <div class="record hidden" id="overPool" style="background:var(--lime)">🎧 Ты в топ-5: в меню открылись треки</div>
     <div class="panel hidden" id="overUnlock"></div>
-    <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l">Лучшее за сессию</div><div class="n best" id="overBest">0</div></div></div>
+    <div class="scores"><div><div class="l">Счёт</div><div class="n" id="overScore">0</div></div><div><div class="l" id="overBestL">Лучшее за сессию</div><div class="n best" id="overBest">0</div></div></div>
     <button id="btn2" class="primary">ЕЩЁ РАЗ</button>
     <div class="row"><button class="chip" id="btnShare">Шерануть 📸</button><button class="chip" id="btnMenu">Меню</button></div>
     <div class="panel" id="overTop">Лидерборд грузится…</div>
   </div>
 </div>
-<script>for(const f of ["zones","gfx","bonuses","core","quotes","leaderboard","modes","audio","fx","share","level","input","menu","progress","slot","draw","loop","bosses","boss-draw","minis","death","main"]) document.write('<script src="js/'+f+'.js?'+VERSION+'"><\/script>');</script>
+<script>for(const f of ["zones","gfx","bonuses","core","quotes","leaderboard","daily","modes","audio","fx","share","level","input","menu","progress","slot","draw","loop","bosses","boss-draw","minis","death","main"]) document.write('<script src="js/'+f+'.js?'+VERSION+'"><\/script>');</script>
 </body>
 </html>

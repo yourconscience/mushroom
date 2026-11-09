@@ -108,10 +108,16 @@ func list(w http.ResponseWriter, prefix string) {
 	json.NewEncoder(w).Encode(out)
 }
 
+var dayRe = regexp.MustCompile(`^day:\d{4}-\d{2}-\d{2}:`)
+
+// validKey accepts v2:NAME (main board), v2s:NAME (secret nicks) and day:YYYY-MM-DD:NAME (daily run).
 func validKey(k string) bool {
 	name, ok := strings.CutPrefix(k, "v2s:")
 	if !ok {
 		name, ok = strings.CutPrefix(k, "v2:")
+	}
+	if !ok && dayRe.MatchString(k) {
+		name, ok = k[15:], true
 	}
 	if !ok || name == "" || !utf8.ValidString(name) || utf8.RuneCountInString(name) > 16 {
 		return false
@@ -222,13 +228,13 @@ func cli(cmd string, args []string) int {
 		return 0
 	}
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: grib-lb rm NAME|v2:NAME|v2s:NAME ...")
+		fmt.Fprintln(os.Stderr, "usage: grib-lb rm NAME|v2:NAME|v2s:NAME|day:YYYY-MM-DD:NAME ...")
 		return 2
 	}
 	code := 0
 	for _, a := range args {
 		keys := []string{"v2:" + a, "v2s:" + a} // bare name: both boards
-		if strings.HasPrefix(a, "v2:") || strings.HasPrefix(a, "v2s:") {
+		if strings.HasPrefix(a, "v2:") || strings.HasPrefix(a, "v2s:") || dayRe.MatchString(a) {
 			keys = []string{a}
 		}
 		for _, k := range keys {
