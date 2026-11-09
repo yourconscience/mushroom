@@ -54,9 +54,13 @@ Scores that fail to send wait in the browser and go out on the next visit or whe
 
 The API is public HTTPS on the server's own address, not a tailnet name: a browser on a device inside the tailnet treats a tailnet address as local network and blocks it from a public page.
 
+## Code
+
+No build step. `index.html` holds the markup and loads `style.css` and `js/*.js` in a fixed order; the scripts share one global scope. Bosses live in `js/bosses.js` and `js/boss-draw.js`, mini-bosses in `js/minis.js`, zones in `js/zones.js`.
+
 ## Version
 
-Current build: **v30** (shown in the bottom-right corner of the game).
+Current build: **v31** (shown in the bottom-right corner of the game).
 
 ## Credits
 
