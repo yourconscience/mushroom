@@ -7,6 +7,7 @@ function startNoir(){
 // удар: большой гриб уменьшается и неуязвим 1.5 с, маленький умирает
 function hit(){
   if(player.dead||player.inv>0)return;
+  if(boss) boss.touched=1;
   if(!player.big){ die(); return; }
   player.big=false; player.inv=1.5;
   sHurt(); shake(9,.35); showQuote('ГРИБ СДУЛСЯ, НО ЖИВ 🍄',true);

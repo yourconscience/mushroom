@@ -153,6 +153,7 @@ function loop(ts){
       } else if(player.vy>(e.type==='hop'?40:140)&&player.y<e.y-(e.type==='hop'?6:14)){
         // СТОМП
         e.dead=0.01; player.vy=JUMP*0.7; player.jumps=maxJumps();
+        if(e.royal&&boss) boss.armor=0;
         combo++; comboT=2.2;
         const pts=100*combo; score+=pts; sStomp();
         if(COMBO_STAMPS[combo]){ stamp(...COMBO_STAMPS[combo]); if(combo>=5) airhorn(); }

@@ -5,26 +5,25 @@ const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
 // пока босс жив (клип просто крутится по кругу). Босс на каждом 10-м уровне (индексы 9, 19, 29...):
-// случайный из семи, каждые 7 боссов — все разные, повторы получают номер (II, III...).
+// шесть в случайном порядке, потом Царь; повторы получают номер (II, III...).
 const BOSS_KINDS=[
-  {name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:5},
-  {name:'ГОЛУБИНЫЙ КОРОЛЬ', kind:'pigeon', hp:5},
-  {name:'ДУТАЯ ФИГУРА',     kind:'balloon',hp:5},
-  {name:'СТЕКЛЯННЫЙ ПЕТУХ', kind:'rooster',hp:6},
-  {name:'ПОДЗЕМНЫЙ ЧЕРВЬ',  kind:'worm',   hp:5},
-  {name:'ЛЕТАЮЩАЯ ТАРЕЛКА', kind:'ufo',    hp:5},
-  {name:'ЦАРЬ ГРИБОВ',      kind:'king',   hp:6},
+  {name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:4},
+  {name:'ГОЛУБИНЫЙ КОРОЛЬ', kind:'pigeon', hp:3},
+  {name:'ДУТАЯ ФИГУРА',     kind:'balloon',hp:3},
+  {name:'СТЕКЛЯННЫЙ ПЕТУХ', kind:'rooster',hp:3},
+  {name:'ПОДЗЕМНЫЙ ЧЕРВЬ',  kind:'worm',   hp:4},
+  {name:'ЛЕТАЮЩАЯ ТАРЕЛКА', kind:'ufo',    hp:3},
+  {name:'ЦАРЬ ГРИБОВ',      kind:'king',   hp:5},
 ];
 const ROMAN=['','II','III','IV','V'];
 let bossOrder=[];
 function bossAt(z){
   if(z%10!==9)return null;
   const i=(z-9)/10;
-  while(bossOrder.length<=i){ // мешок из всех боссов, без повтора на стыке мешков
-    const bag=[0,1,2,3,4,5,6];
+  while(bossOrder.length<=i){ // Царь всегда последний в круге
+    const bag=[0,1,2,3,4,5];
     for(let j=bag.length-1;j>0;j--){ const r=(Math.random()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
-    if(bag[0]===bossOrder[bossOrder.length-1]) bag.push(bag.shift());
-    bossOrder.push(...bag);
+    bossOrder.push(...bag,6);
   }
   const k=bossOrder[i], d=BOSS_KINDS[k], c=bossOrder.slice(0,i).filter(x=>x===k).length;
   return c?{...d,name:d.name+' '+(ROMAN[c]||c+1)}:d;
