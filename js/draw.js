@@ -17,6 +17,7 @@ function drawGrib(p,t){
   if(p.inv>0&&((t*20)|0)%2)return; // мигаем при неуязвимости
   ctx.save(); ctx.translate(p.x-camX,p.y);
   if(charMode==='GLASS')ctx.globalAlpha=0.55;
+  if(ghostT>0)ctx.globalAlpha=0.5; // призрак: полупрозрачный
   if(charMode==='PUFF')ctx.scale(1.18,1.1);
   if(p.big)ctx.scale(1.35,1.35);
   const sq=p.squish; ctx.scale(1-sq*.6,1+sq);
@@ -34,10 +35,11 @@ function drawGrib(p,t){
   ctx.fillStyle=OL;
   ctx.beginPath(); ctx.ellipse(0,-20,21.5,14.5,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-21.5,-21.5,43,7.5);
-  ctx.fillStyle=meta.top?'#b8902a':'#b82432';
+  const sh=(t*400)%360|0, stc=starT>0; // звезда: шляпка переливается
+  ctx.fillStyle=stc?'hsl('+sh+',85%,38%)':meta.top?'#b8902a':'#b82432';
   ctx.beginPath(); ctx.ellipse(0,-20,20,13,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-20,-20,40,4);
-  ctx.fillStyle=meta.top?'#ffd84d':'#e63946';
+  ctx.fillStyle=stc?'hsl('+sh+',90%,60%)':meta.top?'#ffd84d':'#e63946';
   ctx.beginPath(); ctx.ellipse(-1.5,-21,18.5,12,0,Math.PI,0); ctx.fill();
   ctx.fillRect(-20,-21,38,3);
   // точки
@@ -59,6 +61,7 @@ const SKINS={
 };
 function drawEnemy(e,t){
   ctx.save(); ctx.translate(e.x-camX,e.y);
+  if(zapT>0)ctx.scale(.6,.6); // молния: враги 60% размера
   if(e.dead){ ctx.scale(1,0.25); ctx.globalAlpha=Math.max(0,1-e.dead*2); }
   ctx.scale(e.dir,1);
   if(e.type==='hop'&&e.wait>0)ctx.scale(1.12,0.82); // присел перед прыжком

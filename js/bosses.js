@@ -36,7 +36,7 @@ function bossThrow(b){
 }
 function obsAhead(){ return boss.obs.some(o=>o.x>player.x-20); }
 function bossKill(b){
-  b.st='dead'; b.t=0; b.vsx=520; b.vy=-900; b.waves=[]; b.obs=[];
+  b.st='dead'; b.t=0; b.vsx=520; b.vy=-900; b.waves=[]; b.obs=[]; b.frz=0;
   score+=b.mini?(b.easy?750:1500):5000; confetti(b.mini?30:90); shake(18,.6);
   if(b.kind==='rooster') for(let i=0;i<40;i++) parts.push({x:b.x,y:b.y-b.hh/2,vx:(Math.random()-.5)*900,vy:-Math.random()*700,l:1,c:Math.random()<.5?'#bfefff':'#ffffff'});
   if(b.kind==='balloon') beep(160,.8,'sawtooth',.14);
@@ -45,6 +45,7 @@ function bossKill(b){
   stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],b.mini?14:30);
   bossDone[b.lvl]=true;
   if(!b.mini) metaEvent('beat',b.kind); else metaEvent('minibeat',b.kind);
+  if(b.mini&&!spar) pickups.push({x:player.x+300,y:b.gy-52,kind:'life',t:0}); // мини-босс всегда роняет 1UP впереди гриба; арена режется до камеры+1.6W, 300 впереди остаётся
   if(spar){ sparWon=1; sparT=setTimeout(overCard,2500); } // спарринг: через 2.5 с карточка
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
@@ -322,13 +323,14 @@ function spawnMinion(x,y,p){
 const BOSS_UPD={plumber:updPlumber,pigeon:updPigeon,balloon:updBalloon,rooster:updRooster,worm:updWorm,ufo:updUfo,king:updKing};
 function updBoss(dt,onGround){
   const b=boss, psx=player.x-camX, gy=b.gy, rage=b.max-b.hp;
-  b.t+=dt; b.hitT=Math.max(0,b.hitT-dt);
+  if(b.frz>0) b.frz-=dt; else b.t+=dt; // молния: босс замер, его таймеры стоят
+  b.hitT=Math.max(0,b.hitT-dt);
   if(b.st==='dead'){ b.sx+=b.vsx*dt; b.vy+=G*0.55*dt; b.y+=b.vy*dt; b.rot+=dt*9; b.x=camX+b.sx; if(b.t>2.2) boss=null; return; }
-  BOSS_UPD[b.kind](b,dt,psx,gy,rage);
+  if(!(b.frz>0)) BOSS_UPD[b.kind](b,dt,psx,gy,rage);
   b.x=camX+b.sx;
   // ударная волна по земле: перепрыгни
   for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*(b.easy?.8:1)*dt;
-    if(!player.dead&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } }
+    if(!player.dead&&ghostT<=0&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } } // призрак: волны проходят; звезда: hit() ничего не делает, волна гаснет
   b.waves=b.waves.filter(w=>!w.dead&&w.sx>-60&&w.sx<W+60);
   // снаряды: яйца падают и лежат, пузыри и осколки летят на гриб
   const psc=player.big?1.35:1;
@@ -337,14 +339,14 @@ function updBoss(dt,onGround){
     else o.y+=(o.vy||0)*dt;
     o.x+=o.vx*dt;
     if(o.act){ // золотое: прыгни сверху
-      if(!player.dead&&player.vy>40&&Math.abs(player.x-o.x)<o.r+26*psc&&player.y>o.y-o.r-36&&player.y<=o.y+o.r+4){ o.dead=1; bossAct(b,o); }
+      if(!player.dead&&ghostT<=0&&player.vy>40&&Math.abs(player.x-o.x)<o.r+26*psc&&player.y>o.y-o.r-36&&player.y<=o.y+o.r+4){ o.dead=1; bossAct(b,o); }
       continue;
     }
-    if(!player.dead&&player.inv<=0&&Math.abs(player.x-o.x)<o.r+12*psc&&Math.abs(player.y-20*psc-o.y)<o.r+18*psc){ o.dead=1; hit(); }
+    if(!player.dead&&player.inv<=0&&ghostT<=0&&Math.abs(player.x-o.x)<o.r+12*psc&&Math.abs(player.y-20*psc-o.y)<o.r+18*psc){ o.dead=1; hit(); }
   }
   b.obs=b.obs.filter(o=>!o.dead&&o.x>camX-80&&o.x<camX+W+600);
   // контакт с самим боссом
-  if(player.dead||!b.solid)return;
+  if(player.dead||!b.solid||ghostT>0)return; // призрак проходит сквозь босса, без тычков
   const hh=b.hh*b.scale, top=b.y-hh, dx=Math.abs(player.x-b.x);
   if(b.mini){ // телом не бьёт, поэтому окно для тычка широкое
     if(player.vy>0&&dx<b.hw+34*psc&&player.y>top-10&&player.y<top+hh*.7){ player.vy=JUMP*0.78; player.jumps=maxJumps(); bossHit(b,top); }
@@ -358,8 +360,30 @@ function updBoss(dt,onGround){
     if(player.vy>60&&player.y<top+30){
       player.vy=JUMP*0.78; player.jumps=maxJumps(); player.y=Math.min(player.y,top-5); // выталкиваем, иначе следующий кадр считает боковым касанием
       if(b.vuln) bossHit(b,top); else beep(900,.05,'square',.08); // не время: дзынь
-    } else if(b.st!=='hurt'){ hit(); b.st=(b.kind==='plumber'||b.kind==='rooster')?'back':b.kind==='worm'?'dig':'rise'; b.t=0; }
+    } else if(b.st!=='hurt'&&starT<=0){ hit(); b.st=(b.kind==='plumber'||b.kind==='rooster')?'back':b.kind==='worm'?'dig':'rise'; b.t=0; }
   }
+}
+// молния в бою: атаки гаснут, босс стоит 2.5 с (уязвимый остаётся уязвимым)
+function zapBoss(){
+  if(!boss||boss.st==='dead')return;
+  boss.obs=[]; boss.waves=[]; wrenches=[]; boss.frz=2.5;
+  popText(boss.x,boss.y-boss.hh-20,'⚡','#ffe14d'); shake(5,.2);
+}
+// панч: выстрел; по боссу — один тычок через bossHit, иначе до трёх ближайших врагов впереди на экране
+function firePunch(){
+  const px=player.x, py=player.y-24;
+  if(boss&&boss.st!=='dead'){
+    const b=boss; punches.push({x0:px,y0:py,x1:b.x,y1:b.y-b.hh*b.scale/2,l:.3});
+    if(b.kind==='worm') b.dug=0;
+    bossHit(b,b.y-b.hh*b.scale); return;
+  }
+  const t=enemies.filter(e=>!e.dead&&e.x>px&&e.x<camX+W).sort((a,c)=>a.x-c.x).slice(0,3);
+  if(!t.length) punches.push({x0:px,y0:py,x1:camX+W,y1:py,l:.3});
+  for(const e of t){
+    e.dead=0.01; score+=100; punches.push({x0:px,y0:py,x1:e.x,y1:e.y-20,l:.3});
+    popText(e.x,e.y-60,'+100','#ff7aa8'); firework(e.x,e.y-40);
+  }
+  sStomp(); shake(4,.15);
 }
 function bossAct(b,o){
   sStomp(); shake(6,.2); player.jumps=maxJumps();

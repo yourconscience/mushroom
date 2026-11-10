@@ -11,11 +11,13 @@ function loop(ts){
   if(!running){ return; }
 
   if(!player.dead){
-    jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
+    jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt); starT=Math.max(0,starT-rdt); zapT=Math.max(0,zapT-rdt); ghostT=Math.max(0,ghostT-rdt);
+    noKillT+=rdt; if(combo>pCombo)noKillT=0; pCombo=combo; // резинка: время без убийств
     if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
-    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<7?1.2:2)); dist+=speed*dt; } // пока жив босс, зона и скорость стоят
-    player.x+=speed*dt;
+    const sm=starT>0?1.25:1; // звезда: гриб на 25% быстрее
+    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<7?1.2:2)); dist+=speed*sm*dt; } // пока жив босс, зона и скорость стоят
+    player.x+=speed*sm*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
     // смена зоны: все зоны по разу, дальше круг II, III... с ускорением
@@ -34,7 +36,7 @@ function loop(ts){
     zTimer+=dt;
     if(zTimer>=5){
       zTimer=0;
-      const o=SLOT_OUTCOMES[(Math.random()*SLOT_OUTCOMES.length)|0];
+      const o=slotPick();
       applySlot(o.k); showQuote('⚡ '+o.t,true);
       beep(880,.1); setTimeout(()=>beep(660,.12),80);
     }
@@ -69,21 +71,28 @@ function loop(ts){
       beep(700,.08); setTimeout(()=>beep(1050,.12),60);
       if(navigator.vibrate)navigator.vibrate(40);
       shake(3,.15); popText(b.x,b.y-30,B.icon+(b.kind==='loot'?' +500':''),B.color);
+      metaEvent('item',b.kind);
       if(b.kind==='jet')jetT=B.dur;
       else if(b.kind==='big')player.big=true;
       else if(b.kind==='spore')spT=B.dur;
       else if(b.kind==='hypno')hyT=B.dur;
       else if(b.kind==='magnet')mgT=B.dur;
-      else if(b.kind==='noir')startNoir();
+      else if(b.kind==='noir'){ startNoir(); starT=0; zapT=0; ghostT=0; } // нуар сжигает и новые таймеры; пузырь и 1UP остаются
       else if(b.kind==='loot')score+=500;
-      else if(b.kind==='slot'){ slotCharges++; slotBtn.classList.remove('hidden'); }
+      else if(b.kind==='slot'){ if(slotCharges<2){ slotCharges++; slotBtn.classList.remove('hidden'); if(!spinning)slotLabel(); } else { score+=300; popText(b.x,b.y-60,'+300',B.color); } } // в запасе не больше двух зарядов
+      else if(b.kind==='star')starT=B.dur;
+      else if(b.kind==='life')giveLife();
+      else if(b.kind==='bubble'){ if(bubble>0){ score+=300; popText(b.x,b.y-60,'+300',B.color); } else bubble=1; }
+      else if(b.kind==='zap'){ zapT=B.dur; zapBoss(); }
+      else if(b.kind==='punch')firePunch();
+      else if(b.kind==='ghost')ghostT=B.dur;
       for(let i=0;i<14;i++)parts.push({x:b.x,y:b.y,vx:(Math.random()-.5)*450,vy:-Math.random()*350,l:.6,c:B.color});
     }
   }
   pickups=pickups.filter(b=>!b.got);
 
   // враги: у каждого свой характер — скорость, ритм рывков, амплитуда, дистанция
-  const emult=ZONES[zoneI].mult*(1+lap*0.25);
+  const emult=ZONES[zoneI].mult*(1+lap*0.25), zm=zapT>0?.5:1, zs=zapT>0?.6:1; // молния: враги вдвое медленнее и мельче
   for(const e of enemies){
     if(e.dead){ e.dead+=dt; continue; }
     if(e.spd===undefined){ // характер выбирается один раз
@@ -91,11 +100,11 @@ function loop(ts){
       e.pat=Math.random(); e.cd2=0.8+Math.random()*2.4; e.lunge=0; e.hopV=340+Math.random()*120;
       e.burst=0; e.burstT=0; e.dvT=0; e.dip=0;
     }
-    const base=(e.type==='slide'?150:e.type==='fly'?85:e.type==='hop'?70:e.type==='spike'?45:e.type==='thrower'?0:e.type==='dive'?40:60)*emult*e.spd;
+    const base=(e.type==='slide'?150:e.type==='fly'?85:e.type==='hop'?70:e.type==='spike'?45:e.type==='thrower'?0:e.type==='dive'?40:60)*emult*e.spd*zm;
     let sp=base;
     if(e.dv){
       // пике: летит по прямой, потом возвращается и снова целится
-      e.x+=e.dvx*dt; e.y+=e.dvy*dt; e.dir=e.dvx<0?-1:1; e.dvT+=dt;
+      e.x+=e.dvx*dt*zm; e.y+=e.dvy*dt*zm; e.dir=e.dvx<0?-1:1; e.dvT+=dt;
       if(e.dvT>1.6||e.y>H+80||e.x<camX-140){
         e.dv=false; e.dvT=0; e.x=player.x+200+Math.random()*120; e.y=e.baseY-120; e.cd2=1.2+Math.random()*1.4;
         if(e.dives>=2) e.x=camX-500; // две атаки и улетел
@@ -125,8 +134,8 @@ function loop(ts){
       e.dir=player.x<e.x?-1:1;
       const tdx=e.x-player.x, toward=Math.sign(player.x-e.x)||-1;
       // держит дистанцию 240..460 и стреляет очередью из двух ключей
-      if(!player.dead){ if(tdx>460)e.x+=toward*60*dt*emult; else if(tdx<240)e.x-=toward*50*dt*emult; }
-      if(!player.dead&&e.x>camX&&e.x<camX+W&&tdx>0&&tdx<700){ e.cd-=dt; if(e.cd<=0){ e.cd=1.6+Math.random()*0.7; e.burst=2; } }
+      if(!player.dead){ if(tdx>460)e.x+=toward*60*dt*emult*zm; else if(tdx<240)e.x-=toward*50*dt*emult*zm; }
+      if(!player.dead&&e.x>camX&&e.x<camX+W&&tdx>0&&tdx<700){ e.cd-=dt*zm; if(e.cd<=0){ e.cd=1.6+Math.random()*0.7; e.burst=2; } }
       if(e.burst>0){ e.burstT+=dt;
         if(e.burstT>0.22){ e.burstT=0; e.burst--;
           const T=0.6+tdx/1500, x0=e.x, y0=e.y-40;
@@ -144,9 +153,14 @@ function loop(ts){
       if(e.x<e.p.x+18){e.dir=1;} if(e.x>e.p.x+e.p.w-18){e.dir=-1;}
     }
     // коллизия
-    const psc=player.big?1.35:1, eh=e.type==='spike'?30:44;
-    if(!player.dead&&Math.abs(player.x-e.x)<26*psc&&player.y>e.y-eh&&player.y-40*psc<e.y){
-      if(player.vy>140&&player.y<e.y-14&&e.type==='spike'){
+    const psc=player.big?1.35:1, eh=(e.type==='spike'?30:44)*zs;
+    if(!player.dead&&Math.abs(player.x-e.x)<26*psc*zs&&player.y>e.y-eh&&player.y-40*psc<e.y){
+      if(starT>0){ // звезда: касание убивает
+        e.dead=0.01; if(e.royal&&boss) boss.armor=0;
+        combo++; comboT=2.2; score+=100; sStomp(); popText(e.x,e.y-60,'+100','#ffd84d');
+        for(let i=0;i<12;i++)parts.push({x:e.x,y:e.y-20,vx:(Math.random()-.5)*400,vy:-Math.random()*300,l:.6,c:'hsl('+((Math.random()*360)|0)+',90%,60%)'});
+      } else if(ghostT>0){ /* призрак: проходит насквозь, не давит */
+      } else if(player.vy>140&&player.y<e.y-14&&e.type==='spike'){
         // ёж колется: прыжок сверху = удар, но отскок
         player.vy=JUMP*0.6; hit();
       } else if(player.vy>(e.type==='hop'?40:140)&&player.y<e.y-(e.type==='hop'?6:14)){
@@ -187,14 +201,14 @@ function loop(ts){
   for(const w of wrenches){
     w.l-=dt; w.vy+=WG*dt; w.x+=w.vx*dt; w.y+=w.vy*dt; w.r+=12*dt;
     const wsc=player.big?1.35:1;
-    if(!player.dead&&player.inv<=0&&Math.abs(player.x-w.x)<20*wsc&&w.y>player.y-40*wsc-6&&w.y<player.y+4){ w.l=0; hit(); }
+    if(!player.dead&&player.inv<=0&&ghostT<=0&&Math.abs(player.x-w.x)<20*wsc&&w.y>player.y-40*wsc-6&&w.y<player.y+4){ w.l=0; hit(); }
   }
   wrenches=wrenches.filter(w=>w.l>0&&w.y<H+100&&w.x>camX-200);
   // босс
   if(arena&&!boss&&!player.dead&&player.x>arena.x+60) startBoss();
   if(boss) updBoss(dt,onGround);
   // падение
-  if(!player.dead&&player.y>H+80) die();
+  if(!player.dead&&player.y>H+80){ if(bubble>0) useBubble(); else die(); } // яма убивает всегда, звезда не спасает; пузырь — один раз
 
   if(!player.dead) score+=speed*dt*0.05; // после смерти счёт стоит
 
@@ -215,6 +229,7 @@ function loop(ts){
     ctx.restore();
   }
   ctx.textAlign='left';
+  if(starT>0&&!player.dead&&Math.random()<dt*40)parts.push({x:player.x+(Math.random()-.5)*30,y:player.y-Math.random()*40,vx:(Math.random()-.5)*120,vy:-60-Math.random()*100,l:.4,c:'hsl('+((t*400+Math.random()*90)%360|0)+',95%,65%)'});
   // выхлоп джетпака
   if(jetT>0&&!player.dead)parts.push({x:player.x-8,y:player.y-6,vx:-120-Math.random()*80,vy:120+Math.random()*120,l:.35,c:Math.random()<.5?'#ff8c42':'#4cc9f0'});
   for(const e of enemies) drawEnemy(e,t);
@@ -223,6 +238,12 @@ function loop(ts){
     ctx.globalAlpha=.35; ctx.fillStyle='#a6e22e'; ctx.beginPath(); ctx.arc(sp.x-camX,sp.y,10,0,7); ctx.fill();
     ctx.globalAlpha=1; ctx.fillStyle='#e6ff9e'; ctx.beginPath(); ctx.arc(sp.x-camX,sp.y,4.5,0,7); ctx.fill();
   }
+  for(const s of punches){ // выстрел панча: розовая линия с белой сердцевиной
+    s.l-=dt; ctx.globalAlpha=Math.max(0,Math.min(1,s.l*5)); ctx.lineCap='round';
+    ctx.strokeStyle='#ff7aa8'; ctx.lineWidth=9; ctx.beginPath(); ctx.moveTo(s.x0-camX,s.y0); ctx.lineTo(s.x1-camX,s.y1); ctx.stroke();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke(); ctx.globalAlpha=1; ctx.lineCap='butt';
+  }
+  punches=punches.filter(s=>s.l>0);
   for(const w of wrenches){
     ctx.save(); ctx.translate(w.x-camX,w.y); ctx.rotate(w.r);
     ctx.fillStyle='#b8bcc4'; ctx.fillRect(-10,-2.5,20,5); ctx.fillRect(-14,-6,7,12);
@@ -243,7 +264,7 @@ function loop(ts){
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
   scoreEl.textContent='СЧЁТ: '+((score*SM)|0);
-  const fx=[oneUp>0?'🟢':'',player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
+  const fx=[oneUp>0?'🟢':'',bubble>0?'🫧':'',player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT],['star',starT],['zap',zapT],['ghost',ghostT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
   fxEl.textContent=fx;
   if(hyT>0){ ctx.fillStyle='hsla('+((t*90)%360|0)+',90%,60%,0.14)'; ctx.fillRect(-20,-20,W+40,H+40); }
   comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';

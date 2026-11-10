@@ -15,8 +15,8 @@ function sJingle(z){ let d=0; for(const [f,dur] of z.jingle){ setTimeout(()=>bee
 let nextBeat=0, beatI=0;
 function tickMusic(){
   if(!AC||!musicOn||!running||player.dead)return;
-  if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:fsT>0?1.4:1; return; } // играет живой трек
-  const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:fsT>0?1/1.4:1); // восьмые
+  if(clipSrc){ clipSrc.playbackRate.value=hyT>0?0.5:fsT>0?1.4:starT>0?1.25:1; return; } // играет живой трек
+  const z=ZONES[zoneI], spb=60/z.bpm/2*(hyT>0?2:fsT>0?1/1.4:starT>0?1/1.25:1); // восьмые
   if(AC.currentTime>=nextBeat){
     const f=z.loop[beatI%z.loop.length];
     if(f)beep(f,spb*0.9,z.wave,.045);

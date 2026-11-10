@@ -6,7 +6,7 @@ function startNoir(){
 }
 // удар: большой гриб уменьшается и неуязвим 1.5 с, маленький умирает
 function hit(){
-  if(player.dead||player.inv>0)return;
+  if(player.dead||player.inv>0||starT>0||ghostT>0)return; // звезда и призрак: ничто не бьёт
   if(boss) boss.touched=1;
   if(!player.big){ die(); return; }
   player.big=false; player.inv=1.5;
@@ -19,6 +19,14 @@ function revive(){
   const p=plats.find(q=>q.x+q.w>Math.max(player.x,q.x+40)+60)||plats[plats.length-1];
   player.x=Math.max(player.x,p.x+40); player.y=p.y-160; player.vy=0; player.big=false; player.inv=2.5; player.jumps=maxJumps(); combo=0;
   showQuote('ВТОРАЯ ЖИЗНЬ 🟢',true); shake(10,.35); sJingle(ZONES[0]);
+}
+// пузырь: падение в яму — гриб возвращается на первую платформу впереди, 1 с неуязвимости
+function useBubble(){
+  bubble=0;
+  const p=plats.find(q=>q.x+q.w>Math.max(player.x,q.x+40)+60)||plats[plats.length-1];
+  player.x=Math.max(player.x,p.x+40); player.y=p.y-160; player.vy=0; player.inv=1; player.jumps=maxJumps();
+  showQuote('ПУЗЫРЬ ЛОПНУЛ, ГРИБ СПАСЁН 🫧',true); shake(6,.2); beep(900,.1); setTimeout(()=>beep(1300,.12),70);
+  for(let i=0;i<14;i++)parts.push({x:player.x,y:player.y,vx:(Math.random()-.5)*400,vy:-Math.random()*300,l:.6,c:'#7ad7ff'});
 }
 function die(){
   if(player.dead)return;

@@ -33,7 +33,7 @@ let boss=null, arena=null, bossDone={}, bigGiven={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
-  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
+  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; starT=0; zapT=0; ghostT=0; bubble=0; noKillT=0; pCombo=0; punches=[]; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
   boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); zoneIdx={}; bossR=null; miniR=null;
   const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг: старт прямо на арене нужного уровня
   if(sl>=0){ dist=sl*ZONE_LEN+60; speed=420; zoneN=sl; zoneI=sl%ZONES.length; }
@@ -76,11 +76,12 @@ function addPlat(afterX){
   }
   // бонус (Z и V не видят ничего, X — только деньги)
   if(charMode!=='Z'&&charMode!=='V'&&charMode!=='OKS'&&pd>=noirTo){ // нуар: бонусов нет до конца
-    const roll=R(); let acc=0;
+    const roll=R(); let acc=0; const bad=!player.big&&noKillT>10; // резинка: идёт плохо — больше помощи
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
       if(k==='big'&&(player.big||pzi===0||charMode==='GLASS'||charMode==='EZ'))continue; // один уровень роста, не в первой зоне
-      acc+=BONUSES[k].chance;
+      if(BONUSES[k].nw&&(spar||!bOpen(k)))continue; // новые предметы: только открытые
+      acc+=BONUSES[k].chance*(bad?(BAND_UP[k]?2:BAND_DN[k]?.5:1):1);
       if(roll<acc){ pickups.push({x:p.x+w*(0.2+R()*0.6),y:p.y-52,kind:k,t:R()*6}); break; }
     }
   }

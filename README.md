@@ -11,7 +11,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 - Tap / Space -- jump (tap again mid-air for double jump)
 - Land ON enemies to stomp them
-- Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
+- Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays), and six more that open up through the ladder: ⭐ star (5 s: nothing hurts, faster, touch kills; pits still kill), 🟢 1UP (a second life in stock, a mini-boss always drops one), 🫧 bubble (held: saves you from the next pit), ⚡ zap (6 s: enemies smaller and half speed, the boss freezes for 2.5 s and its attacks vanish), 🎤 punch (instantly removes up to three enemies ahead, or hits a boss once), 👻 ghost (4 s: everything passes through you, no stomps). When a run goes badly (small mushroom, no stomp for 10 s) helpers drop twice as often and loot and slot machines half as often
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
 - The first seven levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9 (except during the black-and-white zone), speed grows more slowly, and hoppers and wrench throwers only appear after level 7
 - Bosses: every 7th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
@@ -23,7 +23,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
 - Mini-bosses: level 4 always has an easy one (a single stomp, 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
-- Z key -- spin the slot machine
+- Z key -- spin the slot machine (two charges at most, a third pickup gives +300; outcomes now include a star, a 1UP, 8 s of spores and turning every enemy on screen into pigeons)
 - New players start every normal run with a second life (🟢) until they beat a first mini-boss or boss
 - Sparring: every boss and mini-boss you have met has a Спарринг button in the Боссы tab: a practice fight that scores nothing and changes no goals
 
