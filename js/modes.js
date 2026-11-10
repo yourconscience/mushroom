@@ -22,8 +22,8 @@ function applyName(){
   const v=upName(nickEl.value);
   playerName=v||'АНОНИМ';
   try{ localStorage.gribName=v; }catch(e){}
-  const up=playerName.toUpperCase(), M=MODES[up];
-  charMode=M?M.k:/^[ZXV]$/.test(up)?up:'';
+  const M=MODES[playerName];
+  charMode=M?M.k:'';
   SM=M?M.sm:1;
   document.body.style.filter=baseFilter();
 }

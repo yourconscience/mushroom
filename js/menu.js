@@ -32,8 +32,8 @@ function fillBonus(p){
 }
 function fillLevels(p){
   p.textContent='';
-  const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||200;
-  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. В начале 3-го, 6-го и 9-го уровня всегда лежит гриб. Босс на каждом 10-м уровне, Царь последним в круге из семи, мини-босс на каждом 5-м.'); p.append(a);
+  const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||400;
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. В начале 3-го, 6-го и 9-го уровня всегда лежит гриб. Босс на каждом 10-м уровне, Царь последним в круге из семи, мини-босс на 5-м, 15-м, 25-м и так далее.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок, боссы тоже под случайный трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec,title){
@@ -62,7 +62,7 @@ function poolOpen(){ try{ return localStorage.gribPool==='1'; }catch(e){ return 
 function syncPoolChip(){ document.getElementById('poolChip').classList.toggle('hidden',!poolOpen()); }
 function checkPool(scores,me){
   if(me&&me!=='АНОНИМ'&&!isSecret(me)&&scores.slice(0,10).some(r=>r.n===me)) metaEvent('top');
-  if(poolOpen()||!me||me==='АНОНИМ'||MODES[me.toUpperCase()]||/^[zxv]$/i.test(me))return false;
+  if(poolOpen()||!me||me==='АНОНИМ'||isSecret(me))return false;
   if(!scores.slice(0,5).some(r=>r.n===me))return false;
   try{ localStorage.gribPool='1'; }catch(e){}
   syncPoolChip(); return true;

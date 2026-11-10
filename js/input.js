@@ -1,7 +1,6 @@
 // --- Ввод ---
 function jump(){
-  if(!running){ return; }
-  if(player.dead) return;
+  if(!running||player.dead) return;
   if(player.jumps>0||jetT>0){
     player.vy=(jetT>0?JUMP*0.75:JUMP*(player.jumps===maxJumps()?1:0.88))*(charMode==='PUFF'?0.775:1);
     if(jetT<=0)player.jumps--;
@@ -46,7 +45,7 @@ function startGame(){
   else if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
   let tries=0;
-  const sayStart=()=>{ if(!playlist.length&&tries++<10){ setTimeout(sayStart,300); return; } announceZone(0); };
+  const sayStart=()=>{ if(!playlist.length&&tries++<10){ setTimeout(sayStart,300); return; } announceZone(zoneN); };
   setTimeout(sayStart,350);
 }
 btn.addEventListener('click',()=>{ daily=''; startGame(); });

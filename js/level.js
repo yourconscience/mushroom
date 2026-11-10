@@ -1,6 +1,6 @@
 // --- Состояние ---
 let running=false, gameOver=false;
-let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, tQuote, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, sessBest={};
+let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, sessBest={};
 const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
@@ -32,9 +32,9 @@ let boss=null, arena=null, bossDone={}, bigGiven={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
-  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; tQuote=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
+  plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
   boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; zoneIdx={}; bossR=null; miniR=null;
-  if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; } // ГНОЙНЫЙ: сразу к первому боссу
+  if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; zoneN=9; zoneI=9%ZONES.length; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
   if(charMode==='GNOY'){ arena=plats[0]; arena.w=1e7; arena.lvl=9; } // старт прямо на арене
@@ -42,8 +42,6 @@ function reset(){
   gameOver=false;
   shufflePlaylist();
 }
-// зона по мировой координате (dist == player.x-120)
-function zoneAt(x){ return (((x-120)/ZONE_LEN)|0)%ZONES.length; }
 function addPlat(afterX){
   // забег дня: случайность по ключу (зона, номер платформы в зоне), скорость в зазоре тоже по зоне
   const z0=((dist+afterX-player.x)/ZONE_LEN)|0, R=rngFor('p',z0,zoneIdx[z0]=(zoneIdx[z0]||0)+1);
@@ -51,7 +49,8 @@ function addPlat(afterX){
   const w=200+R()*260;
   const last=plats[plats.length-1];
   // арена босса: одна длинная ровная платформа без врагов и бонусов
-  const pz=((dist+afterX+gap-player.x)/ZONE_LEN)|0;
+  // pd, pz — путь и зона платформы в координатах dist: после боя с боссом они расходятся с мировым x
+  const pd=dist+afterX+gap-player.x, pz=(pd/ZONE_LEN)|0, pzi=pz%ZONES.length;
   if((bossAt(pz)||miniAt(pz))&&!bossDone[pz]&&!arena&&!boss){
     const a={x:afterX+gap,y:Math.max(H*0.55,Math.min(H*0.74,last.y)),w:1e7,lvl:pz};
     plats.push(a); arena=a; return a.x+a.w;
@@ -66,18 +65,18 @@ function addPlat(afterX){
     return p.x+w;
   }
   // враг
-  if(R()<0.45+lap*0.1+(charMode==='MARIO'?0.2:0) && w>150){
+  if(R()<0.45+((pz/ZONES.length)|0)*0.1+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
-    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[zoneI].enemies.filter(t=>pz>=10||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 10-го уровня
+    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[pzi].enemies.filter(t=>pz>=10||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 10-го уровня
     const type=types[(R()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:R()<.5?-1:1,p,dead:0,t:R()*6,type,vy:0,baseY:p.y,cd:0.15+R()*0.3});
   }
   // бонус (Z и V не видят ничего, X — только деньги)
-  if(charMode!=='Z'&&charMode!=='V'&&charMode!=='OKS'&&p.x-120>=noirTo){ // нуар: бонусов нет до конца
+  if(charMode!=='Z'&&charMode!=='V'&&charMode!=='OKS'&&pd>=noirTo){ // нуар: бонусов нет до конца
     const roll=R(); let acc=0;
     for(const k in BONUSES){
       if(charMode==='X'&&k!=='loot')continue;
-      if(k==='big'&&(player.big||zoneAt(p.x)===0||charMode==='GLASS'||charMode==='EZ'))continue; // один уровень роста, не в первой зоне
+      if(k==='big'&&(player.big||pzi===0||charMode==='GLASS'||charMode==='EZ'))continue; // один уровень роста, не в первой зоне
       acc+=BONUSES[k].chance;
       if(roll<acc){ pickups.push({x:p.x+w*(0.2+R()*0.6),y:p.y-52,kind:k,t:R()*6}); break; }
     }

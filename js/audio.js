@@ -23,8 +23,9 @@ function tickMusic(){
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
 }
-// музыка: clips/manifest.json = {"files":[фрагменты]}. special из манифеста не играет: все треки случайные.
-// Все фрагменты качаются сразу, декодируются по требованию (в кэше 3). Каждый забег перемешивает пул.
+// музыка: clips/manifest.json = {"files":[фрагменты],"t":[названия]}. Каждый забег перемешивает пул.
+// Фрагмент качается, когда до него дошла очередь (текущая зона и следующая заранее), а не все 400 сразу (96 МБ).
+// Декодированных в кэше 3.
 let clipMeta=null, clipBytes=[], clipSrc=null, clipGain=null;
 const clipDecoded=new Map();
 let playlist=[], lastFirst=-1, clipToken=0, clipsLoading=false;
@@ -52,13 +53,13 @@ async function loadClips(){
     clipBytes=new Array(files.length);
     renderPool();
     shufflePlaylist();
-    const ready=()=>running&&!player.dead&&!clipSrc;
-    let next=0;
-    const worker=async()=>{ while(next<files.length){ const i=next++; if(!files[i])continue; try{ clipBytes[i]=await (await fetch('clips/'+files[i])).arrayBuffer(); }catch(e){} if(ready()&&pickFor(zoneN)===i) playZone(zoneN); } };
-    const jobs=Array.from({length:Math.min(8,files.length)||1},worker);
-    await Promise.all(jobs);
-    if(ready()) playZone(zoneN);
-  }catch(e){}
+    if(running&&!player.dead&&!clipSrc) playZone(zoneN);
+  }catch(e){ clipsLoading=false; } // манифест не дошёл: следующий старт попробует ещё раз
+}
+// байты фрагмента: один запрос на трек, неудачный не запоминаем
+function clipFetch(i){
+  const f=clipMeta&&clipMeta.files&&clipMeta.files[i]; if(!f) return Promise.resolve(null);
+  return clipBytes[i]||(clipBytes[i]=fetch('clips/'+f).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).catch(()=>{ clipBytes[i]=null; return null; }));
 }
 function shufflePlaylist(){
   const n=clipBytes.length; if(!n)return;
@@ -70,7 +71,7 @@ function shufflePlaylist(){
 }
 async function clipBuffer(pick){
   if(clipDecoded.has(pick)){ const b=clipDecoded.get(pick); clipDecoded.delete(pick); clipDecoded.set(pick,b); return b; }
-  const raw=clipBytes[pick]; if(!raw)return null;
+  const raw=await clipFetch(pick); if(!raw)return null;
   const b=await AC.decodeAudioData(raw.slice(0));
   clipDecoded.set(pick,b);
   if(clipDecoded.size>3) clipDecoded.delete(clipDecoded.keys().next().value);
@@ -98,6 +99,7 @@ async function playZone(zn){
   if(!musicOn)return;
   const pick=pickFor(zn);
   if(pick===-1){ sJingle(ZONES[zoneI]); return; }
+  clipFetch(pickFor(zn+1)); // следующий трек качаем заранее
   let buf=null;
   try{ buf=await clipBuffer(pick); }catch(e){}
   if(token!==clipToken||player.dead)return;

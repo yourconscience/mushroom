@@ -2,24 +2,23 @@
 """Cut 15-second loops from a pool of real tracks.
 
 Reads music/sources.json (private, gitignored):
-  {"special": {"src": "~/Music/favourite/...", "start": 9, "len": 15},
-   "pool": [{"src": "...", "start": null, "len": 15}, ...]}
+  {"pool": [{"src": "~/Music/...", "start": null, "len": 15}, ...]}
 
 "start": null picks the loudest window of "len" seconds (usually the chorus).
 
-Writes clips/NN.mp3 for the pool (in order) and clips/special.mp3, all with
-metadata tags stripped, plus clips/manifest.json:
-  {"files": ["01.mp3", ...], "t": [...], "special": "special.mp3", "st": "..."}
-"t"/"st" hold the titles XOR-ed with a fixed key and base64-encoded, so the names
-never sit in the public repo as plain text; index.html decodes them (deob).
-index.html loads the manifest and reshuffles the pool on every run.
+Writes clips/NN.mp3 for the pool (in order), all with metadata tags stripped,
+plus clips/manifest.json:
+  {"files": ["01.mp3", ...], "t": [...]}
+"t" holds the titles XOR-ed with a fixed key and base64-encoded, so the names
+never sit in the public repo as plain text; js/audio.js decodes them (deob),
+loads the manifest and reshuffles the pool on every run.
 The artist/track mapping goes to music/TRACKLIST.md, which stays gitignored:
 it is the only place the real names live.
 Needs ffmpeg.
 """
 import base64, json, os, re, subprocess, sys
 
-OBF_KEY = b"grib-versus"  # same key as OBF_KEY in index.html
+OBF_KEY = b"grib-versus"  # same key as OBF_KEY in js/audio.js
 
 
 def obf(s):
@@ -94,18 +93,7 @@ def main():
         titles.append(title_of(src))
         tracklist.append(f"| {i} | {title_of(src)} | {start}s |")
         print(f"{name} {start}s  {os.path.basename(src)}")
-    special, special_title = None, None
-    cfg = data.get("special")
-    if cfg:
-        src = os.path.expanduser(cfg["src"])
-        if os.path.exists(src):
-            start = cut(src, cfg.get("start"), int(cfg.get("len") or 15), os.path.join(CLIPS, "special.mp3"))
-            special, special_title = "special.mp3", title_of(src)
-            tracklist.append(f"| special | {title_of(src)} | {start}s |")
-            print(f"special {start}s  {os.path.basename(src)}")
-        else:
-            print(f"skip special: no file {src}", file=sys.stderr)
-    json.dump({"files": files, "t": [obf(t) for t in titles], "special": special, "st": obf(special_title)},
+    json.dump({"files": files, "t": [obf(t) for t in titles]},
               open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0, ensure_ascii=False)
     open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
 

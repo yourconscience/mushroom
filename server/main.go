@@ -4,8 +4,10 @@
 //	GET  /?prefix=v2:      -> [["v2:NAME",score],...]
 //	POST /v2:NAME  body=N  -> keeps the max score per key
 //
-// Admin API on a loopback port that is not funneled: GET / lists all, DELETE /KEY removes a row.
-// CLI on the server: `grib-lb ls`, `grib-lb rm NAME|KEY...`.
+//	POST /ev       body=K  -> anonymous run counter, +1 for (UTC day, event K)
+//
+// Admin API on a loopback port: GET / lists all, DELETE /KEY removes a row, GET /ev?since=DAY dumps the counter.
+// CLI on the server: `grib-lb ls`, `grib-lb rm NAME|KEY...`, `grib-lb stats [DAYS]`.
 package main
 
 import (

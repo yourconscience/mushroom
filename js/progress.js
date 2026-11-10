@@ -106,4 +106,4 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()
   if(on){ b.setAttribute('aria-pressed','true'); const p=document.getElementById('tab-'+b.dataset.tab); FILL[b.dataset.tab](p); p.classList.remove('hidden'); }
 }));
 document.getElementById('btn2').addEventListener('click',startGame);
-document.getElementById('btnMenu').addEventListener('click',()=>{ overEl.classList.add('hidden'); menuEl.classList.remove('hidden'); });
+document.getElementById('btnMenu').addEventListener('click',()=>{ daily=''; overEl.classList.add('hidden'); menuEl.classList.remove('hidden'); });

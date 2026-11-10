@@ -18,7 +18,7 @@ function loop(ts){
     player.x+=speed*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
-    // смена зоны: все 8 по разу, дальше круг II, III... с ускорением
+    // смена зоны: все зоны по разу, дальше круг II, III... с ускорением
     const zn=(dist/ZONE_LEN)|0;
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
@@ -197,7 +197,7 @@ function loop(ts){
   // падение
   if(!player.dead&&player.y>H+80) die();
 
-  score+=speed*dt*0.05;
+  if(!player.dead) score+=speed*dt*0.05; // после смерти счёт стоит
 
   // частицы
   for(const p of parts){ p.l-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=1200*dt; }

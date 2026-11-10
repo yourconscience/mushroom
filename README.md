@@ -22,7 +22,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when the mound reaches you, then stomp the real head, not the thorny one
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
-- Mini-bosses: every 5th level (every 4th in БАТТЛ) brings ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
+- Mini-bosses: levels 5, 15, 25 and so on (every 4th level in БАТТЛ) bring ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
 - Z key -- spin the slot machine
 
 ## Features
@@ -43,7 +43,7 @@ Reaching the first boss opens a Секреты tab in the menu with every secret
 
 ## Audio
 
-The game ships 400 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: the first 200 come from the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник), the rest are the channel's 2023-2026 picks — year-end top lists, release reviews and profiles from @psyterrormagazine — downloaded and cut per track. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
+The game ships 400 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: the first 200 come from the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник), the rest are the channel's 2023-2026 picks — year-end top lists, release reviews and profiles from @psyterrormagazine — downloaded and cut per track. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. A clip is downloaded when its zone comes up, with the next one fetched ahead, so a visit costs a few hundred kilobytes per zone and not the whole 96 MB pool. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
 
 ## Leaderboard
 
@@ -67,7 +67,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v34** (shown in the bottom-right corner of the game).
+Current build: **v37** (shown in the bottom-right corner of the game).
 
 ## Credits
 

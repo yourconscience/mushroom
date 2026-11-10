@@ -15,7 +15,7 @@ function hit(){
 }
 function die(){
   if(player.dead)return;
-  track('end:'+(zoneN+1)+':'+(boss?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег
+  track('end:'+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег
   player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(()=>{

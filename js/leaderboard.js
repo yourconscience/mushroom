@@ -12,7 +12,7 @@ function trackStart(){ // новый браузер, вернулся в дру�
 }
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }
-function isSecret(n){ n=String(n||'').toUpperCase(); return !!MODES[n]||/^[ZXV]$/.test(n); }
+function isSecret(n){ return !!MODES[String(n||'').toUpperCase()]; }
 // таймаут, чтобы зависший сервер (или вопрос браузера про доступ к локальной сети) не держал топ вечно
 function tmo(ms){ return window.AbortSignal&&AbortSignal.timeout?AbortSignal.timeout(ms):undefined; }
 async function getJSON(u){ const r=await fetch(u,{signal:tmo(6000)}); if(!r.ok) throw new Error(r.status); return r.json(); }
@@ -43,4 +43,4 @@ addEventListener('online',flushOutbox);
 let playerName=''; // выбирается один раз за визит
 function myKey(){ return (daily?'D:':'')+(playerName||'АНОНИМ').toUpperCase(); } // забег дня считается отдельно
 function myBest(){ return sessBest[myKey()]||0; }
-let charMode=''; // секретные персонажи: ник Z / X / V и пять режимов ниже
+let charMode=''; // секретный персонаж: код режима из MODES (modes.js) или ''
