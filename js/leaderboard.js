@@ -7,8 +7,16 @@ const LB_URL='https://207-180-207-128.sslip.io:8445/';
 function track(k){ try{ if(!(navigator.sendBeacon&&navigator.sendBeacon(LB_URL+'ev',k))) fetch(LB_URL+'ev',{method:'POST',body:k,keepalive:true}).catch(()=>{}); }catch(e){} }
 function today(){ return new Date(Date.now()+3*3600e3).toISOString().slice(0,10); } // день по Москве
 function trackStart(){ // новый браузер, вернулся в другой день или снова сегодня
-  let last=''; try{ last=localStorage.gribDay||''; localStorage.gribDay=today(); }catch(e){}
-  track('start:'+(!last?'first':last!==today()?'ret':'same'));
+  let last=''; try{ last=localStorage.gribDay||''; }catch(e){}
+  const kind=!last?'first':last!==today()?'ret':'same';
+  let first=''; try{ first=localStorage.gribFirst; if(!first){ first=today(); localStorage.gribFirst=first; } }catch(e){ first=today(); }
+  try{ localStorage.gribDay=today(); }catch(e){}
+  track('start:'+kind);
+  if(kind==='first'||kind==='ret'){ // первый заход за день: неделя с первого визита
+    let n=0; try{ n=Math.floor((Date.parse(today())-Date.parse(first))/(7*864e5)); }catch(e){}
+    if(n<0)n=0; if(n>12)n=12;
+    track('week:w'+n);
+  }
 }
 // секретные ники (режимы и Z/X/V) живут в отдельном топе с ключами v2s:, в общем их нет
 function upName(n){ return String(n||'').trim().slice(0,8).toUpperCase(); }

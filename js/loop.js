@@ -22,6 +22,7 @@ function loop(ts){
     const zn=(dist/ZONE_LEN)|0;
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
+      metaEvent('level',zn+1);
       if((charMode==='EZ'||charMode==='LEG')&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
       speed+=zn<7?5:8;
       announceZone(zn);
@@ -153,7 +154,7 @@ function loop(ts){
         // СТОМП
         e.dead=0.01; player.vy=JUMP*0.7; player.jumps=maxJumps();
         if(e.royal&&boss) boss.armor=0;
-        combo++; comboT=2.2;
+        combo++; comboT=2.2; metaEvent('combo',combo);
         const pts=100*combo; score+=pts; sStomp();
         if(COMBO_STAMPS[combo]){ stamp(...COMBO_STAMPS[combo]); if(combo>=5) airhorn(); }
         popText(e.x,e.y-60,'+'+pts, combo>1?'#ff2d78':'#ffe14d');

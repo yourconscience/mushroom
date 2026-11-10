@@ -40,6 +40,7 @@ function startGame(){
   player.jumps=maxJumps();
   runUnlocks=[]; renderRunUnlocks(); roundN=0;
   if(!spar) trackStart();
+  if(daily) metaEvent('streak',streakNow()); // лучшая серия забега дня
   if(!daily&&!spar&&isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
   const M=!daily&&!spar&&MODES[playerName.toUpperCase()];
   if(!daily&&!spar&&!charMode&&!cnt(meta.beat)&&!cnt(meta.miniBeat)){ oneUp=1; setTimeout(()=>showQuote('НОВИЧКУ: ВТОРАЯ ЖИЗНЬ 🟢',true),700); } // пока не завалил ни одного босса

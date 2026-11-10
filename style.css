@@ -57,6 +57,7 @@ button { font:inherit; color:inherit; cursor:pointer; border:0; background:none;
 .panel b { color:var(--ink); font-weight:600; }
 .blist { display:grid; grid-template-columns:26px 1fr; gap:7px 8px; }
 .blist .ic { font-size:17px; line-height:1.25; text-align:center; }
+.blist .riddle { font-style:italic; }
 .top { display:grid; grid-template-columns:22px 1fr auto; gap:3px 10px; font-variant-numeric:tabular-nums; }
 .top .rk { color:var(--dim); }
 .top .me { color:var(--lime); }

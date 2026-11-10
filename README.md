@@ -41,7 +41,11 @@ The «Забег дня» button starts the run of the day (Moscow date): the sa
 
 ## Progress
 
-Reaching the first boss opens a Секреты tab in the menu with every secret nickname. Seven goals (first boss, beating a boss, meeting and beating all seven, all mini-bosses, top 10, every secret hero) unlock start perks, the БАТТЛ mode and the ЛЕГЕНДА hero. Progress lives in the browser. A player who has never beaten a mini-boss or a boss gets one extra life (🟢) in normal runs. Every met boss and mini-boss has a Спарринг chip in the Боссы tab: a practice fight on a plain mushroom that posts nothing to the top, the counter or the goals.
+A 14-step ladder opens up over successive runs: the first steps land in the first session (a x3 combo and reaching level 3) and hand out the six new items one by one (🫧 bubble, 🟢 extra life, ⚡ zap, ⭐ star, 👻 ghost, 🎤 punch). The old eight pickups stay available to everyone; in a daily run every item can drop. Later steps unlock start perks (big mushroom, casino charge, magnet, spores, a second life), the БАТТЛ and ЛЕГЕНДА modes, and the gold hat.
+
+The Секреты tab opens at level 3: each finished step reveals one more secret nickname; unrevealed ones show only a riddle. Typing a nickname by hand works regardless. The Коллекция tab (was Боссы) lists bosses and mini-bosses met and beaten, the 14 items collected and the heroes played, with one total counter on the chip; every met boss and mini-boss keeps its Спарринг chip (a practice fight on a plain mushroom that posts nothing to the top, the counter or the goals).
+
+Progress lives in the browser. A player who has never beaten a mini-boss or a boss gets one extra life (🟢) in normal runs.
 
 ## Audio
 
@@ -57,7 +61,7 @@ ssh <vps> grib-lb rm NAME       # NAME on both boards; or v2:NAME / v2s:NAME / d
 ssh <vps> grib-lb stats [DAYS]  # anonymous run counter: new and returning players, shares, where runs end
 ```
 
-The run counter stores only a UTC day, an event name and a count: run start (new browser, back on another day, again today), run end (level, cause: pit, enemy or the boss kind, and whether the screen was narrow) and share clicks. No ids, nicknames or addresses.
+The run counter stores only a UTC day, an event name and a count: run start (new browser, back on another day, again today), run end (level, cause: pit, enemy or the boss kind, and whether the screen was narrow) and share clicks. Each browser also sends a week bucket on its first start of a day (`week:w0`..`week:w12`, whole weeks since that browser's first visit), so the counter shows week-to-week return. No ids, nicknames or addresses.
 
 Scores that fail to send wait in the browser and go out on the next visit or when the network returns. With no network the menu shows the last board this browser saw.
 
