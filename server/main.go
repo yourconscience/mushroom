@@ -289,6 +289,7 @@ func stats(base string, args []string) int {
 	lvl := map[int]int{}
 	view := map[string]map[int]int{"end": {}, "endn": {}} // level -> runs, wide and narrow screens apart
 	cause := map[string]int{}
+	week := map[string]int{}
 	ends := 0
 	for _, r := range rows {
 		d, k, n := r[0].(string), r[1].(string), int(r[2].(float64))
@@ -308,6 +309,8 @@ func stats(base string, args []string) int {
 			perDay[d].share += n
 		case p[0] == "daily":
 			perDay[d].daily += n
+		case p[0] == "week" && len(p) == 2:
+			week[p[1]] += n
 		case (p[0] == "end" || p[0] == "endn") && len(p) == 3:
 			l, _ := strconv.Atoi(p[1])
 			lvl[l] += n
@@ -341,6 +344,13 @@ func stats(base string, args []string) int {
 	sort.Slice(cs, func(i, j int) bool { return cause[cs[i]] > cause[cs[j]] })
 	for _, c := range cs {
 		fmt.Printf("  %-8s %5d\n", c, cause[c])
+	}
+	fmt.Println("\nplayers by week since first visit:")
+	for i := 0; i <= 12; i++ {
+		k := "w" + strconv.Itoa(i)
+		if n, ok := week[k]; ok {
+			fmt.Printf("  %-3s %5d\n", k, n)
+		}
 	}
 	return 0
 }
