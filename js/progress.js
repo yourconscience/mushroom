@@ -1,10 +1,10 @@
 // --- Прогресс между забегами: цели открывают тайные ники, режимы и перки на старт (только для обычного ника) ---
-function loadMeta(){ const d={found:0,top:0,seen:{},beat:{},minis:{},heroes:{}}; try{ return Object.assign(d,JSON.parse(localStorage.gribMeta||'{}')); }catch(e){ return d; } }
+function loadMeta(){ const d={found:0,top:0,seen:{},beat:{},minis:{},miniBeat:{},heroes:{}}; try{ return Object.assign(d,JSON.parse(localStorage.gribMeta||'{}')); }catch(e){ return d; } }
 const meta=loadMeta();
 const cnt=o=>Object.keys(o).length;
 const HEROES=()=>Object.keys(MODES).filter(n=>n!=='ЛЕГЕНДА');
 const GOALS=[
-  {id:'found', t:'Дойти до первого босса (10-й уровень)', r:'вкладка «Секреты» в меню: все тайные ники', ok:()=>meta.found},
+  {id:'found', t:'Дойти до первого босса (7-й уровень)', r:'вкладка «Секреты» в меню: все тайные ники', ok:()=>meta.found},
   {id:'beat',  t:'Завалить босса', r:'🍄 старт большим грибом и режим БАТТЛ', ok:()=>cnt(meta.beat)>0},
   {id:'seen',  t:'Встретить всех боссов', r:'🎰 заряд казино на старте', ok:()=>cnt(meta.seen)>=BOSS_KINDS.length, p:()=>cnt(meta.seen)+'/'+BOSS_KINDS.length},
   {id:'all',   t:'Завалить всех боссов', r:'🦠 споры на старте', ok:()=>cnt(meta.beat)>=BOSS_KINDS.length, p:()=>cnt(meta.beat)+'/'+BOSS_KINDS.length},
@@ -27,10 +27,12 @@ function syncMeta(){
   document.getElementById('bossCount').textContent=cnt(meta.seen)+'/'+BOSS_KINDS.length;
 }
 function metaEvent(type,key){
+  if(spar)return; // спарринг ничего не засчитывает
   const before=GOALS.filter(g=>!g.ok());
   if(type==='boss'){ meta.seen[key]=1; if(charMode!=='GNOY') meta.found=1; } // ГНОЙНЫЙ стартует у босса, это не считается
   else if(type==='beat') meta.beat[key]=1;
   else if(type==='mini') meta.minis[key]=1;
+  else if(type==='minibeat') meta.miniBeat[key]=1;
   else if(type==='top') meta.top=1;
   else if(type==='hero') meta.heroes[key]=1;
   try{ localStorage.gribMeta=JSON.stringify(meta); }catch(e){}
@@ -75,7 +77,8 @@ function fillBosses(p){
     for(const k of met){
       const [ic,what,how]=BOSS_INFO[k.kind], d=el('div');
       list.append(el('div','ic',ic));
-      d.append(el('b',null,k.name+(beat[k.kind]?' ✅':'')),' — '+k.hp+(k.hp<5?' тычка. ':' тычков. ')+what+' Как бить: '+how+'.');
+      d.append(el('b',null,k.name+(beat[k.kind]?' ✅':'')),' — '+k.hp+(k.hp<5?' тычка. ':' тычков. ')+what+' Как бить: '+how+'.',el('br'));
+      const c=el('button','chip','Спарринг'); c.addEventListener('click',()=>{ spar={kind:k.kind,mini:!!k.mini,i:kinds.indexOf(k),name:k.name}; daily=''; startGame(); }); d.append(c);
       list.append(d);
     }
     p.append(list);
@@ -106,4 +109,4 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()
   if(on){ b.setAttribute('aria-pressed','true'); const p=document.getElementById('tab-'+b.dataset.tab); FILL[b.dataset.tab](p); p.classList.remove('hidden'); }
 }));
 document.getElementById('btn2').addEventListener('click',startGame);
-document.getElementById('btnMenu').addEventListener('click',()=>{ daily=''; overEl.classList.add('hidden'); menuEl.classList.remove('hidden'); });
+document.getElementById('btnMenu').addEventListener('click',()=>{ daily=''; spar=null; overEl.classList.add('hidden'); menuEl.classList.remove('hidden'); });

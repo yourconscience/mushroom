@@ -13,27 +13,43 @@ function hit(){
   sHurt(); shake(9,.35); showQuote('ГРИБ СДУЛСЯ, НО ЖИВ 🍄',true);
   for(let i=0;i<14;i++)parts.push({x:player.x,y:player.y-24,vx:(Math.random()-.5)*450,vy:-Math.random()*350,l:.6,c:'#e63946'});
 }
+// запас новичка: вместо смерти встаёт на ближайшую платформу, которая тянется хотя бы на 60 px вперёд
+function revive(){
+  oneUp--;
+  const p=plats.find(q=>q.x+q.w>Math.max(player.x,q.x+40)+60)||plats[plats.length-1];
+  player.x=Math.max(player.x,p.x+40); player.y=p.y-160; player.vy=0; player.big=false; player.inv=2.5; player.jumps=maxJumps(); combo=0;
+  showQuote('ВТОРАЯ ЖИЗНЬ 🟢',true); shake(10,.35); sJingle(ZONES[0]);
+}
 function die(){
   if(player.dead)return;
-  track('end:'+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег
+  if(oneUp>0){ revive(); return; }
+  if(!spar) track('end:'+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег
   player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
-  setTimeout(()=>{
+  setTimeout(overCard,900);
+}
+function overCard(){ // карточка конца забега; для спарринга зовётся и после победы
+  if(!running)return;
+  {
     running=false; hud.classList.add('hidden'); slotBtn.classList.add('hidden');
     const s=(score*SM)|0, key=myKey();
-    sessBest[key]=Math.max(sessBest[key]||0,s); // лучшее за визит, отдельно для каждого ника
-    const line=DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
+    if(AC)stopClip();
+    if(!spar) sessBest[key]=Math.max(sessBest[key]||0,s); // лучшее за визит, отдельно для каждого ника
+    const line=spar?'СПАРРИНГ: '+spar.name+(sparWon?' ПОВЕРЖЕН':''):DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
     const overTop=document.getElementById('overTop'), overBest=document.getElementById('overBest');
     document.getElementById('overLine').textContent=line;
     document.getElementById('overScore').textContent=s;
-    overBest.textContent=sessBest[key];
+    overBest.textContent=sessBest[key]||0;
     document.getElementById('overBestL').textContent=daily?'Лучшее сегодня':'Лучшее за сессию';
     document.getElementById('overRec').classList.add('hidden');
     document.getElementById('overPool').classList.add('hidden');
     menuEl.classList.add('hidden'); overEl.classList.remove('hidden'); overlay.classList.remove('hidden');
     document.body.style.filter=baseFilter(); // нуар не тянем на экран смерти
-    shareFile=null; shareKey=''; prepShare(s,line);
+    shareFile=null; shareKey='';
     confetti(45);
+    document.getElementById('btnShare').classList.toggle('hidden',!!spar);
+    if(spar){ overTop.textContent='Спарринг: очки не идут в топ'; return; }
+    prepShare(s,line);
     document.getElementById('btnShare').onclick=()=>shareScore(s,line);
     overTop.textContent='Лидерборд грузится…';
     submitScore(s).then(res=>{
@@ -47,5 +63,5 @@ function die(){
       prepShare(s,line); // пересобрать картинку уже с топом
       if(!res.day&&checkPool(res.scores,res.name)) document.getElementById('overPool').classList.remove('hidden');
     });
-  },900);
+  }
 }

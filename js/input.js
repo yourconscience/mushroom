@@ -32,15 +32,17 @@ function startGame(){
   resize();
   applyName();
   if(daily){ daily=today(); charMode=''; SM=1; markDaily(); syncDailyBtn(); track('daily:start'); } // у всех одинаковые условия
+  else if(spar){ charMode=''; SM=1; document.body.style.filter=''; } // спарринг: простой гриб, без перков
   if(!clipsLoading) loadClips();
   reset(); running=true; overlay.classList.add('hidden'); hud.classList.remove('hidden');
   if(charMode==='EZ'||charMode==='LEG')player.big=true;
-  if(!charMode&&!daily) applyPerks();
+  if(!charMode&&!daily&&!spar) applyPerks();
   player.jumps=maxJumps();
   runUnlocks=[]; renderRunUnlocks(); roundN=0;
-  trackStart();
-  if(!daily&&isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
-  const M=!daily&&MODES[playerName.toUpperCase()];
+  if(!spar) trackStart();
+  if(!daily&&!spar&&isSecret(playerName)) metaEvent('hero',playerName.toUpperCase());
+  const M=!daily&&!spar&&MODES[playerName.toUpperCase()];
+  if(!daily&&!spar&&!charMode&&!cnt(meta.beat)&&!cnt(meta.miniBeat)){ oneUp=1; setTimeout(()=>showQuote('НОВИЧКУ: ВТОРАЯ ЖИЗНЬ 🟢',true),700); } // пока не завалил ни одного босса
   if(daily) setTimeout(()=>showQuote('ЗАБЕГ ДНЯ '+dayLabel(daily)+': У ВСЕХ ОДИНАКОВЫЙ',true),400);
   else if(M) setTimeout(()=>showQuote('РЕЖИМ «'+playerName.toUpperCase()+'»: '+M.info,true),400);
   if(AC)playZone(zoneN);
@@ -48,7 +50,7 @@ function startGame(){
   const sayStart=()=>{ if(!playlist.length&&tries++<10){ setTimeout(sayStart,300); return; } announceZone(zoneN); };
   setTimeout(sayStart,350);
 }
-btn.addEventListener('click',()=>{ daily=''; startGame(); });
-document.getElementById('dailyBtn').addEventListener('click',()=>{ daily=today(); startGame(); });
+btn.addEventListener('click',()=>{ daily=''; spar=null; startGame(); });
+document.getElementById('dailyBtn').addEventListener('click',()=>{ daily=today(); spar=null; startGame(); });
 syncDailyBtn();
-nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); daily=''; startGame(); } });
+nickEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); daily=''; spar=null; startGame(); } });

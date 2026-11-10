@@ -1,5 +1,5 @@
 // --- Мини-боссы ---
-// На каждом 5-м уровне (5, 15, 25...), в режиме БАТТЛ на каждом 4-м. Два тычка: после первого уменьшается и меняет атаку.
+// На 4-м уровне (лёгкий, один тычок), потом по одному в каждом блоке между боссами на случайном уровне; в режиме БАТТЛ на каждом 4-м. Два тычка: после первого уменьшается и меняет атаку.
 const MINI_KINDS=[
   {name:'ОКСИ',   kind:'oxy',   hp:2,mini:1,line:'ОКСИ ЗАЧИТЫВАЕТ 📖'},
   {name:'ШОК',    kind:'shock', hp:2,mini:1,line:'ШОК-КОНТЕНТ ⚡'},
@@ -7,12 +7,18 @@ const MINI_KINDS=[
   {name:'ТАНЦОР', kind:'dancer',hp:2,mini:1,line:'ТАНЦПОЛ ОТКРЫТ 🕺'},
   {name:'РИКИ Ф', kind:'ricky', hp:2,mini:1,line:'РИКИ Ф НА БИТЕ 🎧'},
 ];
-let miniPlan={}, miniBag=[], miniR=null;
+let miniPlan={}, miniBag=[], miniR=null, miniBlk=1; // miniBlk: с какого блока между боссами ещё не разыграно
+function miniKind(){
+  if(!miniBag.length){ miniBag=MINI_KINDS.map((_,i)=>i); const R=miniR||(miniR=rngFor('mini')); for(let j=miniBag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
+  return MINI_KINDS[miniBag.pop()];
+}
 function miniAt(z){
   if(z in miniPlan) return miniPlan[z];
-  const on=z%10!==9&&(charMode==='BATTLE'?z%4===3:z%10===4);
-  if(on&&!miniBag.length){ miniBag=MINI_KINDS.map((_,i)=>i); const R=miniR||(miniR=rngFor('mini')); for(let j=miniBag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
-  return miniPlan[z]=on?MINI_KINDS[miniBag.pop()]:null;
+  if(charMode==='BATTLE') return miniPlan[z]=z%4===3&&z%7!==6?miniKind():null;
+  if(z===3) return miniPlan[z]={...miniKind(),hp:1,easy:1}; // лёгкая форма: один тычок
+  // блок b: уровни 7b+1..7b+6 (индексы 7b..7b+5), мини-босс на уровне 7b+2..7b+5; блоки разыгрываем строго по порядку
+  for(;miniBlk<=((z/7)|0);miniBlk++){ const R=miniR||(miniR=rngFor('mini')); miniPlan[7*miniBlk+1+((R()*4)|0)]=miniKind(); }
+  return z in miniPlan?miniPlan[z]:(miniPlan[z]=null);
 }
 Object.assign(BOSS_SIZE,{oxy:[28,88],shock:[28,88],gnoy:[28,88],dancer:[28,96],ricky:[28,88]});
 Object.assign(BOSS_TIP,{
@@ -31,12 +37,12 @@ const MINI_PHASE2={
 };
 const MINI_WORDS=['ФЛОУ','ПАНЧ','РИФМА','БИФ','ДИСС','ХАЙП','СМЫСЛ','ВЕРСУС'];
 // Приёмы: от каждого хватает одного прыжка, паузы между ними длиннее прыжка (0.73 с)
-function miniWord(b,low,txt){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(240,340),vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:txt||MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
+function miniWord(b,low,txt){ b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(240,340)*(b.easy?.8:1),vy:0,r:low?15:17,kind:low?'bubL':'bubH',txt:txt||MINI_WORDS[(Math.random()*MINI_WORDS.length)|0]}); beep(low?320:560,.08,'triangle',.1); }
 function miniSpark(b){ b.obs.push({x:camX+W+rand(20,120),y:b.gy-14,vx:0,vy:0,r:14,kind:'spark'}); shake(4,.1); beep(1800,.06,'sawtooth',.06); }
 function miniPulse(b){ b.st='pulse'; b.t=0; }
 function miniGoo(b){ b.obs.push({x:b.x,y:b.y-b.hh*.8,vx:rand(-50,50),vy:rand(-470,-360),r:13,kind:'goo',grav:1}); beep(240,.08,'sawtooth',.08); }
-function miniGas(b){ b.obs.push({x:b.x-b.hw,y:b.gy-36,vx:speed-rand(220,300),vy:0,r:28,kind:'gas'}); beep(160,.2,'sawtooth',.08); }
-function miniDisc(b){ const low=chance(.55); b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(260,340),vy:0,r:16,kind:low?'ringL':'ringH'}); beep(low?660:990,.08,'square',.08); }
+function miniGas(b){ b.obs.push({x:b.x-b.hw,y:b.gy-36,vx:speed-rand(220,300)*(b.easy?.8:1),vy:0,r:28,kind:'gas'}); beep(160,.2,'sawtooth',.08); }
+function miniDisc(b){ const low=chance(.55); b.obs.push({x:b.x-b.hw,y:low?b.gy-20:b.gy-100,vx:speed-rand(260,340)*(b.easy?.8:1),vy:0,r:16,kind:low?'ringL':'ringH'}); beep(low?660:990,.08,'square',.08); }
 function miniWave(b){ b.waves.push({sx:b.sx-b.hw,d:-1}); b.rot=6; shake(6,.15); beep(90,.2,'square',.14); }
 const MINI_MOVES={ // [до тычка, после тычка]
   oxy:   [[b=>miniWord(b,true),b=>miniWord(b,false)],[b=>miniWord(b,true),b=>miniWord(b,true),b=>miniWord(b,false)]],
@@ -46,7 +52,7 @@ const MINI_MOVES={ // [до тычка, после тычка]
   ricky: [[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ')],[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ'),miniWave]],
 };
 const miniAnchor=(b,dt)=>{ b.sx+=(Math.min(W*(b.ax||.72),player.x-camX+560)-b.sx)*Math.min(1,dt*4); };
-function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=chance(.25)?0:randi(1,2); b.gap=rand(.5,1); b.ax=rand(.66,.78); } // иногда сразу идёт на гриб
+function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=b.easy?randi(0,1):chance(.25)?0:randi(1,2); b.gap=rand(.5,1)+(b.easy?.35:0); b.ax=rand(.66,.78); } // иногда сразу идёт на гриб
 // Мини-босс телом не бьёт: упал сверху — тычок, не попал — пробежит насквозь, уйдёт за экран и вернётся справа.
 function updMini(b,dt,psx,gy,rage){
   if(b.rot>0) b.rot=Math.max(0,b.rot-dt*14);
@@ -58,7 +64,7 @@ function updMini(b,dt,psx,gy,rage){
     case 'act':
       miniAnchor(b,dt); b.y=b.kind==='dancer'?gy-Math.abs(Math.sin(b.t*6))*20:gy;
       if(b.n>=b.cnt){ b.y=gy; b.st='wait'; b.t=0; b.rdy=rand(.3,.8); break; }
-      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.05,1.6); const pool=MINI_MOVES[b.kind][rage?1:0]; pool[(Math.random()*pool.length)|0](b); }
+      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.05,1.6)+(b.easy?.35:0); const pool=MINI_MOVES[b.kind][rage?1:0]; pool[(Math.random()*pool.length)|0](b); }
       break;
     case 'pulse': // весь пол под током: на вспышке надо быть в воздухе
       b.y=gy; miniAnchor(b,dt); b.live=b.t>.85&&b.t<1.1;

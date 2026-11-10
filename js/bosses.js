@@ -14,12 +14,12 @@ const BOSS_TIP={
 };
 function startBoss(){
   const d=bossAt(arena.lvl)||miniAt(arena.lvl), sz=BOSS_SIZE[d.kind];
-  boss={mini:!!d.mini,lvl:arena.lvl,kind:d.kind,name:d.name,hp:d.hp,max:d.hp,hw:sz[0],hh:sz[1],gy:arena.y,sx:W+80,y:d.kind==='plumber'||d.kind==='rooster'?-200:H*0.1,
+  boss={easy:d.easy||0,mini:!!d.mini,lvl:arena.lvl,kind:d.kind,name:d.name,hp:d.hp,max:d.hp,hw:sz[0],hh:sz[1],gy:arena.y,sx:W+80,y:d.kind==='plumber'||d.kind==='rooster'?-200:H*0.1,
         vy:0,vsx:0,st:'enter',t:0,n:0,hitT:0,rot:0,scale:1,alpha:1,waves:[],obs:[],vuln:false,solid:false};
   boss.x=camX+boss.sx;
   enemies=enemies.filter(e=>e.x<player.x-40);
   showQuote((d.mini?'МИНИ-БОСС: ':'БОСС: ')+boss.name,true); if(d.line) showQuote(d.line,false); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
-  const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },1800);
+  const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },d.easy?0:1800); // у лёгкого мини-босса подсказка сразу
   metaEvent(d.mini?'mini':'boss',d.kind);
   vsCard(boss.name,d.mini); airhorn();
 }
@@ -37,14 +37,15 @@ function bossThrow(b){
 function obsAhead(){ return boss.obs.some(o=>o.x>player.x-20); }
 function bossKill(b){
   b.st='dead'; b.t=0; b.vsx=520; b.vy=-900; b.waves=[]; b.obs=[];
-  score+=b.mini?1500:5000; confetti(b.mini?30:90); shake(18,.6);
+  score+=b.mini?(b.easy?750:1500):5000; confetti(b.mini?30:90); shake(18,.6);
   if(b.kind==='rooster') for(let i=0;i<40;i++) parts.push({x:b.x,y:b.y-b.hh/2,vx:(Math.random()-.5)*900,vy:-Math.random()*700,l:1,c:Math.random()<.5?'#bfefff':'#ffffff'});
   if(b.kind==='balloon') beep(160,.8,'sawtooth',.14);
   for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
-  showQuote(b.mini?'МИНИ-БОСС СЛИТ +1500 🎤':'БОСС ПОВЕРЖЕН +5000 🏆',true);
+  showQuote(b.mini?(b.easy?'МИНИ-БОСС СЛИТ +750 🎤':'МИНИ-БОСС СЛИТ +1500 🎤'):'БОСС ПОВЕРЖЕН +5000 🏆',true);
   stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],b.mini?14:30);
   bossDone[b.lvl]=true;
-  if(!b.mini) metaEvent('beat',b.kind);
+  if(!b.mini) metaEvent('beat',b.kind); else metaEvent('minibeat',b.kind);
+  if(spar){ sparWon=1; setTimeout(overCard,2500); } // спарринг: через 2.5 с карточка
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
     plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);
@@ -326,7 +327,7 @@ function updBoss(dt,onGround){
   BOSS_UPD[b.kind](b,dt,psx,gy,rage);
   b.x=camX+b.sx;
   // ударная волна по земле: перепрыгни
-  for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*dt;
+  for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*(b.easy?.8:1)*dt;
     if(!player.dead&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } }
   b.waves=b.waves.filter(w=>!w.dead&&w.sx>-60&&w.sx<W+60);
   // снаряды: яйца падают и лежат, пузыри и осколки летят на гриб

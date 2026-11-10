@@ -14,7 +14,7 @@ function loop(ts){
     jetT=Math.max(0,jetT-rdt); spT=Math.max(0,spT-rdt); if(hyT>0){ hyT-=rdt; if(hyT<=0){ hyT=0; fsT=3; showQuote('ОТХОДНЯК: ГАЗ В ПОЛ 🏎',true); } } mgT=Math.max(0,mgT-rdt); fsT=Math.max(0,fsT-rdt);
     if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
-    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<10?1.2:2)); dist+=speed*dt; } // пока жив босс, зона и скорость стоят
+    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<7?1.2:2)); dist+=speed*dt; } // пока жив босс, зона и скорость стоят
     player.x+=speed*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
@@ -23,7 +23,7 @@ function loop(ts){
     if(zn!==zoneN){
       zoneN=zn; zoneI=zn%ZONES.length; lap=(zn/ZONES.length)|0;
       if((charMode==='EZ'||charMode==='LEG')&&!player.big){ player.big=true; showQuote('ИЗИИИИ 😏',false); }
-      speed+=zn<10?5:8;
+      speed+=zn<7?5:8;
       announceZone(zn);
       playZone(zn);
     }
@@ -243,7 +243,7 @@ function loop(ts){
   if(!player.dead||player.y<H+200) drawGrib(player,t);
 
   scoreEl.textContent='СЧЁТ: '+((score*SM)|0);
-  const fx=[player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
+  const fx=[oneUp>0?'🟢':'',player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
   fxEl.textContent=fx;
   if(hyT>0){ ctx.fillStyle='hsla('+((t*90)%360|0)+',90%,60%,0.14)'; ctx.fillRect(-20,-20,W+40,H+40); }
   comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';
