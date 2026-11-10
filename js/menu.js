@@ -33,7 +33,7 @@ function fillBonus(p){
 function fillLevels(p){
   p.textContent='';
   const n=(clipMeta&&clipMeta.files&&clipMeta.files.length)||400;
-  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. Босс на каждом 10-м уровне, Царь последним в круге из семи, мини-босс на 5-м, 15-м, 25-м и так далее.'); p.append(a);
+  const a=el('div'); a.append(el('b',null,ZONES.length+' зон'),' по кругу: '+ZONES.map(z=>z.name).join(' · ')+'. С 3-й зоны новые враги, прыгуны и метатели болтов только после 10-го уровня, после круга всё злее. В начале 3-го, 6-го и 9-го уровня всегда лежит гриб. Босс на каждом 10-м уровне, Царь последним в круге из семи, мини-босс на 5-м, 15-м, 25-м и так далее.'); p.append(a);
   const b=el('div'); b.append(el('b',null,n+' треков'),': каждый забег новый случайный порядок, боссы тоже под случайный трек.'); p.append(b);
 }
 function renderTop(p,scores,me,sec,title){

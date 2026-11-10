@@ -3,6 +3,7 @@
 //
 //	GET  /?prefix=v2:      -> [["v2:NAME",score],...]
 //	POST /v2:NAME  body=N  -> keeps the max score per key
+//	POST /day:YYYY-MM-DD:NAME -> same for a daily run, only while that Moscow day is today or yesterday
 //
 //	POST /ev       body=K  -> anonymous run counter, +1 for (UTC day, event K)
 //
@@ -132,6 +133,14 @@ func validKey(k string) bool {
 	return true
 }
 
+// dayOpen reports whether the daily board of a Moscow day still takes scores: today, yesterday
+// (a run can end after midnight and a score can wait in the browser for the network),
+// or tomorrow in the last five minutes of the day, for a device whose clock runs ahead.
+func dayOpen(day string, now time.Time) bool {
+	msk := func(t time.Time) string { return t.UTC().Add(3 * time.Hour).Format("2006-01-02") }
+	return day == msk(now) || day == msk(now.Add(-24*time.Hour)) || day == msk(now.Add(5*time.Minute))
+}
+
 // upKey uppercases the name part, so "v2:дутый" and "v2:ДУТЫЙ" are one row.
 func upKey(k string) string {
 	if i := strings.IndexByte(k, ':'); i >= 0 {
@@ -144,7 +153,7 @@ func put(w http.ResponseWriter, r *http.Request) {
 	k := upKey(strings.TrimPrefix(r.URL.Path, "/"))
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 32))
 	s, err := strconv.ParseInt(strings.TrimSpace(string(body)), 10, 64)
-	if !validKey(k) || err != nil || s < 0 || s > 100_000_000 {
+	if !validKey(k) || err != nil || s < 0 || s > 100_000_000 || (dayRe.MatchString(k) && !dayOpen(k[4:14], time.Now())) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
@@ -159,7 +168,8 @@ func put(w http.ResponseWriter, r *http.Request) {
 
 var evRe = regexp.MustCompile(`^[a-z]{2,8}(:[a-z0-9]{1,12}){0,2}$`)
 
-// count adds one to today's counter for an event like "start:first" or "end:12:pit".
+// count adds one to today's counter for an event like "start:first" or "end:12:pit"
+// ("endn:12:pit" when the run was played on a narrow screen).
 func count(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 64))
 	k := strings.TrimSpace(string(body))
@@ -256,7 +266,7 @@ func cli(cmd string, args []string) int {
 }
 
 // stats prints the funnel for the last N days (default 7): runs by player kind,
-// shares, and where runs end (level and cause).
+// shares, where runs end (level and cause), and the median level on wide and narrow screens.
 func stats(base string, args []string) int {
 	days := 7
 	if len(args) > 0 {
@@ -277,6 +287,7 @@ func stats(base string, args []string) int {
 	perDay := map[string]*dayRow{}
 	var order []string
 	lvl := map[int]int{}
+	view := map[string]map[int]int{"end": {}, "endn": {}} // level -> runs, wide and narrow screens apart
 	cause := map[string]int{}
 	ends := 0
 	for _, r := range rows {
@@ -297,9 +308,10 @@ func stats(base string, args []string) int {
 			perDay[d].share += n
 		case p[0] == "daily":
 			perDay[d].daily += n
-		case p[0] == "end" && len(p) == 3:
+		case (p[0] == "end" || p[0] == "endn") && len(p) == 3:
 			l, _ := strconv.Atoi(p[1])
 			lvl[l] += n
+			view[p[0]][l] += n
 			cause[p[2]] += n
 			ends += n
 		}
@@ -318,6 +330,9 @@ func stats(base string, args []string) int {
 	for _, l := range ls {
 		fmt.Printf("  %3d  %5d  %s\n", l, lvl[l], strings.Repeat("#", (lvl[l]*40+ends-1)/max(ends, 1)))
 	}
+	wm, wn := median(view["end"])
+	nm, nn := median(view["endn"])
+	fmt.Printf("median level: wide screens %d (%d runs), narrow screens %d (%d runs)\n", wm, wn, nm, nn)
 	fmt.Println("cause:")
 	var cs []string
 	for c := range cause {
@@ -328,4 +343,22 @@ func stats(base string, args []string) int {
 		fmt.Printf("  %-8s %5d\n", c, cause[c])
 	}
 	return 0
+}
+
+// median returns the median level of a level -> runs histogram and the number of runs.
+func median(h map[int]int) (int, int) {
+	var ls []int
+	total := 0
+	for l, n := range h {
+		ls = append(ls, l)
+		total += n
+	}
+	sort.Ints(ls)
+	seen := 0
+	for _, l := range ls {
+		if seen += h[l]; seen*2 >= total {
+			return l, total
+		}
+	}
+	return 0, 0
 }

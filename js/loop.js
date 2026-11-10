@@ -134,11 +134,10 @@ function loop(ts){
           wrenches.push({x:x0,y:y0,vx:(tx-x0)/T,vy:(ty-y0-0.5*WG*T*T)/T,r:0,l:4});
           beep(420,.06,'triangle'); } }
     } else {
-      // патруль с рывками: сантехник ускоряется, ёж бросается на гриб с дистанции
+      // патруль с рывками: сантехник ускоряется, ёж просто ходит туда-сюда и к грибу не разворачивается
       e.cd2-=dt;
       if(e.lunge>0){ e.lunge-=dt; sp*=e.type==='slide'?2.4:1.9; }
       else if(e.cd2<=0){ e.cd2=2.2+Math.random()*3; e.lunge=e.type==='slide'?0.45:0.3; }
-      if(e.type==='spike'&&Math.abs(player.x-e.x)<200&&e.lunge<=0&&Math.random()<dt*1.2){ e.dir=player.x>e.x?1:-1; e.lunge=0.5; }
       e.x+=e.dir*sp*dt;
     }
     if(e.type!=='thrower'&&!e.dv){
