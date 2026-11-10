@@ -1,6 +1,6 @@
 # Mushroom
 
-ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 400-track soundtrack and meets a random boss every 10 levels.
+ГРИБ: Versus is a browser runner: a mushroom stomps plumbers to a shuffled 400-track soundtrack and meets a random boss every 7 levels.
 The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 
 **[Play in browser](https://yourconscience.github.io/mushroom/)**
@@ -13,8 +13,8 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
-- The first ten levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9 (except during the black-and-white zone), speed grows more slowly, and hoppers and wrench throwers only appear after level 10
-- Bosses: every 10th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
+- The first seven levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9 (except during the black-and-white zone), speed grows more slowly, and hoppers and wrench throwers only appear after level 7
+- Bosses: every 7th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
   - ГЛАВНЫЙ САНТЕХНИК (4): stomp him while he charges
   - ГОЛУБИНЫЙ КОРОЛЬ (3): out of reach; stomp the golden egg and it flies back at him
   - ДУТАЯ ФИГУРА (3): head-butt it from below as it floats over you
@@ -22,12 +22,12 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when the mound reaches you, then stomp the real head, not the thorny one
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
-- Mini-bosses: levels 5, 15, 25 and so on (every 4th level in БАТТЛ) bring ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
+- Mini-bosses: level 4 always has an easy one (a single stomp, 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
 - Z key -- spin the slot machine
 
 ## Features
 - 15 zones on a loop with procedural backgrounds, 7 enemy types, each with its own temper: speed, lunges, dips, bursts
-- A random boss every 10 levels, seven kinds, each with its own movement and hit window
+- A random boss every 7 levels, seven kinds, each with its own movement and hit window
 - Menu with nickname, music toggle, bonus and level info, online top-10
 - Share card for Telegram and other apps (the game link is copied for the next message)
 - Mobile-friendly (touch controls)
@@ -39,7 +39,7 @@ The «Забег дня» button starts the run of the day (Moscow date): the sa
 
 ## Progress
 
-Reaching the first boss opens a Секреты tab in the menu with every secret nickname. Seven goals (first boss, beating a boss, meeting and beating all seven, all mini-bosses, top 10, every secret hero) unlock start perks, the БАТТЛ mode and the ЛЕГЕНДА hero. Progress lives in the browser.
+Reaching the first boss opens a Секреты tab in the menu with every secret nickname. Seven goals (first boss, beating a boss, meeting and beating all seven, all mini-bosses, top 10, every secret hero) unlock start perks, the БАТТЛ mode and the ЛЕГЕНДА hero. Progress lives in the browser. A player who has never beaten a mini-boss or a boss gets one extra life (🟢) in normal runs. Every met boss and mini-boss has a Спарринг chip in the Боссы tab: a practice fight on a plain mushroom that posts nothing to the top, the counter or the goals.
 
 ## Audio
 

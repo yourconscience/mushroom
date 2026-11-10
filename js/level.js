@@ -1,10 +1,11 @@
 // --- Состояние ---
 let running=false, gameOver=false;
+let spar=null, sparWon=0, oneUp=0; // спарринг {kind,mini,i,name} или null; запас «вторая жизнь» новичка (0/1)
 let player, plats, enemies, parts, pickups, camX, speed, score, combo, comboT, dist, zoneI, zoneN, lap, jetT, spT=0, hyT=0, mgT=0, fsT=0, noirTo=0, spCd=0, spores=[], wrenches=[], zTimer=0, sessBest={};
 const G=2400, JUMP=-880, WG=1400;
 // --- Боссы ---
 // Ключ — индекс зоны (уровень-1). Перед боссом строится ровная арена без ям, зона и трек не меняются,
-// пока босс жив (клип просто крутится по кругу). Босс на каждом 10-м уровне (индексы 9, 19, 29...):
+// пока босс жив (клип просто крутится по кругу). Босс на каждом 7-м уровне (индексы 6, 13, 20...):
 // шесть в случайном порядке, потом Царь; повторы получают номер (II, III...).
 const BOSS_KINDS=[
   {name:'ГЛАВНЫЙ САНТЕХНИК',kind:'plumber',hp:4},
@@ -18,8 +19,8 @@ const BOSS_KINDS=[
 const ROMAN=['','II','III','IV','V'];
 let bossOrder=[], bossR=null, zoneIdx={};
 function bossAt(z){
-  if(z%10!==9)return null;
-  const i=(z-9)/10;
+  if(z%7!==6)return null;
+  const i=(z-6)/7;
   while(bossOrder.length<=i){ // Царь всегда последний в круге
     const bag=[0,1,2,3,4,5], R=bossR||(bossR=rngFor('boss'));
     for(let j=bag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [bag[j],bag[r]]=[bag[r],bag[j]]; }
@@ -33,11 +34,13 @@ let boss=null, arena=null, bossDone={}, bigGiven={};
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; zoneIdx={}; bossR=null; miniR=null;
-  if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; zoneN=9; zoneI=9%ZONES.length; } // ГНОЙНЫЙ: сразу к первому боссу
+  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; zoneIdx={}; bossR=null; miniR=null;
+  const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг: старт прямо на арене нужного уровня
+  if(sl>=0){ dist=sl*ZONE_LEN+60; speed=420; zoneN=sl; zoneI=sl%ZONES.length; }
+  if(spar){ if(spar.mini) miniPlan[3]=MINI_KINDS[spar.i]; else bossOrder=[spar.i]; } // полная форма мини-босса, один босс в круге
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
-  if(charMode==='GNOY'){ arena=plats[0]; arena.w=1e7; arena.lvl=9; } // старт прямо на арене
+  if(sl>=0){ arena=plats[0]; arena.w=1e7; arena.lvl=sl; } // старт прямо на арене
   else { let x=800; while(x<3000){ x=addPlat(x); } }
   gameOver=false;
   shufflePlaylist();
@@ -45,7 +48,7 @@ function reset(){
 function addPlat(afterX){
   // забег дня: случайность по ключу (зона, номер платформы в зоне), скорость в зазоре тоже по зоне
   const z0=((dist+afterX-player.x)/ZONE_LEN)|0, R=rngFor('p',z0,zoneIdx[z0]=(zoneIdx[z0]||0)+1);
-  const gap=60+R()*100+(daily?Math.min(560,230+z0*(z0<10?16:20)):speed)*0.08;
+  const gap=60+R()*100+(daily?Math.min(560,230+z0*(z0<7?16:20)):speed)*0.08;
   const w=200+R()*260;
   const last=plats[plats.length-1];
   // арена босса: одна длинная ровная платформа без врагов и бонусов
@@ -67,7 +70,7 @@ function addPlat(afterX){
   // враг
   if(R()<0.6+((pz/ZONES.length)|0)*0.05+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
-    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[pzi].enemies.filter(t=>pz>=10||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 10-го уровня
+    const types=charMode==='X'?['walk','slide','fly','hop','spike','thrower','dive']:charMode==='MARIO'?['hop','hop','dive']:ZONES[pzi].enemies.filter(t=>pz>=7||(t!=='hop'&&t!=='thrower')); // прыгуны и болтомёты только после 7-го уровня
     const type=types[(R()*types.length)|0];
     enemies.push({x:p.x+w*0.5,y:p.y,w:34,h:42,dir:R()<.5?-1:1,p,dead:0,t:R()*6,type,vy:0,baseY:p.y,cd:0.15+R()*0.3});
   }
