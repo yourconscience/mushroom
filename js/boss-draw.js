@@ -125,10 +125,12 @@ function drawBoss(t){
   }
   // полоска здоровья
   if(b.st!=='dead'){
-    const bw=Math.min(260,W*0.6), x0=(W-bw)/2, y0=62;
+    ctx.save(); ctx.scale(1/S,1/S); // в CSS-пикселях: не сжимается на узком экране и читается
+    const bw=Math.min(260,W*S*0.6), x0=(W*S-bw)/2, y0=62;
     ctx.fillStyle='rgba(10,10,18,.6)'; ctx.fillRect(x0-8,y0-22,bw+16,40);
-    ctx.fillStyle='#fff'; ctx.font="800 12px 'Unbounded',system-ui,sans-serif"; ctx.textAlign='center'; ctx.fillText(b.name,W/2,y0-6); ctx.textAlign='left';
+    ctx.fillStyle='#fff'; ctx.font="800 12px 'Unbounded',system-ui,sans-serif"; ctx.textAlign='center'; ctx.fillText(b.name,W*S/2,y0-6); ctx.textAlign='left';
     const pw=(bw-6*(b.max-1))/b.max;
     for(let i=0;i<b.max;i++){ ctx.fillStyle=i<b.hp?'#ff3d7f':'rgba(255,255,255,.18)'; ctx.fillRect(x0+i*(pw+6),y0,pw,8); }
+    ctx.restore();
   }
 }

@@ -49,7 +49,7 @@ function showQuote(txt, big){
   if(lane<0)lane=0; // все заняты — кладём в нижнюю, хуже не будет
   quoteLanes[lane]=true;
   const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
-  el.style.bottom=(H*(0.30+lane*0.075))+'px';
+  el.style.bottom=(H*S*(0.30+lane*0.075))+'px';
   if(big) el.classList.add('big');
   ui.appendChild(el);
   setTimeout(()=>{ el.remove(); quoteLanes[lane]=false; },1700);

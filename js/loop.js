@@ -4,7 +4,7 @@ function loop(ts){
   requestAnimationFrame(loop);
   const t=ts/1000, rdt=Math.min((ts-lt)/1000,0.033); lt=ts;
   const dt=rdt*(hyT>0?0.5:fsT>0?1.4:1)*(charMode==='EZ'?0.8:1); // гипногриб: вдвое медленнее, потом отходняк x1.4; таймеры бонусов в реальном времени
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.setTransform(DPR*S,0,0,DPR*S,0,0);
   if(running&&hyT>0){ ctx.translate(W/2,H/2); ctx.transform(1,Math.sin(t*2.3)*.015,Math.sin(t*1.9)*.015,1,0,0); ctx.translate(-W/2,-H/2); }
   if(shakeT>0){ shakeT-=rdt; const a=shakeA*Math.min(1,shakeT*4); ctx.translate((Math.random()-.5)*2*a,(Math.random()-.5)*2*a); if(shakeT<=0)shakeA=0; }
   drawBg(t);
@@ -211,7 +211,7 @@ function loop(ts){
     ctx.save(); ctx.translate(b.x-camX,by);
     ctx.globalAlpha=.25; ctx.fillStyle=B.color;
     ctx.beginPath(); ctx.arc(0,0,20+Math.sin(t*6+b.t)*3,0,7); ctx.fill();
-    ctx.globalAlpha=1; ctx.font='22px monospace'; ctx.fillText(B.icon,0,8);
+    ctx.globalAlpha=1; ctx.font=(Math.max(22,Math.round(16/S)))+'px monospace'; ctx.fillText(B.icon,0,8);
     ctx.restore();
   }
   ctx.textAlign='left';
@@ -231,7 +231,7 @@ function loop(ts){
   }
   for(const p of parts){ ctx.globalAlpha=Math.min(1,p.l*2); ctx.fillStyle=p.c; ctx.fillRect(p.x-camX-3,p.y-3,6,6); ctx.globalAlpha=1; }
   // всплывающие очки
-  ctx.textAlign='center'; ctx.font='bold 22px monospace';
+  ctx.textAlign='center'; ctx.font='bold '+(Math.max(22,Math.round(16/S)))+'px monospace';
   for(const tx of texts){
     tx.l-=dt; tx.y-=70*dt;
     ctx.globalAlpha=Math.min(1,tx.l*2.5); ctx.fillStyle=tx.c;
