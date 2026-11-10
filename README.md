@@ -43,7 +43,7 @@ Reaching the first boss opens a Секреты tab in the menu with every secret
 
 ## Audio
 
-The game ships 400 15-second clips in `clips/`. Their titles are kept in `clips/manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: the first 200 come from the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник), the rest are the channel's 2023-2026 picks — year-end top lists, release reviews and profiles from @psyterrormagazine — downloaded and cut per track. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. A clip is downloaded when its zone comes up, with the next one fetched ahead, so a visit costs a few hundred kilobytes per zone and not the whole 96 MB pool. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git, and the audio files themselves carry no tags.
+The game plays 400 15-second clips that live in their own repo, [mushroom-clips](https://github.com/yourconscience/mushroom-clips), so a game release does not re-upload 96 MB. Their titles are kept in its `manifest.json` lightly obfuscated (XOR plus base64), so no artist or track name sits in the repo as plain text. The tracklist is Russian hip-hop only: the first 200 come from the owner's own library (favourites, Kunteynir, Бабангида, Паша Техник), the rest are the channel's 2023-2026 picks — year-end top lists, release reviews and profiles from @psyterrormagazine — downloaded and cut per track. Every run shuffles the pool, so each zone gets a different track and its banner shows that track's name. A clip is downloaded when its zone comes up, with the next one fetched ahead, so a visit costs a few hundred kilobytes per zone and not the whole 96 MB pool. Boss fights also get a random track. The full pool list is a hidden menu tab that unlocks once your nickname reaches the top 5 of the leaderboard. `tools/cut-clips.py` cuts the clips from a private `music/` folder that stays out of git into a `mushroom-clips` checkout next to this repo (or `CLIPS_DIR`), and the audio files themselves carry no tags.
 
 ## Leaderboard
 
@@ -67,7 +67,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v37** (shown in the bottom-right corner of the game).
+Current build: **v38** (shown in the bottom-right corner of the game).
 
 ## Credits
 

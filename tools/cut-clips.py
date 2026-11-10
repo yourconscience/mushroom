@@ -6,8 +6,8 @@ Reads music/sources.json (private, gitignored):
 
 "start": null picks the loudest window of "len" seconds (usually the chorus).
 
-Writes clips/NN.mp3 for the pool (in order), all with metadata tags stripped,
-plus clips/manifest.json:
+Writes NN.mp3 for the pool (in order), all with metadata tags stripped, into the
+mushroom-clips checkout next to this repo (or $CLIPS_DIR), plus its manifest.json:
   {"files": ["01.mp3", ...], "t": [...]}
 "t" holds the titles XOR-ed with a fixed key and base64-encoded, so the names
 never sit in the public repo as plain text; js/audio.js decodes them (deob),
@@ -29,7 +29,7 @@ def obf(s):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUSIC = os.path.join(ROOT, "music")
-CLIPS = os.path.join(ROOT, "clips")
+CLIPS = os.environ.get("CLIPS_DIR") or os.path.join(os.path.dirname(ROOT), "mushroom-clips")
 
 
 def rms_per_second(src):

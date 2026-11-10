@@ -23,9 +23,11 @@ function tickMusic(){
     beatI++; nextBeat=Math.max(AC.currentTime,nextBeat)+spb;
   }
 }
-// музыка: clips/manifest.json = {"files":[фрагменты],"t":[названия]}. Каждый забег перемешивает пул.
+// музыка лежит в отдельном репозитории (mushroom-clips), чтобы релиз игры не перезаливал 96 МБ.
+// manifest.json = {"files":[фрагменты],"t":[названия]}. Каждый забег перемешивает пул.
 // Фрагмент качается, когда до него дошла очередь (текущая зона и следующая заранее), а не все 400 сразу (96 МБ).
 // Декодированных в кэше 3.
+const CLIPS_URL='https://yourconscience.github.io/mushroom-clips/';
 let clipMeta=null, clipBytes=[], clipSrc=null, clipGain=null;
 const clipDecoded=new Map();
 let playlist=[], lastFirst=-1, clipToken=0, clipsLoading=false;
@@ -47,7 +49,7 @@ function deob(s){
 async function loadClips(){
   clipsLoading=true;
   try{
-    clipMeta=await (await fetch('clips/manifest.json')).json();
+    clipMeta=await (await fetch(CLIPS_URL+'manifest.json')).json();
     if(clipMeta.t) clipMeta.titles=clipMeta.t.map(deob);
     const files=clipMeta.files||[];
     clipBytes=new Array(files.length);
@@ -59,7 +61,7 @@ async function loadClips(){
 // байты фрагмента: один запрос на трек, неудачный не запоминаем
 function clipFetch(i){
   const f=clipMeta&&clipMeta.files&&clipMeta.files[i]; if(!f) return Promise.resolve(null);
-  return clipBytes[i]||(clipBytes[i]=fetch('clips/'+f).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).catch(()=>{ clipBytes[i]=null; return null; }));
+  return clipBytes[i]||(clipBytes[i]=fetch(CLIPS_URL+f).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).catch(()=>{ clipBytes[i]=null; return null; }));
 }
 function shufflePlaylist(){
   const n=clipBytes.length; if(!n)return;
