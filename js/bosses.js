@@ -45,7 +45,7 @@ function bossKill(b){
   stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],b.mini?14:30);
   bossDone[b.lvl]=true;
   if(!b.mini) metaEvent('beat',b.kind); else metaEvent('minibeat',b.kind);
-  if(spar){ sparWon=1; setTimeout(overCard,2500); } // спарринг: через 2.5 с карточка
+  if(spar){ sparWon=1; sparT=setTimeout(overCard,2500); } // спарринг: через 2.5 с карточка
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
     plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);

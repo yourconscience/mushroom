@@ -24,13 +24,15 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
 - Mini-bosses: level 4 always has an easy one (a single stomp, 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
 - Z key -- spin the slot machine
+- New players start every normal run with a second life (🟢) until they beat a first mini-boss or boss
+- Sparring: every boss and mini-boss you have met has a Спарринг button in the Боссы tab: a practice fight that scores nothing and changes no goals
 
 ## Features
 - 15 zones on a loop with procedural backgrounds, 7 enemy types, each with its own temper: speed, lunges, dips, bursts
 - A random boss every 7 levels, seven kinds, each with its own movement and hit window
 - Menu with nickname, music toggle, bonus and level info, online top-10
 - Share card for Telegram and other apps (the game link is copied for the next message)
-- Mobile-friendly (touch controls)
+- Mobile-friendly: touch controls, and on screens narrower than 640 px the world is drawn zoomed out, so a phone sees about as far ahead as a small desktop window
 - Hip-hop quotes as kill banners
 
 ## Daily run
@@ -67,7 +69,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v40** (shown in the bottom-right corner of the game).
+Current build: **v41** (shown in the bottom-right corner of the game).
 
 ## Credits
 

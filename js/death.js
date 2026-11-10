@@ -23,7 +23,7 @@ function revive(){
 function die(){
   if(player.dead)return;
   if(oneUp>0){ revive(); return; }
-  if(!spar) track('end:'+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег
+  if(!spar) track((S<1?'endn:':'end:')+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег; endn — на узком экране
   player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   setTimeout(overCard,900);
@@ -37,6 +37,7 @@ function overCard(){ // карточка конца забега; для спа�
     if(!spar) sessBest[key]=Math.max(sessBest[key]||0,s); // лучшее за визит, отдельно для каждого ника
     const line=spar?'СПАРРИНГ: '+spar.name+(sparWon?' ПОВЕРЖЕН':''):DEATH_LINES[(Math.random()*DEATH_LINES.length)|0];
     const overTop=document.getElementById('overTop'), overBest=document.getElementById('overBest');
+    document.getElementById('overTitle').textContent=spar?(sparWon?'ПОБЕДА':'СПАРРИНГ'):'RIP ГРИБ';
     document.getElementById('overLine').textContent=line;
     document.getElementById('overScore').textContent=s;
     overBest.textContent=sessBest[key]||0;
