@@ -13,7 +13,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Land ON enemies to stomp them
 - Collect bonuses: 🍄 big mushroom (survives one hit), 🚀 jetpack, 🦠 spores, 🌀 slow-mo (then a short speed-up), 🧲 magnet, 💰 loot, 🎰 slot machine, 🎞 noir (one zone in black and white, bonuses burn, the big mushroom stays)
 - Hedgehogs can't be stomped; wrench throwers and diving pigeons can
-- The first ten levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9, and hoppers and wrench throwers only appear after level 10
+- The first ten levels are gentler: speed grows more slowly, and hoppers and wrench throwers only appear after level 10
 - Bosses: every 10th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
   - ГЛАВНЫЙ САНТЕХНИК (4): stomp him while he charges
   - ГОЛУБИНЫЙ КОРОЛЬ (3): out of reach; stomp the golden egg and it flies back at him
@@ -67,7 +67,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v38** (shown in the bottom-right corner of the game).
+Current build: **v39** (shown in the bottom-right corner of the game).
 
 ## Credits
 

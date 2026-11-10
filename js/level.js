@@ -28,12 +28,12 @@ function bossAt(z){
   const k=bossOrder[i], d=BOSS_KINDS[k], c=bossOrder.slice(0,i).filter(x=>x===k).length;
   return c?{...d,name:d.name+' '+(ROMAN[c]||c+1)}:d;
 }
-let boss=null, arena=null, bossDone={}, bigGiven={};
+let boss=null, arena=null, bossDone={};
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; zoneIdx={}; bossR=null; miniR=null;
+  boss=null; arena=null; bossDone={}; bossOrder=[]; miniPlan={}; miniBag=[]; zoneIdx={}; bossR=null; miniR=null;
   if(charMode==='GNOY'){ dist=9*ZONE_LEN+60; speed=420; zoneN=9; zoneI=9%ZONES.length; } // ГНОЙНЫЙ: сразу к первому боссу
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
@@ -59,11 +59,6 @@ function addPlat(afterX){
   y=Math.max(H*0.35,Math.min(H*0.82,y));
   const p={x:afterX+gap,y,w};
   plats.push(p);
-  // начало 3-й, 6-й и 9-й сцены: гриб всегда и без врага рядом
-  if((pz===2||pz===5||pz===8)&&!bigGiven[pz]&&!charMode){
-    bigGiven[pz]=1; pickups.push({x:p.x+w*0.5,y:p.y-52,kind:'big',t:0});
-    return p.x+w;
-  }
   // враг
   if(R()<0.45+((pz/ZONES.length)|0)*0.1+(charMode==='MARIO'?0.2:0) && w>150){
     // X сразу встречает весь зоопарк врагов
