@@ -5,6 +5,7 @@ function rnd(n){ n=(n*374761393+1)|0; n=Math.imul(n^(n>>>13),1274126177); return
 // фон и текстуры платформ: см. gfx.js (слои кэшируются по зоне и размеру экрана)
 const gfx=makeGfx(rnd);
 function drawBg(t){
+  if(room){ drawRoomBg(t); return; }
   const warm=running&&dist%ZONE_LEN>ZONE_LEN*0.5?(zoneI+1)%ZONES.length:-1; // следующий фон строим заранее
   gfx.bg(ctx,W,H,zoneI||0,camX||0,t,warm);
 }

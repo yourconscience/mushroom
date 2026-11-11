@@ -16,7 +16,7 @@ function loop(ts){
     if(noirTo&&dist>=noirTo){ noirTo=0; document.body.style.filter=baseFilter(); showQuote('ЦВЕТ ВЕРНУЛСЯ 🌈',true); } player.inv=Math.max(0,player.inv-rdt);
     if(charMode==='V')jetT=9; // вечный ранец
     const sm=starT>0?1.25:1; // звезда: гриб на 25% быстрее
-    if(!boss){ speed=Math.min(560,speed+dt*(zoneN<7?1.2:2)); dist+=speed*sm*dt; } // пока жив босс, зона и скорость стоят
+    if(!boss&&!room){ speed=Math.min(560,speed+dt*(zoneN<7?1.2:2)); dist+=speed*sm*dt; } // пока жив босс, зона и скорость стоят
     player.x+=speed*sm*dt;
     // гриб ближе к левому краю — впереди видно больше
     camX=player.x-Math.min(100,W*0.16);
@@ -47,6 +47,7 @@ function loop(ts){
   player.squish+= (0-player.squish)*Math.min(1,dt*10);
 
   // платформы
+  pipeCheck(dt); // приземление на трубу
   let onGround=false; const edge=player.big?30:14;
   for(const p of plats){
     if(player.x>p.x-edge&&player.x<p.x+p.w+edge&&player.vy>=0&&player.y>=p.y-6&&player.y<=p.y+Math.max(26,player.vy*dt+8)){
@@ -56,7 +57,7 @@ function loop(ts){
   if(onGround) { combo>0&&(comboT-=dt); if(comboT<=0) combo=0; }
 
   // генерация/чистка
-  while(plats[plats.length-1].x<camX+W*2.5) addPlat(plats[plats.length-1].x+plats[plats.length-1].w);
+  if(!room) while(plats[plats.length-1].x<camX+W*2.5) addPlat(plats[plats.length-1].x+plats[plats.length-1].w);
   plats=plats.filter(p=>p.x+p.w>camX-200);
   enemies=enemies.filter(e=>e.x>camX-200&&e.dead<1);
   pickups=pickups.filter(b=>b.x>camX-100);
@@ -151,7 +152,7 @@ function loop(ts){
       e.x+=e.dir*sp*dt;
     }
     if(e.type!=='thrower'&&!e.dv){
-      if(e.x<e.p.x+18){e.dir=1;} if(e.x>e.p.x+e.p.w-18){e.dir=-1;}
+      if(e.x<e.p.x+18){e.dir=1;} if(e.x>(e.p.pipe?e.p.pipe.x-40:e.p.x+e.p.w-18)){e.dir=-1;}
     }
     // коллизия
     const psc=player.big?1.35:1, eh=(e.type==='spike'?30:44)*zs;
@@ -205,6 +206,7 @@ function loop(ts){
     if(!player.dead&&player.inv<=0&&ghostT<=0&&Math.abs(player.x-w.x)<20*wsc&&w.y>player.y-40*wsc-6&&w.y<player.y+4){ w.l=0; hit(); }
   }
   wrenches=wrenches.filter(w=>w.l>0&&w.y<H+100&&w.x>camX-200);
+  if(room) updRoom(dt);
   // босс
   if(arena&&!boss&&!player.dead&&player.x>arena.x+60) startBoss();
   if(boss) updBoss(dt,onGround);
@@ -218,7 +220,7 @@ function loop(ts){
   parts=parts.filter(p=>p.l>0);
 
   // --- рендер мира ---
-  for(const p of plats) gfx.plat(ctx,p,camX,t,H,zoneI);
+  for(const p of plats){ gfx.plat(ctx,p,camX,t,H,zoneI); if(p.pipe) drawPipe(p.pipe.x-camX,p.y,p.pipe.used); }
   // бонусы (парят и пульсируют)
   ctx.textAlign='center';
   for(const b of pickups){
@@ -230,6 +232,7 @@ function loop(ts){
     ctx.restore();
   }
   ctx.textAlign='left';
+  if(room) drawRoom(t);
   if(starT>0&&!player.dead&&Math.random()<dt*40)parts.push({x:player.x+(Math.random()-.5)*30,y:player.y-Math.random()*40,vx:(Math.random()-.5)*120,vy:-60-Math.random()*100,l:.4,c:'hsl('+((t*400+Math.random()*90)%360|0)+',95%,65%)'});
   // выхлоп джетпака
   if(jetT>0&&!player.dead)parts.push({x:player.x-8,y:player.y-6,vx:-120-Math.random()*80,vy:120+Math.random()*120,l:.35,c:Math.random()<.5?'#ff8c42':'#4cc9f0'});

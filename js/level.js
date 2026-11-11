@@ -30,11 +30,13 @@ function bossAt(z){
   return c?{...d,name:d.name+' '+(ROMAN[c]||c+1)}:d;
 }
 let boss=null, arena=null, bossDone={}, bigGiven={};
+let room=null, pipeZ=-9; // v43: тайная комната (null вне комнаты, см. rooms.js); уровень последней трубы
+
 
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; starT=0; zapT=0; ghostT=0; bubble=0; noKillT=0; pCombo=0; punches=[]; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); zoneIdx={}; bossR=null; miniR=null;
+  boss=null; arena=null; room=null; pipeZ=-9; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); zoneIdx={}; bossR=null; miniR=null;
   const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг: старт прямо на арене нужного уровня
   if(sl>=0){ dist=sl*ZONE_LEN+60; speed=420; zoneN=sl; zoneI=sl%ZONES.length; }
   if(spar){ if(spar.mini) miniPlan[3]=MINI_KINDS[spar.i]; else bossOrder=[spar.i]; } // полная форма мини-босса, один босс в круге
@@ -65,6 +67,7 @@ function addPlat(afterX){
   // начало 3-й, 6-й и 9-й сцены: гриб всегда и без врага рядом (в нуар пропускаем)
   if((pz===2||pz===5||pz===8)&&!bigGiven[pz]&&!charMode&&pd>=noirTo){
     bigGiven[pz]=1; pickups.push({x:p.x+w*0.5,y:p.y-52,kind:'big',t:0});
+    pipeRoll(p,R,pz);
     return p.x+w;
   }
   // враг
@@ -85,5 +88,6 @@ function addPlat(afterX){
       if(roll<acc){ pickups.push({x:p.x+w*(0.2+R()*0.6),y:p.y-52,kind:k,t:R()*6}); break; }
     }
   }
+  pipeRoll(p,R,pz); // труба: числа из потока платформы берём только после всех прежних, чтобы старые забеги дня не менялись
   return p.x+w;
 }

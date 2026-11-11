@@ -41,9 +41,11 @@ The «Забег дня» button starts the run of the day (Moscow date): the sa
 
 ## Progress
 
-A 14-step ladder opens up over successive runs: the first steps land in the first session (a x3 combo and reaching level 3) and hand out the six new items one by one (🫧 bubble, 🟢 extra life, ⚡ zap, ⭐ star, 👻 ghost, 🎤 punch). The old eight pickups stay available to everyone; in a daily run every item can drop. Later steps unlock start perks (big mushroom, casino charge, magnet, spores, a second life), the БАТТЛ and ЛЕГЕНДА modes, and the gold hat.
+A 15-step ladder opens up over successive runs: the first steps land in the first session (a x3 combo and reaching level 3) and hand out the six new items one by one (🫧 bubble, 🟢 extra life, ⚡ zap, ⭐ star, 👻 ghost, 🎤 punch). The old eight pickups stay available to everyone; in a daily run every item can drop. Later steps unlock start perks (big mushroom, casino charge, magnet, spores, a second life), the БАТТЛ and ЛЕГЕНДА modes, and the gold hat.
 
-The Секреты tab opens at level 3: each finished step reveals one more secret nickname; unrevealed ones show only a riddle. Typing a nickname by hand works regardless. The Коллекция tab (was Боссы) lists bosses and mini-bosses met and beaten, the 14 items collected and the heroes played, with one total counter on the chip; every met boss and mini-boss keeps its Спарринг chip (a practice fight on a plain mushroom that posts nothing to the top, the counter or the goals).
+The Секреты tab opens at level 3: each finished step reveals one more secret nickname; unrevealed ones show only a riddle. Typing a nickname by hand works regardless. The Коллекция tab (was Боссы) lists bosses and mini-bosses met and beaten, the 14 items collected, the secret rooms found and the heroes played, with one total counter on the chip; every met boss and mini-boss keeps its Спарринг chip (a practice fight on a plain mushroom that posts nothing to the top, the counter or the goals).
+
+Pipes and secret rooms (v43): about 3% of long platforms from level 2 (at most one per three levels, none on arenas or in sparring; seeded per platform, so the daily run has the same pipes for everyone) carry a green pipe. Landing on top of it puts the run aside and opens a room: ПОДВАЛ (10 s, twenty coins), КАЗИНО (three free spins) or ЧЁРНЫЙ ХОД (4 s, comes out up to two levels ahead, never past a pending boss or mini-boss). Finding all three doubles the pipe chance.
 
 Progress lives in the browser. A player who has never beaten a mini-boss or a boss gets one extra life (🟢) in normal runs.
 
@@ -73,7 +75,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v42** (shown in the bottom-right corner of the game).
+Current build: **v43** (shown in the bottom-right corner of the game).
 
 ## Credits
 

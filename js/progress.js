@@ -1,6 +1,6 @@
-// --- Прогресс между забегами: лесенка из 14 шагов открывает предметы, вкладки, режимы и перки на старт (только для обычного ника) ---
+// --- Прогресс между забегами: лесенка из 15 шагов открывает предметы, вкладки, режимы и перки на старт (только для обычного ника) ---
 function loadMeta(){
-  const d={found:0,top:0,seen:{},beat:{},minis:{},miniBeat:{},heroes:{},maxLvl:0,combo:0,items:{},streak:0};
+  const d={found:0,top:0,seen:{},beat:{},minis:{},miniBeat:{},heroes:{},maxLvl:0,combo:0,items:{},streak:0,rooms:{}};
   let m; try{ m=Object.assign(d,JSON.parse(localStorage.gribMeta||'{}')); }catch(e){ m=d; }
   // миграция: ветеран с found или любым seen уже доходил до 7-го уровня и делал комбо x3
   if(m.found||Object.keys(m.seen).length){ m.maxLvl=Math.max(m.maxLvl||0,7); m.combo=Math.max(m.combo||0,3); }
@@ -25,6 +25,7 @@ const GOALS=[
   {id:'seen',    t:'Встретить всех боссов', r:'🎰 заряд казино на старте', ok:()=>cnt(meta.seen)>=BOSS_KINDS.length, p:()=>cnt(meta.seen)+'/'+BOSS_KINDS.length},
   {id:'top',     t:'Попасть в топ-10', r:'золотая шляпка', ok:()=>meta.top},
   {id:'streak7', t:'Забег дня 7 дней подряд', r:'ещё одна жизнь на старте', ok:()=>meta.streak>=7, p:()=>meta.streak+'/7'},
+  {id:'rooms',   t:'Найти все тайные комнаты', r:'трубы встречаются вдвое чаще', ok:()=>cnt(meta.rooms)>=ROOM_ORDER.length, p:()=>cnt(meta.rooms)+'/'+ROOM_ORDER.length},
   {id:'all',     t:'Завалить всех боссов', r:'🦠 споры на старте', ok:()=>cnt(meta.beat)>=BOSS_KINDS.length, p:()=>cnt(meta.beat)+'/'+BOSS_KINDS.length},
   {id:'heroes',  t:'Сыграть всеми тайными героями', r:'режим ЛЕГЕНДА', ok:()=>HEROES().every(n=>meta.heroes[n]), p:()=>HEROES().filter(n=>meta.heroes[n]).length+'/'+HEROES().length},
 ];
@@ -42,8 +43,8 @@ function renderRunUnlocks(){
   if(runUnlocks.length) p.append(el('b','sect','🔓 Открыто за этот забег'));
   for(const g of runUnlocks) p.append(el('div',null,g.t+': '+g.r));
 }
-function colDone(){ return cnt(meta.seen)+cnt(meta.beat)+cnt(meta.minis)+cnt(meta.miniBeat)+cnt(meta.items)+cnt(meta.heroes); }
-function colTotal(){ return BOSS_KINDS.length*2+MINI_KINDS.length*2+Object.keys(BONUSES).length+HEROES().length; }
+function colDone(){ return cnt(meta.seen)+cnt(meta.beat)+cnt(meta.minis)+cnt(meta.miniBeat)+cnt(meta.items)+cnt(meta.heroes)+cnt(meta.rooms); }
+function colTotal(){ return BOSS_KINDS.length*2+MINI_KINDS.length*2+Object.keys(BONUSES).length+HEROES().length+ROOM_ORDER.length; }
 function syncMeta(){
   document.getElementById('secChip').classList.toggle('hidden',!goalDone('lvl3'));
   document.getElementById('progCount').textContent=GOALS.filter(g=>g.ok()).length+'/'+GOALS.length;
@@ -61,6 +62,7 @@ function metaEvent(type,key){
   else if(type==='top'){ if(!meta.top){meta.top=1;ch=true;} }
   else if(type==='hero'){ if(!meta.heroes[key]){meta.heroes[key]=1;ch=true;} }
   else if(type==='item'){ if(!meta.items[key]){meta.items[key]=1;ch=true;} }
+  else if(type==='room'){ if(!meta.rooms[key]){meta.rooms[key]=1;ch=true;} }
   else if(type==='level'){ if(key>meta.maxLvl){meta.maxLvl=key;ch=true;} }
   else if(type==='combo'){ if(key>meta.combo){meta.combo=key;ch=true;} }
   else if(type==='streak'){ if(key>meta.streak){meta.streak=key;ch=true;} }
@@ -126,6 +128,12 @@ function fillCollection(p){
       list.append(el('div','ic',got?BONUSES[k].icon:'🔒'));
       list.append(el('div',null,name+(got?' ✅':'')));
     }
+    p.append(list);
+  }
+  { // тайные комнаты: найденная показывает имя, ненайденная замок
+    p.append(el('b','sect','Тайные комнаты: '+cnt(meta.rooms)+'/'+ROOM_ORDER.length));
+    const list=el('div','blist');
+    for(const k of ROOM_ORDER){ const got=!!meta.rooms[k]; list.append(el('div','ic',got?ROOM_KINDS[k].icon:'🔒')); list.append(el('div',null,got?ROOM_KINDS[k].name+' ✅':'???')); }
     p.append(list);
   }
   { // герои
