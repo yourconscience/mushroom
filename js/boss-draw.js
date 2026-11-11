@@ -64,8 +64,12 @@ function drawUfoB(b,t){
   ctx.fillStyle='rgba(255,255,255,.18)'; ctx.beginPath(); ctx.ellipse(-12,-28,30,6,0,0,7); ctx.fill();
   for(let i=-2;i<=2;i++){ ctx.fillStyle='rgba(255,'+((60+glow*140)|0)+',90,'+(.45+glow*.55)+')'; ctx.beginPath(); ctx.arc(i*20,-20,4,0,7); ctx.fill(); }
   const bx=(b.beamX||0)-(b.x-camX);
-  if(b.st==='charge'){ ctx.strokeStyle='rgba(255,80,120,.55)'; ctx.setLineDash([10,10]); ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(bx,-20); ctx.lineTo(bx,H); ctx.stroke(); ctx.setLineDash([]); }
-  if(b.st==='beam'){ ctx.fillStyle='rgba(255,80,120,.30)'; ctx.fillRect(bx-24,-20,48,H); ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(bx-8,-20,16,H); }
+  if(b.st==='mark'){ // метка на земле под грибом: три мига, на третьем замирает; потом вспышка
+    const gyy=b.gy-b.y, lock=b.t>=b.M, live=b.t>b.liveAt&&b.t<b.liveEnd;
+    if(!live){ let lit=lock; for(let i=0;i<3;i++){ const d=b.t-(b.M-.6+i*.3); if(d>=0&&d<.14) lit=true; }
+      ctx.strokeStyle=lock?'#fff':'rgba(255,80,120,'+(lit?.95:.35)+')'; ctx.lineWidth=lock?7:lit?5:3; ctx.setLineDash(lock?[]:[10,10]); ctx.beginPath(); ctx.moveTo(bx,-20); ctx.lineTo(bx,gyy-8); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,60,100,'+(lit?.55:.15)+')'; ctx.beginPath(); ctx.ellipse(bx,gyy-2,34,9,0,0,7); ctx.fill(); ctx.stroke(); }
+    else { ctx.fillStyle='rgba(255,80,120,.30)'; ctx.fillRect(bx-24,-20,48,H); ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(bx-8,-20,16,H); } }
 }
 function drawKingB(b,t){
   ctx.globalAlpha=b.alpha==null?1:b.alpha;

@@ -20,9 +20,9 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
   - ДУТАЯ ФИГУРА (3): head-butt it from below as it floats over you
   - СТЕКЛЯННЫЙ ПЕТУХ (3): don't hit it; clear a whole series without being touched and the glass cracks
   - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when the mound reaches you, then stomp the real head, not the thorny one
-  - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
+  - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; discs come one at a time, low ones you jump and high ones you ignore on the ground; a mark under you blinks three times and freezes with a loud beep: jump when it freezes (or a little earlier) to be airborne for the flash; then stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
-- Mini-bosses: level 4 always has an easy one (a single stomp, 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
+- Mini-bosses: level 4 always has an easy one (two stomps like the full form, but it only uses the first-phase attacks, slower and with longer pauses, and always attacks once or twice before each run; 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back
 - Z key -- spin the slot machine (two charges at most, a third pickup gives +300; outcomes now include a star, a 1UP, 8 s of spores and turning every enemy on screen into pigeons)
 - New players start every normal run with a second life (🟢) until they beat a first mini-boss or boss
 - Sparring: every boss and mini-boss you have met has a Спарринг button in the Боссы tab: a practice fight that scores nothing and changes no goals
@@ -75,7 +75,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v43** (shown in the bottom-right corner of the game).
+Current build: **v44** (shown in the bottom-right corner of the game).
 
 ## Credits
 

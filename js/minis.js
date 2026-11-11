@@ -1,5 +1,5 @@
 // --- Мини-боссы ---
-// На 4-м уровне (лёгкий, один тычок), потом по одному в каждом блоке между боссами на случайном уровне; в режиме БАТТЛ на каждом 4-м. Два тычка: после первого уменьшается и меняет атаку.
+// На 4-м уровне (лёгкий: два тычка, но атаки только первой фазы, медленнее и с паузами подлиннее), потом по одному в каждом блоке между боссами на случайном уровне; в режиме БАТТЛ на каждом 4-м. Два тычка: после первого уменьшается и меняет атаку.
 const MINI_KINDS=[
   {name:'ОКСИ',   kind:'oxy',   hp:2,mini:1,line:'ОКСИ ЗАЧИТЫВАЕТ 📖'},
   {name:'ШОК',    kind:'shock', hp:2,mini:1,line:'ШОК-КОНТЕНТ ⚡'},
@@ -15,7 +15,7 @@ function miniKind(){
 function miniAt(z){
   if(z in miniPlan) return miniPlan[z];
   if(charMode==='BATTLE') return miniPlan[z]=z%4===3&&z%7!==6?miniKind():null;
-  if(z===3) return miniPlan[z]={...miniKind(),hp:1,easy:1}; // лёгкая форма: один тычок
+  if(z===3) return miniPlan[z]={...miniKind(),easy:1}; // лёгкая форма: те же два тычка, но атаки мягче
   // блок b: уровни 7b+1..7b+6 (индексы 7b..7b+5), мини-босс на уровне 7b+2..7b+5; блоки разыгрываем строго по порядку
   for(;miniBlk<=((z/7)|0);miniBlk++){ const R=miniR||(miniR=rngFor('mini')); miniPlan[7*miniBlk+1+((R()*4)|0)]=miniKind(); }
   return z in miniPlan?miniPlan[z]:(miniPlan[z]=null);
@@ -52,8 +52,9 @@ const MINI_MOVES={ // [до тычка, после тычка]
   ricky: [[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ')],[b=>miniWord(b,true,'ФФФ'),b=>miniWord(b,false,'ФФФ'),miniWave]],
 };
 const miniAnchor=(b,dt)=>{ b.sx+=(Math.min(W*(b.ax||.72),player.x-camX+560)-b.sx)*Math.min(1,dt*4); };
-function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=b.easy?randi(0,1):chance(.25)?0:randi(1,2); b.gap=rand(.5,1)+(b.easy?.35:0); b.ax=rand(.66,.78); } // иногда сразу идёт на гриб
+function miniRound(b){ b.st='act'; b.t=0; b.n=0; b.cnt=b.easy?randi(1,2):chance(.25)?0:randi(1,2); b.gap=rand(.5,1)+(b.easy?.35:0); b.ax=rand(.66,.78); } // у полной формы иногда сразу идёт на гриб, у лёгкой всегда сначала одна-две атаки
 // Мини-босс телом не бьёт: упал сверху — тычок, не попал — пробежит насквозь, уйдёт за экран и вернётся справа.
+// У лёгкой формы пул приёмов и после тычка первый (rage&&!b.easy).
 function updMini(b,dt,psx,gy,rage){
   if(b.rot>0) b.rot=Math.max(0,b.rot-dt*14);
   switch(b.st){
@@ -64,7 +65,7 @@ function updMini(b,dt,psx,gy,rage){
     case 'act':
       miniAnchor(b,dt); b.y=b.kind==='dancer'?gy-Math.abs(Math.sin(b.t*6))*20:gy;
       if(b.n>=b.cnt){ b.y=gy; b.st='wait'; b.t=0; b.rdy=rand(.3,.8); break; }
-      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.05,1.6)+(b.easy?.35:0); const pool=MINI_MOVES[b.kind][rage?1:0]; pool[(Math.random()*pool.length)|0](b); }
+      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.05,1.6)+(b.easy?.35:0); const pool=MINI_MOVES[b.kind][rage&&!b.easy?1:0]; pool[(Math.random()*pool.length)|0](b); }
       break;
     case 'pulse': // весь пол под током: на вспышке надо быть в воздухе
       b.y=gy; miniAnchor(b,dt); b.live=b.t>.85&&b.t<1.1;
