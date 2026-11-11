@@ -22,7 +22,7 @@ const BONUS_INFO={
   punch:['Панч','сразу: до трёх врагов впереди, а в бою с боссом тычок'],
   ghost:['Призрак','4 с враги, ключи и атаки боссов проходят сквозь, но и давить нельзя'],
 };
-function el(tag,cls,txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function el(tag,cls,txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.innerHTML=upHtml(txt); return e; }
 function fillBonus(p){
   p.textContent='';
   const list=el('div','blist');

@@ -44,11 +44,14 @@ async function submitScore(s){
 
 // дорожки, чтобы баннеры не накладывались друг на друга
 const quoteLanes=[false,false,false,false];
+// 🟢 в тексте — маркер второй жизни: рисуем зелёный гриб (CSS-фильтр красит 🍄)
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function upHtml(s){ return esc(s).replace(/🟢/g,'<span class="up">🍄</span>'); }
 function showQuote(txt, big){
   let lane=quoteLanes.indexOf(false);
   if(lane<0)lane=0; // все заняты — кладём в нижнюю, хуже не будет
   quoteLanes[lane]=true;
-  const el=document.createElement('div'); el.className='quote'; el.textContent=txt;
+  const el=document.createElement('div'); el.className='quote'; el.innerHTML=upHtml(txt);
   el.style.bottom=(H*S*(0.30+lane*0.075))+'px';
   if(big) el.classList.add('big');
   ui.appendChild(el);

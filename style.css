@@ -18,6 +18,7 @@ button { font:inherit; color:inherit; cursor:pointer; border:0; background:none;
   animation:quotePop 1.6s ease-out forwards;
 }
 .quote.big { color:var(--lime); font-size:clamp(15px,4.8vw,26px); text-shadow:0 2px 0 rgba(0,0,0,.6), 0 0 20px rgba(198,255,61,.45); }
+.up { display:inline-block; filter:hue-rotate(120deg) saturate(1.3); }
 @keyframes quotePop {
   0% { opacity:0; transform:translateX(-50%) translateY(20px) scale(.6); }
   15% { opacity:1; transform:translateX(-50%) translateY(0) scale(1.08); }

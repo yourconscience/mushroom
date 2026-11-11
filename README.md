@@ -16,10 +16,10 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - The first seven levels are gentler: a big mushroom always waits at the start of levels 3, 6 and 9 (except during the black-and-white zone), speed grows more slowly, and hoppers and wrench throwers only appear after level 7
 - Bosses: every 7th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
   - ГЛАВНЫЙ САНТЕХНИК (4): stomp him while he charges
-  - ГОЛУБИНЫЙ КОРОЛЬ (3): out of reach; stomp the golden egg and it flies back at him
-  - ДУТАЯ ФИГУРА (3): head-butt it from below as it floats over you
-  - СТЕКЛЯННЫЙ ПЕТУХ (3): don't hit it; clear a whole series without being touched and the glass cracks
-  - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when the mound reaches you, then stomp the real head, not the thorny one
+  - ГОЛУБИНЫЙ КОРОЛЬ (3): out of reach; his eggs bounce toward you (stay under a high arc, jump a low touch-down) and the golden one, stomped, flies back at him
+  - ДУТАЯ ФИГУРА (3): the ball itself bounces at you; its shadow shows where it lands — head-butt it from below in a jump
+  - СТЕКЛЯННЫЙ ПЕТУХ (3): don't hit it; he shows a song as notes, then pecks it on a beat — clear the whole song untouched and the glass cracks
+  - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when each mound reaches you, then stomp the real head, not the thorny ones
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; stomp the golden disc, it throws you onto the saucer
   - ЦАРЬ ГРИБОВ (5): stomp him while he squats and crawls; from the third stomp he wears armour until you stomp a soldier he summons
 - Mini-bosses: level 4 always has an easy one (a single stomp, 750 points), then each stretch between two bosses has one on a random level (every 4th level in БАТТЛ, never easy). Kinds: ОКСИ, ШОК, ГНОЙНЫЙ, ТАНЦОР or РИКИ Ф; the full form takes 2 stomps, attacks in random order; their body doesn't hurt, so a miss is free: they run off screen and come back

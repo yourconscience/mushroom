@@ -72,7 +72,7 @@ function loop(ts){
       showQuote(B.quote,true);
       beep(700,.08); setTimeout(()=>beep(1050,.12),60);
       if(navigator.vibrate)navigator.vibrate(40);
-      shake(3,.15); popText(b.x,b.y-30,B.icon+(b.kind==='loot'?' +500':''),B.color);
+      shake(3,.15); if(b.kind==='life') texts.push({x:b.x,y:b.y-30,spr:'up',l:0.9}); else popText(b.x,b.y-30,B.icon+(b.kind==='loot'?' +500':''),B.color);
       metaEvent('item',b.kind);
       if(b.kind==='jet')jetT=B.dur;
       else if(b.kind==='big')player.big=true;
@@ -228,7 +228,9 @@ function loop(ts){
     ctx.save(); ctx.translate(b.x-camX,by);
     ctx.globalAlpha=.25; ctx.fillStyle=B.color;
     ctx.beginPath(); ctx.arc(0,0,20+Math.sin(t*6+b.t)*3,0,7); ctx.fill();
-    ctx.globalAlpha=1; ctx.font=(Math.max(22,Math.round(16/S)))+'px monospace'; ctx.fillText(B.icon,0,8);
+    ctx.globalAlpha=1;
+    if(b.kind==='life') drawUpMush(0,8,1.15); // вторая жизнь — зелёный гриб, не эмодзи
+    else { ctx.font=(Math.max(22,Math.round(16/S)))+'px monospace'; ctx.fillText(B.icon,0,8); }
     ctx.restore();
   }
   ctx.textAlign='left';
@@ -259,7 +261,9 @@ function loop(ts){
   ctx.textAlign='center'; ctx.font='bold '+(Math.max(22,Math.round(16/S)))+'px monospace';
   for(const tx of texts){
     tx.l-=dt; tx.y-=70*dt;
-    ctx.globalAlpha=Math.min(1,tx.l*2.5); ctx.fillStyle=tx.c;
+    ctx.globalAlpha=Math.min(1,tx.l*2.5);
+    if(tx.spr){ drawUpMush(tx.x-camX,tx.y,1.1); ctx.globalAlpha=1; continue; }
+    ctx.fillStyle=tx.c;
     ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.strokeText(tx.txt,tx.x-camX,tx.y);
     ctx.fillText(tx.txt,tx.x-camX,tx.y); ctx.globalAlpha=1;
   }
@@ -269,7 +273,7 @@ function loop(ts){
 
   scoreEl.textContent='СЧЁТ: '+((score*SM)|0);
   const fx=[oneUp>0?'🟢':'',bubble>0?'🫧':'',player.big?'🍄':'',noirTo?'🎞':''].concat([['jet',jetT],['spore',spT],['hypno',hyT],['magnet',mgT],['star',starT],['zap',zapT],['ghost',ghostT]].filter(a=>a[1]>0).map(a=>BONUSES[a[0]].icon+Math.ceil(a[1])),fsT>0?['🏎'+Math.ceil(fsT)]:[]).filter(Boolean).join(' ');
-  fxEl.textContent=fx;
+  if(fxEl._fx!==fx){ fxEl._fx=fx; fxEl.innerHTML=upHtml(fx); }
   if(hyT>0){ ctx.fillStyle='hsla('+((t*90)%360|0)+',90%,60%,0.14)'; ctx.fillRect(-20,-20,W+40,H+40); }
   comboEl.textContent=combo>1?('x'+combo+' КОМБО'):'';
 }

@@ -53,6 +53,32 @@ function drawGrib(p,t){
   ctx.globalAlpha=1;
   ctx.restore();
 }
+// зелёный гриб 1UP: маленький, в стиле гриба (зелёная шляпка, белые точки), ноги в (x,y)
+function drawUpMush(x,y,s){
+  const k=s||1;
+  ctx.save(); ctx.translate(x,y); ctx.scale(k,k);
+  // ножка
+  ctx.fillStyle=OL; ctx.fillRect(-6.5,-12.5,13,13);
+  ctx.fillStyle='#f5e9d0'; ctx.fillRect(-6,-12,12,12);
+  ctx.fillStyle='#dccba6'; ctx.fillRect(3,-12,3,12); ctx.fillRect(-6,-3,12,2);
+  // глаза
+  ctx.fillStyle='#222'; ctx.fillRect(-4,-8,3,4); ctx.fillRect(2,-8,3,4);
+  ctx.fillStyle='#fff'; ctx.fillRect(-3.5,-7.5,1,1); ctx.fillRect(2.5,-7.5,1,1);
+  // шляпка: обводка, тень, свет — зелёная
+  ctx.fillStyle=OL;
+  ctx.beginPath(); ctx.ellipse(0,-12,12.5,8.5,0,Math.PI,0); ctx.fill();
+  ctx.fillRect(-12.5,-12.5,25,4.5);
+  ctx.fillStyle='#2e9e5b';
+  ctx.beginPath(); ctx.ellipse(0,-12,11.5,7.5,0,Math.PI,0); ctx.fill();
+  ctx.fillRect(-11.5,-12,23,2.5);
+  ctx.fillStyle='#4ade80';
+  ctx.beginPath(); ctx.ellipse(-1,-12.5,10.5,6.5,0,Math.PI,0); ctx.fill();
+  ctx.fillRect(-11,-12,22,2);
+  // точки
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-4.5,-15,2.2,0,7); ctx.arc(4.5,-14.5,2,0,7); ctx.arc(0,-17.5,1.7,0,7); ctx.fill();
+  ctx.restore();
+}
 // --- Враги ---
 const SKINS={
   walk: {cap:'#d62828', body:'#2a5fd0', letter:'М'},

@@ -5,10 +5,10 @@
 const BOSS_SIZE={plumber:[34,96],pigeon:[44,62],balloon:[46,92],rooster:[36,92],worm:[30,56],ufo:[58,34],king:[42,96]}; // полуширина и рост
 const BOSS_TIP={
   plumber:'ПРЫГАЙ НА ГОЛОВУ, КОГДА ОН ПРЁТ ⭐',
-  pigeon:'ЯЙЦА ПЕРЕПРЫГИВАЙ, НА ЗОЛОТОЕ ПРЫГНИ — ПОЛЕТИТ В НЕГО ⭐',
-  balloon:'ПЛЫВЁТ НАД ГОЛОВОЙ — ПРОБЕЙ СНИЗУ, МАКУШКОЙ ⭐',
-  rooster:'НЕ БЕЙ ЕГО: ЧИСТАЯ СЕРИЯ — И ОН ТРЕСНЕТ ⭐',
-  worm:'БУГОР ДОШЁЛ — БУДЬ В ПРЫЖКЕ; БЕЙ ГОЛОВУ СО ЗВЁЗДАМИ, КОЛЮЧАЯ ЖАЛИТ ⭐',
+  pigeon:'ЯЙЦА СКАЧУТ: ПОД ВЫСОКОЙ ДУГОЙ СТОЙ, НИЗКОЕ КАСАНИЕ ПЕРЕПРЫГНИ; ТОПНИ ЗОЛОТОЕ ⭐',
+  balloon:'МЯЧ СКАЧЕТ К ТЕБЕ: НЕ СТОЙ, ГДЕ ТЕНЬ ПРИЗЕМЛИТСЯ; ПРОБЕЙ СНИЗУ В ПРЫЖКЕ ⭐',
+  rooster:'ЗАПОМНИ НОТЫ И НЕ ПОПАДИСЬ: ЧИСТАЯ ПЕСНЯ — И ОН ТРЕСНЕТ ⭐',
+  worm:'БУГОР ДОШЁЛ — БУДЬ В ВОЗДУХЕ; БЕЙ ГОЛОВУ СО ЗВЁЗДАМИ, КОЛЮЧАЯ ЖАЛИТ ⭐',
   ufo:'ЛУЧ — БУДЬ В ПРЫЖКЕ; ЗОЛОТОЙ ДИСК ПОДБРОСИТ НА ТАРЕЛКУ ⭐',
   king:'СЕЛ И ПОЛЗЁТ — БЕЙ В ШЛЯПКУ; В БРОНЕ — СНАЧАЛА РАЗДАВИ СОЛДАТА ⭐',
 };
@@ -91,22 +91,34 @@ function updPlumber(b,dt,psx,gy,rage){
   }
   b.vuln=b.st==='charge'; b.solid=b.st!=='enter'&&b.st!=='leap';
 }
-// №2 ГОЛУБИНЫЙ КОРОЛЬ: сам недосягаем. Несёт яйца, последнее золотое: прыгни на него, и оно полетит обратно в голубя.
-// Пропустил золотое — пикирует и проносится по земле, это надо перепрыгнуть.
-function pigeonRound(b,rage){ b.st='hover'; b.t=0; b.n=0; b.cnt=randi(1,2+rage); b.gap=rand(.95,1.45); b.ao=rand(0,60); } // только дальше: яйцо должно успеть упасть до гриба
+// №2 ГОЛУБИНЫЙ КОРОЛЬ: сам недосягаем. Несёт яйца, они скачут по земле к грибу:
+// под высокой дугой стой, низкое касание перепрыгни. Последнее яйцо золотое и тоже скачет —
+// топни его, и оно полетит обратно в голубя. Пропустил — пикирует и проносится по земле, это надо перепрыгнуть.
+const PIGEON_EGGS={ hi:{a:170,bv:850,r:13}, mid:{a:240,bv:700,r:13}, lo:{a:380,bv:490,r:13} }; // a — скорость подхода по экрану, bv — скорость отскока (дуга bv²/2G)
+function pigeonRound(b,rage){
+  b.st='hover'; b.t=0; b.n=0; b.gap=rand(.8,1.1); b.ao=rand(0,60);
+  b.eggs=rage===0?[]:rage===1?['mid']:['mid','lo']; // незолотые яйца; золотое — всегда последнее
+}
+function pigeonEgg(b,psx,gy,prof,gold){
+  const a=prof.a, bv=prof.bv, r=prof.r, sx=b.sx-b.hw, sy=b.y;
+  const dropH=Math.max(40,sy-(gy-r)), T=Math.sqrt(2*dropH/G), mark=camX+sx-a*T; // первая точка касания земли
+  b.obs.push({x:camX+sx,y:sy,vx:speed-a,vy:0,r,bv,bounced:0,mark,kind:'egg',grav:1,act:gold?'kick':null,
+              stopAt:gold?(psx+34):null,sit:gold?1.5:0});
+  beep(gold?880:520,.06,'triangle');
+}
 function updPigeon(b,dt,psx,gy,rage){
   const ax=Math.min(W*0.7,psx+560)+(b.ao||0), ay=Math.max(110,gy-300);
   switch(b.st){
     case 'enter': b.sx+=(ax-b.sx)*Math.min(1,dt*2.5); b.y+=(ay-b.y)*Math.min(1,dt*2.5); if(b.t>1.2) pigeonRound(b,rage); break;
     case 'hover':
       b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y=ay+Math.sin(b.t*3)*14;
-      if(b.t>b.gap){ b.t=0; b.n++;
-        const gold=b.n>b.cnt;
-        b.gap=b.n===b.cnt?rand(1.45,1.9):rand(.95,1.45)-rage*.04; // золотое с паузой, чтобы успеть приземлиться и прыгнуть на него
-        b.obs.push({x:b.x,y:b.y,vx:0,vy:0,r:gold?17:13,kind:'egg',grav:1,act:gold?'kick':null}); beep(gold?880:520,.06,'triangle');
-        if(gold){ b.n=0; b.st='aim'; b.t=0; b.tx=psx+rand(270,400); b.dv=chance(.7); } }
+      if(b.t>b.gap){ b.t=0; b.n++; const gold=b.n>b.eggs.length;
+        const prof=PIGEON_EGGS[gold?'hi':b.eggs[b.n-1]];
+        pigeonEgg(b,psx,gy,prof,gold);
+        b.gap=gold?rand(1.5,1.9):rand(.8,1.15)-rage*.04; // золотое с паузой, чтобы успеть приземлиться
+        if(gold){ b.n=0; b.st='wait'; b.t=0; b.dv=chance(.7); b.tx=psx+rand(270,400); } }
       break;
-    case 'aim': // ждёт, пока все яйца позади, и метит в землю впереди гриба
+    case 'wait': // ждёт, пока все яйца позади; золотое топнули — новый круг, пропустил — пикирует
       b.sx+=(ax+40-b.sx)*Math.min(1,dt*3); b.y+=(ay-30-b.y)*Math.min(1,dt*3);
       if(b.t>0.7&&!obsAhead()){ if(b.dv){ b.st='dive'; b.t=0; b.lx=b.sx; b.ly=b.y; b.dd=rand(.38,.55); b.sp=rand(.85,1.15); beep(1400,.15,'square',.06); } else pigeonRound(b,rage); }
       break;
@@ -120,34 +132,49 @@ function updPigeon(b,dt,psx,gy,rage){
   }
   b.vuln=false; b.solid=b.st==='stuck';
 }
-// №3 ДУТАЯ ФИГУРА: пускает пузыри (низкий — прыгай, высокий — стой), потом плывёт над грибом:
-// бить только снизу, макушкой. С каждым тычком сдувается.
-function balloonRound(b,rage){ b.st='puff'; b.t=0; b.n=0; b.cnt=randi(1,3+rage); b.gap=rand(.9,1.45); }
+// №3 ДУТАЯ ФИГУРА: теперь он сам — мяч. Скачет по арене к грибу, как пляжный мяч: тень на земле показывает, где приземлится.
+// Под высокой дугой пробеги, не стой, где приземлится; бей снизу макушкой в прыжке. Каждый тычок сдувает его (меньше, ниже, чаще),
+// со второго тычка приземление бьёт коротким кольцом по земле — перепрыгни.
+function balloonRound(b,rage){ b.st='bounce'; b.t=0; b.vy=0; }
 function updBalloon(b,dt,psx,gy,rage){
-  const ax=Math.min(W*0.7,psx+560), ay=gy-H*0.26, low=b.low||gy-175;
+  const ax=Math.min(W*0.7,psx+560), ay=gy-H*0.26;
+  const approach=170+rage*50, GB=800, apex=150-rage*25, bv=Math.sqrt(2*GB*apex), spacing=approach*2*bv/GB;
+  b.approach=approach; b.bv=bv; b.gb=GB; // для предсказания в боте
   b.below=true;
+  const launch=()=>{ // вершина дуги — ровно над грибом: бей снизу в прыжке, когда он плывёт над тобой
+    b.st='bounce'; b.t=0; b.y=gy-apex; b.vy=0;
+    const k=Math.max(1,Math.round((ax-psx)/spacing)); b.sx=psx+k*spacing;
+  };
   switch(b.st){
-    case 'enter': b.sx+=(ax-b.sx)*Math.min(1,dt*2); b.y+=(ay-b.y)*Math.min(1,dt*2); if(b.t>1.3) balloonRound(b,rage); break;
-    case 'puff':
-      b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y=ay+Math.sin(b.t*2.4)*10;
-      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(.9,1.45); // пузыри не чаще прыжка
-        const lowB=chance(.55);
-        b.obs.push({x:b.x-b.hw,y:lowB?gy-20:gy-100,vx:speed-300,vy:0,r:lowB?15:17,kind:lowB?'bubL':'bubH'}); beep(lowB?300:620,.08,'sine',.12);
-        if(b.n>=b.cnt){ b.n=0; b.st='sag'; b.t=0; b.low=gy-rand(165,185); beep(240,.6,'sawtooth',.08); } }
+    case 'enter': b.sx+=(ax-b.sx)*Math.min(1,dt*2); b.y+=(ay-b.y)*Math.min(1,dt*2); if(b.t>1.3) launch(); break;
+    case 'bounce':
+      b.sx-=approach*dt; b.vy+=GB*dt; b.y+=b.vy*dt;
+      if(b.y>=gy){ b.y=gy; b.vy=-bv; shake(6,.15); beep(120,.12,'sawtooth',.06);
+        if(rage>=1){ const x0=b.sx-b.hw*b.scale, x1=b.sx+b.hw*b.scale; b.waves.push({sx:x0,d:-1,span:60,d0:x0},{sx:x1,d:1,span:60,d0:x1}); } }
+      if(b.sx<psx-140){ b.st='reset'; b.t=0; }
       break;
-    case 'sag': b.sx+=(psx+Math.min(W*0.8,460)-b.sx)*Math.min(1,dt*2.5); b.y+=(low-b.y)*Math.min(1,dt*3);
-      if(b.t>0.9&&!obsAhead()){ b.st='roll'; b.t=0; rushStart(b,230+rage*25,psx); }
-      break;
-    case 'roll': bossRush(b,dt); b.y=low+Math.sin(b.t*5)*5; if(b.sx<psx-110){ b.st='rise'; b.t=0; } break;
-    case 'hurt': b.sx+=b.vsx*dt; b.vsx*=Math.pow(0.08,dt); b.y+=(ay-b.y)*Math.min(1,dt*3); if(b.t>0.8){ b.st='rise'; b.t=0; } break;
-    case 'rise': b.sx+=(ax-b.sx)*Math.min(1,dt*2.5); b.y+=(ay-b.y)*Math.min(1,dt*2.5); if(b.t>1){ if(chance(.25)){ b.st='sag'; b.t=0; b.low=gy-rand(165,185); } else balloonRound(b,rage); } break;
+    case 'reset': b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y+=(ay-b.y)*Math.min(1,dt*2.5); if(b.t>0.6) launch(); break;
+    case 'hurt': b.sx+=b.vsx*dt; b.vsx*=Math.pow(0.08,dt); b.y+=(ay-b.y)*Math.min(1,dt*3); if(b.t>0.8){ b.st='reset'; b.t=0; } break;
   }
-  b.vuln=b.st==='roll'; b.solid=b.st==='roll';
+  b.vuln=false; b.solid=b.st==='bounce'||b.st==='reset';
 }
-// №4 СТЕКЛЯННЫЙ ПЕТУХ: его не бьют. Осколки и кольца идут серией в ритме; серия без единого удара по грибу — трещина.
-// На стекле можно подпрыгнуть, но вреда это ему не делает. Со второй серии он ещё и бежит на гриб, с третьей финтит.
-function roosterRound(b,rage){ b.st='peck'; b.t=0; b.n=0; b.touched=0; b.gap=rand(.8,1.25);
-  b.list=Array.from({length:randi(3+rage,4+rage*2)},()=>chance(rage?.6:.2)?(chance(.55)?'L':'H'):'s'); } // серия каждый раз новая
+// №4 СТЕКЛЯННЫЙ ПЕТУХ: его не бьют. Песня: сначала ноты над головой (низкая/высокая/осколок) не меньше 1.2 с,
+// потом на ровном бите (клюёт на каждый). Серия без единого удара по грибу — трещина. Каждая трещина добавляет ноту
+// и ускоряет бит ~12%; со второй трещины одна нота спрятана до вылета. Он не бежит на гриб.
+function roosterRound(b,rage){
+  b.st='show'; b.t=0; b.n=0; b.touched=0; b.beat=1.0*Math.pow(0.88,rage);
+  b.list=[];
+  for(let i=0;i<4+rage;i++){ // не больше двух прыжковых нот подряд: иначе не увернуться
+    let k; do { const r=Math.random(); k=r<0.4?'L':r<0.7?'H':'s'; }
+    while(i>=2&&k!=='H'&&b.list[i-1]!=='H'&&b.list[i-2]!=='H');
+    b.list.push(k);
+  }
+  b.hide=rage>=2?randi(0,b.list.length-1):-1;
+}
+function roosterNote(b,gy,k){
+  if(k==='s'){ b.obs.push({x:b.x-b.hw,y:gy-9,vx:speed-400,vy:0,r:10,kind:'shard'}); beep(1300,.04,'square',.06); }
+  else { const low=k==='L'; b.obs.push({x:b.x-b.hw,y:low?gy-20:gy-100,vx:speed-360,vy:0,r:low?15:17,kind:low?'ringL':'ringH'}); beep(low?700:1000,.1,'triangle',.1); }
+}
 function updRooster(b,dt,psx,gy,rage){
   const anchor=Math.min(W*0.72,psx+560), list=b.list;
   switch(b.st){
@@ -155,24 +182,21 @@ function updRooster(b,dt,psx,gy,rage){
       b.sx+=(anchor-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt;
       if(b.y>=gy){ b.y=gy; b.vy=0; shake(12,.3); roosterRound(b,rage); }
       break;
-    case 'peck':
-      b.sx+=(anchor-b.sx)*Math.min(1,dt*4); b.y=gy;
-      if(b.t>b.gap){ b.t=0; b.gap=rand(.8,1.25); const k=list[b.n++];
-        if(k==='s'){ b.obs.push({x:b.x-b.hw,y:gy-9,vx:speed-400,vy:0,r:10,kind:'shard'}); beep(1300,.04,'square',.06); }
-        else { const low=k==='L'; b.obs.push({x:b.x-b.hw,y:low?gy-20:gy-100,vx:speed-400,vy:0,r:low?15:17,kind:low?'ringL':'ringH'}); beep(low?700:1000,.1,'triangle',.1); }
-        if(b.n>=list.length){ b.n=0; b.st='wait'; b.t=0; b.ran=false; } }
+    case 'show':
+      b.sx+=(anchor-b.sx)*Math.min(1,dt*3); b.y=gy;
+      if(b.t>1.2){ b.st='play'; b.t=0; }
+      break;
+    case 'play':
+      b.sx+=(anchor-b.sx)*Math.min(1,dt*3); b.y=gy;
+      if(b.t>b.beat){ b.t=0; roosterNote(b,gy,list[b.n++]);
+        if(b.n>=list.length){ b.n=0; b.st='wait'; b.t=0; } }
       break;
     case 'wait':
       b.y=gy;
       if(b.t>0.5&&!obsAhead()){
-        if(rage>=1&&!b.ran){ b.ran=true; if(chance(.7)){ b.st='charge'; b.t=0; rushStart(b,268,psx); break; } }
         if(b.touched){ b.st='back'; b.t=0; showQuote('СЕРИЯ НЕ В СЧЁТ, ЕЩЁ РАЗ 🐓',false); }
         else { for(let i=0;i<14;i++) parts.push({x:b.x,y:gy-b.hh+20,vx:(Math.random()-.5)*500,vy:-Math.random()*400,l:.6,c:'#bfefff'}); bossHit(b,gy-b.hh); }
       }
-      break;
-    case 'charge':
-      b.y=gy; bossRush(b,dt);
-      if(b.sx<-120){ b.st='wait'; b.t=0; b.sx=W+100; }
       break;
     case 'hurt':
       b.sx+=b.vsx*dt; b.vsx*=Math.pow(0.08,dt); b.vy+=G*dt; b.y+=b.vy*dt;
@@ -181,39 +205,43 @@ function updRooster(b,dt,psx,gy,rage){
       break;
     case 'back': b.y=gy; b.sx+=(anchor-b.sx)*Math.min(1,dt*3); if(Math.abs(anchor-b.sx)<10) roosterRound(b,rage); break;
   }
-  b.vuln=false; b.solid=b.st==='charge';
+  b.vuln=false; b.solid=false;
 }
-// №5 ПОДЗЕМНЫЙ ЧЕРВЬ: бугор идёт к грибу рывками и бьёт снизу, в этот момент надо быть в воздухе.
-// Потом вылезают две головы: настоящая со звёздами и колючая, которая жалит.
+// №5 ПОДЗЕМНЫЙ ЧЕРВЬ: бугор идёт к грибу — будь в воздухе, когда дойдёт. Потом вылезают головы: настоящая со звёздами
+// и колючая, что жалит. Эскалация детерминирована: 0 тычков — один бугор, 1 — два через 0.9 с, 2 — три (средний быстрее), 3 — две колючие.
+function wormDig(b,rage){ b.dug=0; b.moundN=0; b.mounds=1+Math.min(rage,2); b.st='dig'; b.t=0; }
 function updWorm(b,dt,psx,gy,rage){
-  const v=130+rage*25;
+  const v=155; // скорость головы постоянна — тычок предсказуем
   switch(b.st){
     case 'enter':
       b.sx+=(W*0.7-b.sx)*Math.min(1,dt*3); b.vy+=G*dt; b.y+=b.vy*dt;
-      if(b.y>=gy){ b.y=gy; b.vy=0; shake(10,.25); b.st='dig'; b.t=0; }
+      if(b.y>=gy){ b.y=gy; b.vy=0; shake(10,.25); wormDig(b,rage); }
       break;
-    case 'dig':
-      if(!b.dug){ b.dug=1; b.sx=psx+Math.min(W*0.85,520)*rand(.75,1); b.ph=Math.random()*6; b.fr=rand(3.5,5.5); }
-      b.y=gy+b.hh+14; b.sx-=(300+rage*30+220*Math.sin(b.t*b.fr+b.ph))*dt;
+    case 'dig':{
+      if(!b.dug){ b.dug=1; b.sx=psx+Math.min(W*0.85,480); b.ph=Math.random()*6;
+        const D=Math.min(W*0.85,480), mid=b.mounds===3&&b.moundN===1; // средний из трёх — быстрее
+        b.mv=D/(mid?0.62:0.9); b.fr=(mid?6.5:4)+Math.random()*2; }
+      b.y=gy+b.hh+14; b.sx-=b.mv*dt;
       if(Math.random()<dt*22) parts.push({x:camX+b.sx+(Math.random()-.5)*36,y:gy-2,vx:(Math.random()-.5)*120,vy:-80-Math.random()*120,l:.5,c:'#8a6a4a'});
-      if(b.sx>psx-6&&b.sx<psx+18&&player.vy===0) hit(); // уже прошёл — не бьёт
-      if(b.sx<psx-60){ b.dug=0; if(chance(.3)){ b.t=0; break; } // иногда второй бугор подряд
+      if(b.sx>psx-6&&b.sx<psx+18&&player.vy===0) hit();
+      if(b.sx<psx-60){ b.dug=0; b.moundN++;
+        if(b.moundN<b.mounds){ b.t=0; break; } // ещё бугор
         b.st='rise'; b.t=0; beep(130,.22,'sawtooth',.1);
-        const near=chance(.5), d1=rand(150,190), d2=d1+rand(130,190);
-        b.sx=psx+(near?d1:d2);
-        b.obs.push({x:camX+psx+(near?d2:d1),y:gy-22,vx:speed-v,vy:0,r:20,kind:'decoy'}); }
-      break;
+        b.sx=psx+rand(150,190); // настоящая голова всегда ближе всех — успеваешь топнуть
+        const decN=rage>=3?2:1;
+        for(let i=0;i<decN;i++) b.obs.push({x:camX+psx+rand(330,380)+i*120,y:gy-22,vx:speed-400,vy:0,r:20,kind:'decoy'}); } // колючая пролетает быстро
+      break; }
     case 'rise':
       b.sx-=v*dt; b.y+=(gy-b.y)*Math.min(1,dt*6);
       if(Math.abs(gy-b.y)<3){ b.y=gy; b.st='surface'; b.t=0; b.sd=rand(2.2,3.2); shake(11,.28); beep(90,.2,'square',.12); }
       break;
     case 'surface':
       b.sx-=v*dt;
-      if(b.t>b.sd||b.sx<psx-110){ b.st='dig'; b.t=0; }
+      if(b.t>b.sd||b.sx<psx-110) wormDig(b,rage);
       break;
     case 'hurt':
       b.sx+=b.vsx*dt; b.vsx*=Math.pow(.08,dt); b.y+=(gy-b.y)*Math.min(1,dt*6);
-      if(b.t>.7){ b.st='dig'; b.t=0; }
+      if(b.t>.7) wormDig(b,rage);
       break;
   }
   b.vuln=b.st==='surface'||b.st==='rise'; b.solid=b.vuln;
@@ -330,14 +358,18 @@ function updBoss(dt,onGround){
   b.x=camX+b.sx;
   // ударная волна по земле: перепрыгни
   for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*(b.easy?.8:1)*dt;
+    if(w.span&&Math.abs(w.sx-w.d0)>w.span){ w.dead=1; continue; }
     if(!player.dead&&ghostT<=0&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } } // призрак: волны проходят; звезда: hit() ничего не делает, волна гаснет
   b.waves=b.waves.filter(w=>!w.dead&&w.sx>-60&&w.sx<W+60);
   // снаряды: яйца падают и лежат, пузыри и осколки летят на гриб
   const psc=player.big?1.35:1;
   for(const o of b.obs){
-    if(o.grav){ o.vy+=G*dt; o.y+=o.vy*dt; if(o.y>=gy-o.r){ o.y=gy-o.r; o.vy=0; o.grav=0; } }
+    if(o.grav){ o.vy+=G*dt; o.y+=o.vy*dt; if(o.y>=gy-o.r){ o.y=gy-o.r; if(o.bv){ o.vy=-o.bv; o.bounced=(o.bounced||0)+1; } else { o.vy=0; o.grav=0; } } }
     else o.y+=(o.vy||0)*dt;
     o.x+=o.vx*dt;
+    if(o.stopAt!=null&&o.x-camX<o.stopAt){ // золотое яйцо: замирает у гриба, потом скатывается, если не топнули
+      if(o.sit>0){ o.sit-=dt; o.bv=0; o.vx=speed; if(o.sit<=0){ o.vx=speed-360; o.sit=-1; } }
+    }
     if(o.act){ // золотое: прыгни сверху
       if(!player.dead&&ghostT<=0&&player.vy>40&&Math.abs(player.x-o.x)<o.r+26*psc&&player.y>o.y-o.r-36&&player.y<=o.y+o.r+4){ o.dead=1; bossAct(b,o); }
       continue;
@@ -352,8 +384,9 @@ function updBoss(dt,onGround){
     if(player.vy>0&&dx<b.hw+34*psc&&player.y>top-10&&player.y<top+hh*.7){ player.vy=JUMP*0.78; player.jumps=maxJumps(); bossHit(b,top); }
     return;
   }
-  if(b.below){ // бьётся только снизу, макушкой; сбоку и сверху не задевает
+  if(b.below){ // бьётся снизу макушкой; приземление на гриб или касание стоя/падая — удар по грибу
     if(player.vy<0&&dx<b.hw*b.scale+16*psc&&player.y-40*psc<b.y+10&&player.y-40*psc>top){ player.vy=120; bossHit(b,b.y); }
+    else if(player.vy>=0&&dx<b.hw*b.scale+20*psc&&player.y-40*psc<b.y+6&&player.y>top-8){ hit(); }
     return;
   }
   if(dx<b.hw*b.scale+20*psc&&player.y>top-4&&player.y-40*psc<b.y){
