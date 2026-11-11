@@ -46,7 +46,7 @@ function bossKill(b){
   bossDone[b.lvl]=true;
   if(!b.mini) metaEvent('beat',b.kind); else metaEvent('minibeat',b.kind);
   if(b.mini&&!spar) pickups.push({x:player.x+300,y:b.gy-52,kind:'life',t:0}); // мини-босс всегда роняет 1UP впереди гриба; арена режется до камеры+1.6W, 300 впереди остаётся
-  if(spar){ sparWon=1; sparT=setTimeout(overCard,2500); } // спарринг: через 2.5 с карточка
+  if(spar){ sparWon=1; sparT=setTimeout(()=>{ if(spar) overCard(); },2500); } // спарринг: через 2.5 с карточка
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
     plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);
