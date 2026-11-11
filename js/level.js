@@ -36,7 +36,7 @@ let room=null, pipeZ=-9; // v43: тайная комната (null вне ком
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; starT=0; zapT=0; ghostT=0; bubble=0; noKillT=0; pCombo=0; punches=[]; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; room=null; pipeZ=-9; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); clearTimeout(dieT); // карточка прошлого забега не должна закрыть новый zoneIdx={}; bossR=null; miniR=null;
+  boss=null; arena=null; room=null; pipeZ=-9; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); clearTimeout(dieT); zoneIdx={}; bossR=null; miniR=null; // dieT: карточка прошлого забега не должна закрыть новый
   const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг: старт прямо на арене нужного уровня
   if(sl>=0){ dist=sl*ZONE_LEN+60; speed=420; zoneN=sl; zoneI=sl%ZONES.length; }
   if(spar){ if(spar.mini) miniPlan[3]=MINI_KINDS[spar.i]; else bossOrder=[spar.i]; } // полная форма мини-босса, один босс в круге
