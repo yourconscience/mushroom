@@ -17,7 +17,7 @@ The mushroom is a nod to the Oxxxymiron vs Слава КПСС Versus battle.
 - Bosses: every 7th level brings one of seven, the king always last in the round of seven; repeats get numbered II, III. Each one goes down a different way:
   - ГЛАВНЫЙ САНТЕХНИК (4): stomp him while he charges
   - ГОЛУБИНЫЙ КОРОЛЬ (3): out of reach; his eggs bounce toward you (stay under a high arc, jump a low touch-down) and the golden one, stomped, flies back at him
-  - ДУТАЯ ФИГУРА (3): the ball itself bounces at you; its shadow shows where it lands — head-butt it from below in a jump
+  - ДУТАЯ ФИГУРА (3): the ball itself bounces at you; its shadow shows the next landing and turns red when it will land on you — head-butt it from below in a jump
   - СТЕКЛЯННЫЙ ПЕТУХ (3): don't hit it; he shows a song as notes, then pecks it on a beat — clear the whole song untouched and the glass cracks
   - ПОДЗЕМНЫЙ ЧЕРВЬ (4): be in the air when each mound reaches you, then stomp the real head, not the thorny ones
   - ЛЕТАЮЩАЯ ТАРЕЛКА (3): out of reach; discs come one at a time, low ones you jump and high ones you ignore on the ground; a mark under you blinks three times and freezes with a loud beep: jump when it freezes (or a little earlier) to be airborne for the flash; then stomp the golden disc, it throws you onto the saucer

@@ -15,9 +15,15 @@ function drawPigeonB(b,t){
 }
 function drawBalloonB(b,t){
   const s=b.scale, rx=b.hw*s, ry=b.hh*s/2, cy=-ry, wob=Math.sin(t*5)*1.5;
-  const hgt=Math.max(0,b.gy-b.y), k=Math.max(0.15,1-hgt/500); // тень на земле: где приземлится
-  ctx.globalAlpha=.35*k; ctx.fillStyle='#000';
-  ctx.beginPath(); ctx.ellipse(0,b.gy-b.y+2,(rx+8)*k,6*k,0,0,7); ctx.fill(); ctx.globalAlpha=1;
+  // тень на земле: где будет следующее касание, растёт к касанию; красная — упадёт на гриб
+  if(b.st==='bounce'&&b.touchX!=null){
+    const tx=b.touchX-b.sx, gy=b.gy, apex=b.apex||150;
+    const hgt=Math.max(0,gy-b.y), grow=Math.min(1,Math.max(0,1-hgt/apex)); // 0 на вершине, 1 у земли
+    const fin=b.touchIdx===0;
+    ctx.globalAlpha=(fin?0.5:0.3)+(fin?0.2*Math.sin(t*8):0);
+    ctx.fillStyle=fin?'#ff3d3d':'#000';
+    ctx.beginPath(); ctx.ellipse(tx,gy-b.y+2,(rx+8)*(0.35+0.65*grow),7*(0.35+0.65*grow),0,0,7); ctx.fill(); ctx.globalAlpha=1;
+  }
   ctx.strokeStyle=OL; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,8); ctx.lineTo(6,8); ctx.closePath(); ctx.fillStyle='#d94c80'; ctx.fill(); ctx.stroke(); // узелок
   ctx.beginPath(); ctx.ellipse(0,cy,rx+wob,ry-wob,0,0,7); ctx.fillStyle='#ff7aa8'; ctx.fill(); ctx.stroke();
