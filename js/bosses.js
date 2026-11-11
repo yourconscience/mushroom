@@ -9,7 +9,7 @@ const BOSS_TIP={
   balloon:'МЯЧ СКАЧЕТ К ТЕБЕ: НЕ СТОЙ, ГДЕ ТЕНЬ ПРИЗЕМЛИТСЯ; ПРОБЕЙ СНИЗУ В ПРЫЖКЕ ⭐',
   rooster:'ЗАПОМНИ НОТЫ И НЕ ПОПАДИСЬ: ЧИСТАЯ ПЕСНЯ — И ОН ТРЕСНЕТ ⭐',
   worm:'БУГОР ДОШЁЛ — БУДЬ В ВОЗДУХЕ; БЕЙ ГОЛОВУ СО ЗВЁЗДАМИ, КОЛЮЧАЯ ЖАЛИТ ⭐',
-  ufo:'ЛУЧ — БУДЬ В ПРЫЖКЕ; ЗОЛОТОЙ ДИСК ПОДБРОСИТ НА ТАРЕЛКУ ⭐',
+  ufo:'ДИСКИ: НИЗКИЙ — ПРЫГАЙ, ВЫСОКИЙ — СТОЙ. МЕТКА ЗАСТЫЛА — ПРЫГАЙ. ЗОЛОТОЙ ДИСК ПОДБРОСИТ НА ТАРЕЛКУ ⭐',
   king:'СЕЛ И ПОЛЗЁТ — БЕЙ В ШЛЯПКУ; В БРОНЕ — СНАЧАЛА РАЗДАВИ СОЛДАТА ⭐',
 };
 function startBoss(){
@@ -246,9 +246,11 @@ function updWorm(b,dt,psx,gy,rage){
   }
   b.vuln=b.st==='surface'||b.st==='rise'; b.solid=b.vuln;
 }
-// №6 ЛЕТАЮЩАЯ ТАРЕЛКА: до неё не допрыгнуть. Веер дисков, луч по метке, потом катится золотой диск:
+// №6 ЛЕТАЮЩАЯ ТАРЕЛКА: до неё не допрыгнуть. Каждый приём проходится одним прыжком или стоянием на земле, знак виден за 0.6 с и больше:
+// диски летят по одному на двух высотах (низкий — прыгай, высокий — стой), промежуток между ними дольше прыжка;
+// луч: метка мигает 3 раза и застывает, ЗАМИРАНИЕ — сигнал: прыжок по нему (с реакцией 0.15 с) или чуть раньше накрывает вспышку; потом катится золотой диск:
 // прыгни на него, он подбросит вверх, и тарелка окажется под ногами.
-function ufoRound(b,rage){ b.st='hover'; b.t=0; b.n=0; b.cnt=randi(1,2+rage); b.gap=rand(.9,1.35); }
+function ufoRound(b,rage){ b.st='hover'; b.t=0; b.n=0; b.cnt=randi(1,2+rage); b.gap=rand(1.1,1.4); }
 function updUfo(b,dt,psx,gy,rage){
   const ax=Math.min(W*0.68,psx+560), ay=Math.max(96,gy-300);
   switch(b.st){
@@ -257,22 +259,22 @@ function updUfo(b,dt,psx,gy,rage){
       if(b.t>1.1) ufoRound(b,rage);
       break;
     case 'hover':
-      b.sx=ax+Math.sin(b.t*1.6)*Math.min(W*0.12,120); b.y=ay+Math.sin(b.t*2.6)*18;
-      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(.9,1.35);
-        const sx=b.x, sy=b.y+10, ang=Math.atan2((player.y-24)-sy, player.x-sx), m=chance(.6)?3:2, sp=rand(.22,.34), v=(330+rage*20)*rand(.9,1.15);
-        for(let i=0;i<m;i++){ const k=i-(m-1)/2, a=ang+k*sp;
-          b.obs.push({x:sx,y:sy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:13,kind:k<0?'bubL':k>0?'bubH':'ringL'}); }
-        beep(680,.07,'sine',.1);
-        if(b.n>=b.cnt){ b.n=0; b.st='charge'; b.t=0; b.td=rand(.8,1.1); b.beamX=psx; } }
+      b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y=ay+Math.sin(b.t*2.6)*18; // по горизонтали стоит: диски вылетают из одной точки с одной скоростью, интервал на подходе не плывёт
+      if(b.t>b.gap){ b.t=0; b.n++; b.gap=rand(1.1,1.5)-rage*.05; // не короче 1.05 с: прыжок 0.73 с и запас на реакцию
+        const low=chance(.55);
+        b.obs.push({x:camX+ax-b.hw,y:low?gy-20:gy-100,vx:speed-(300+rage*20),vy:0,r:low?15:17,kind:low?'ringL':'ringH'}); beep(low?660:990,.08,'sine',.1);
+        if(b.n>=b.cnt){ b.n=0; b.st='wait'; b.t=0; } }
       break;
-    case 'charge':
-      b.sx+=(psx-b.sx)*Math.min(1,dt*6); b.y+=(ay-20-b.y)*Math.min(1,dt*3); b.beamX=b.sx;
-      if(b.t>b.td){ b.st='beam'; b.t=0; beep(300,.5,'sawtooth',.12); }
+    case 'wait': // последний диск прошёл мимо гриба
+      b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y=ay+Math.sin(b.t*2.6)*18;
+      if(b.t>.5&&!obsAhead()){ b.st='mark'; b.t=0; b.mk=0; b.beamX=psx; b.M=1-rage*.05; b.liveAt=b.M+.26; b.liveEnd=b.M+.36; } // метка 1.0 с (не меньше 0.9); вспышка через 0.26 с после замирания и на 0.1 с: прыжок от замирания (реакция до 0.26 с) или на 0.35 с раньше накрывает её
       break;
-    case 'beam': // жжёт землю: увернуться можно только прыжком
-      b.y=ay-20;
-      if(b.t>0.12&&player.vy===0&&Math.abs(psx-b.beamX)<26) hit();
-      if(b.t>0.55){ b.st='plate'; b.t=0; beep(880,.12,'triangle',.1);
+    case 'mark': // метка на земле под грибом: три мига, на третьем замирает; вспышка жжёт землю, увернуться можно только прыжком
+      b.sx+=(psx-b.sx)*Math.min(1,dt*6); b.y+=(ay-20-b.y)*Math.min(1,dt*3); b.beamX=psx;
+      if(b.mk<3&&b.t>=b.M-.6+b.mk*.3){ b.mk++; beep(b.mk<3?700:1300,b.mk<3?.08:.25,'square',b.mk<3?.1:.16); if(b.mk===3) shake(5,.12); } // третий миг и есть замирание: громче и с толчком
+      if(b.t>b.liveAt&&b.t<b.liveEnd&&player.vy===0) hit();
+      if(b.t>b.liveAt&&!b.fired){ b.fired=1; beep(300,.4,'sawtooth',.12); }
+      if(b.t>b.liveEnd+.15){ b.fired=0; b.st='plate'; b.t=0; beep(880,.12,'triangle',.1);
         b.obs.push({x:camX+psx+Math.min(W*0.8,520)*rand(.7,1),y:gy-16,vx:speed-rand(220,300),vy:0,r:20,kind:'plate',act:'tramp'}); }
       break;
     case 'plate': // катится золотой диск; пропустил — всё сначала
@@ -432,7 +434,7 @@ function bossHit(b,top){
   if(b.kind==='balloon'){ b.scale=0.55+0.45*b.hp/b.max; beep(200,.4,'sawtooth',.1); }
   if(b.kind==='rooster') for(let i=0;i<14;i++) parts.push({x:b.x,y:top+20,vx:(Math.random()-.5)*500,vy:-Math.random()*400,l:.6,c:'#bfefff'});
   if(b.hp<=0){ bossKill(b); return; }
-  if(b.mini){ b.scale=0.65; b.waves=[]; b.obs=[]; showQuote(MINI_PHASE2[b.kind],true); } // сдулся и меняет атаку
+  if(b.mini){ b.scale=0.65; b.waves=[]; b.obs=[]; showQuote(b.easy?'СДУЛСЯ — ЕЩЁ ОДИН ТЫЧОК 👊':MINI_PHASE2[b.kind],true); } // сдулся; полная форма меняет атаку, лёгкая нет
   else showQuote('ТЫЧОК '+(b.max-b.hp)+'/'+b.max+' 👊',true);
   b.st='hurt'; b.t=0; b.vsx=900; b.vy=-520;
 }

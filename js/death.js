@@ -34,7 +34,7 @@ function die(){
   if(!spar) track((S<1?'endn:':'end:')+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег; endn — на узком экране
   player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
-  setTimeout(overCard,900);
+  dieT=setTimeout(overCard,900);
 }
 function overCard(){ // карточка конца забега; для спарринга зовётся и после победы
   if(!running)return;
