@@ -110,7 +110,6 @@ function drawBoss(t){
   if(!(b.hitT>0&&((t*24)|0)%2)){
     ctx.save(); ctx.translate(b.x-camX,b.y);
     if(b.st==='dead') ctx.rotate(b.rot);
-    if(b.mini) ctx.scale(b.scale,b.scale);
     BOSS_DRAW[b.kind](b,t);
     ctx.restore();
   }
@@ -129,12 +128,9 @@ function drawBoss(t){
   if(b.kind==='pigeon'&&b.st==='aim'&&((t*8)|0)%2){ ctx.strokeStyle='#ff3d3d'; ctx.lineWidth=3; const x=b.tx; ctx.beginPath(); ctx.moveTo(x-12,gy-12); ctx.lineTo(x+12,gy+2); ctx.moveTo(x+12,gy-12); ctx.lineTo(x-12,gy+2); ctx.stroke(); }
   // ударные волны
   for(const w of b.waves){ ctx.fillStyle='rgba(255,216,77,.8)'; ctx.fillRect(w.sx-14,gy-10,28,10); ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(w.sx-8,gy-18,16,8); }
-  // ШОК: пол под током
-  if(b.st==='pulse'){ ctx.fillStyle=b.live?'rgba(255,240,120,.95)':'rgba(255,240,120,'+(.3+.25*Math.sin(t*30))+')'; ctx.fillRect(0,gy-(b.live?12:4),W,b.live?16:6); }
   // снаряды
   for(const o of b.obs){
     const x=o.x-camX;
-    if(o.txt||o.kind==='spark'||o.kind==='goo'||o.kind==='gas'){ drawMiniObs(o,x,t); continue; }
     if(o.act){ ctx.fillStyle='#fff3b0'; for(let i=0;i<3;i++){ const a=t*5+i*2.1; ctx.fillRect(x+Math.cos(a)*(o.r+12)-2,o.y+Math.sin(a)*(o.r+6)-2,5,5); } }
     if(o.kind==='plate'){ ctx.fillStyle='#ffd84d'; ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x,o.y,o.r+8,o.r*.6,0,0,7); ctx.fill(); ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fillRect(x-10,o.y-4,20,3); }
     else if(o.kind==='decoy'){ ctx.fillStyle='#b5402e'; ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x,o.y+4,o.r+2,o.r,0,0,7); ctx.fill(); ctx.stroke(); ctx.fillStyle='#fff'; for(let i=-2;i<=2;i++){ ctx.beginPath(); ctx.moveTo(x+i*9-5,o.y-o.r+6); ctx.lineTo(x+i*9,o.y-o.r-12); ctx.lineTo(x+i*9+5,o.y-o.r+6); ctx.closePath(); ctx.fill(); ctx.stroke(); } }

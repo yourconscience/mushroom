@@ -31,7 +31,9 @@ function useBubble(){
 function die(){
   if(player.dead)return;
   if(oneUp>0){ revive(); return; }
-  if(!spar) track((S<1?'endn:':'end:')+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:player.y>H+80?'pit':'enemy')); // где и от чего кончился забег; endn — на узком экране
+  // где и от чего кончился забег; endn — на узком экране; активная элита (duel/charge/behind) важнее ямы и врага
+  const el=enemies.find(e=>e.type==='elite'&&(e.st==='duel'||e.st==='charge'||e.st==='behind'));
+  if(!spar) track((S<1?'endn:':'end:')+(zoneN+1)+':'+(boss&&boss.st!=='dead'?boss.kind:el?'e-'+el.ek:player.y>H+80?'pit':'enemy'));
   player.dead=true; player.vy=-500; if(AC)stopClip(); sDie(); scratch(); shake(14,.5);
   if(navigator.vibrate)navigator.vibrate([60,40,80]);
   dieT=setTimeout(overCard,900);

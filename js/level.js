@@ -36,13 +36,17 @@ let room=null, pipeZ=-9; // v43: тайная комната (null вне ком
 function reset(){
   player={x:120,y:H*0.4,vx:0,vy:0,w:36,h:40,jumps:2,dead:false,squish:0,big:false,inv:0};
   plats=[]; enemies=[]; parts=[]; pickups=[]; texts=[]; camX=0; speed=230; score=0; combo=0; comboT=0; dist=0; zoneI=0; zoneN=0; lap=0; beatI=0; nextBeat=0; jetT=0; spT=0; hyT=0; mgT=0; fsT=0; noirTo=0; document.body.style.filter=baseFilter(); spCd=0; spores=[]; wrenches=[]; shakeT=0; shakeA=0; slotCharges=0; spinning=false; zTimer=0; starT=0; zapT=0; ghostT=0; bubble=0; noKillT=0; pCombo=0; punches=[]; slotBtn.textContent='🎰 КРУТИТЬ'; slotBtn.classList.add('hidden');
-  boss=null; arena=null; room=null; pipeZ=-9; bossDone={}; bigGiven={}; bossOrder=[]; miniPlan={}; miniBag=[]; miniBlk=1; oneUp=0; sparWon=0; clearTimeout(sparT); clearTimeout(dieT); zoneIdx={}; bossR=null; miniR=null; // dieT: карточка прошлого забега не должна закрыть новый
-  const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг: старт прямо на арене нужного уровня
+  boss=null; arena=null; room=null; pipeZ=-9; bossDone={}; bigGiven={}; bossOrder=[]; miniBag=[]; eliteLvl={}; eliteUp=0; oneUp=0; sparWon=0; clearTimeout(sparT); clearTimeout(dieT); zoneIdx={}; bossR=null; miniR=null; // dieT: карточка прошлого забега не должна закрыть новый
+  const sl=spar?(spar.mini?3:6):charMode==='GNOY'?6:-1; // ГНОЙНЫЙ и спарринг босса: старт прямо на арене нужного уровня; спарринг элиты — на 4-м
   if(sl>=0){ dist=sl*ZONE_LEN+60; speed=420; zoneN=sl; zoneI=sl%ZONES.length; }
-  if(spar){ if(spar.mini) miniPlan[3]=MINI_KINDS[spar.i]; else bossOrder=[spar.i]; } // полная форма мини-босса, один босс в круге
+  if(spar&&!spar.mini) bossOrder=[spar.i]; // один босс в круге
   // стартовая земля
   plats.push({x:-100,y:H*0.72,w:900});
-  if(sl>=0){ arena=plats[0]; arena.w=1e7; arena.lvl=sl; } // старт прямо на арене
+  if(spar&&spar.mini){ // спарринг с элитой: одна ровная платформа без арены, элита в 700 px впереди
+    plats[0].w=1e7;
+    enemies.push({x:player.x+700,y:plats[0].y,p:plats[0],dead:0,t:0,type:'elite',ek:MINI_KINDS[spar.i].kind,hp:2,st:'idle',tt:0,chg:0,stage:1,sc:0.85,dir:-1,noGive:1});
+  }
+  else if(sl>=0){ arena=plats[0]; arena.w=1e7; arena.lvl=sl; } // старт прямо на арене
   else { let x=800; while(x<3000){ x=addPlat(x); } }
   gameOver=false;
   shufflePlaylist();
@@ -56,7 +60,8 @@ function addPlat(afterX){
   // арена босса: одна длинная ровная платформа без врагов и бонусов
   // pd, pz — путь и зона платформы в координатах dist: после боя с боссом они расходятся с мировым x
   const pd=dist+afterX+gap-player.x, pz=(pd/ZONE_LEN)|0, pzi=pz%ZONES.length;
-  if((bossAt(pz)||miniAt(pz))&&!bossDone[pz]&&!arena&&!boss){
+  if(bossAt(pz)&&!bossDone[pz]&&!arena&&!boss){
+    enemies=enemies.filter(e=>e.type!=='elite'); // арена убирает элиту с уровня без баннера
     const a={x:afterX+gap,y:Math.max(H*0.55,Math.min(H*0.74,last.y)),w:1e7,lvl:pz};
     plats.push(a); arena=a; return a.x+a.w;
   }
@@ -89,5 +94,6 @@ function addPlat(afterX){
     }
   }
   pipeRoll(p,R,pz); // труба: числа из потока платформы берём только после всех прежних, чтобы старые забеги дня не менялись
+  eliteRoll(p,R,pz,pd); // элита: тоже после трубы, поток платформы не меняется
   return p.x+w;
 }

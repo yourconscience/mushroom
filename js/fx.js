@@ -13,11 +13,11 @@ function stamp(txt,c){ const d=document.createElement('div'); d.className='stamp
 const COMBO_STAMPS={3:['ПАНЧ!','#ffd84d'],5:['ДАБЛ-ТАЙМ!','#c6ff3d'],7:['БЭНГЕР!','#ff3d7f'],10:['ЛЕГЕНДАРНО!','#7ad7ff'],15:['ОСТАНОВИТЕ ЕГО','#ffffff']};
 const BOSS_KO=['НОКАУТ ПАНЧЕМ','ДЖАДЖИ: 3-0','MIC DROP','СЛИТ','ГРИБ ЗАБРАЛ РАУНД'];
 let roundN=0;
-function vsCard(name,mini){
+function vsCard(name){
   roundN++;
   const d=document.createElement('div'); d.className='vs';
   const line=(cls,t)=>{ const e=document.createElement('div'); if(cls)e.className=cls; e.textContent=t; d.append(e); };
-  line('rd',(mini?'МИНИ-РАУНД ':'РАУНД ')+roundN); line('','ГРИБ'); line('v','VS'); line('',name);
+  line('rd','РАУНД '+roundN); line('','ГРИБ'); line('v','VS'); line('',name);
   document.body.appendChild(d); setTimeout(()=>d.remove(),1650);
 }
 function emojiRain(list,n){

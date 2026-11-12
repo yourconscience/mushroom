@@ -87,6 +87,7 @@ const SKINS={
   thrower:{cap:'#ff9f1c', body:'#2d6a4f', letter:'К'},
 };
 function drawEnemy(e,t){
+  if(e.type==='elite'){ drawElite(e,t); return; } // элита: своя фигурка и пойнты (см. minis.js)
   ctx.save(); ctx.translate(e.x-camX,e.y);
   if(zapT>0)ctx.scale(.6,.6); // молния: враги 60% размера
   if(e.dead){ ctx.scale(1,0.25); ctx.globalAlpha=Math.max(0,1-e.dead*2); }

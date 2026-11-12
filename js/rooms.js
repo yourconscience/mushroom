@@ -30,7 +30,7 @@ function pipeCheck(dt){
 // Куда выходит ЧЁРНЫЙ ХОД: min(уровень+2, первый уровень с ожидающей ареной), не менее чем на полуровня вперёд; иначе -1
 function backTarget(){
   let lim=zoneN+2;
-  for(let q=zoneN;q<=zoneN+2;q++) if((bossAt(q)||miniAt(q))&&!bossDone[q]){ lim=Math.min(lim,q); break; }
+  for(let q=zoneN;q<=zoneN+2;q++) if(bossAt(q)&&!bossDone[q]){ lim=Math.min(lim,q); break; }
   return lim-dist/ZONE_LEN>=.5?lim:-1;
 }
 function enterRoom(kind,pl){
@@ -39,6 +39,7 @@ function enterRoom(kind,pl){
   if(kind==='back'){ tg=backTarget(); if(tg<0) kind='cellar'; }
   const K=ROOM_KINDS[kind];
   if(!pl) pl=plats.find(q=>q.w<1e6&&player.x>=q.x&&player.x<=q.x+q.w);
+  enemies=enemies.filter(e=>e.type!=='elite'); // комната убирает элиту с уровня без баннера
   room={kind,t:0,T:K.t,tg,pl,x0:player.x,endX:player.x+ROOM_SPEED*K.t,coins:[],done:0,
     sv:{plats,enemies,pickups,spores,wrenches,arena,camX,speed,px:player.x,py:player.y,slot:slotCharges}};
   const fl=H*0.72;
@@ -69,6 +70,7 @@ function exitRoom(){
     dist=r.tg*ZONE_LEN+1;
     for(const k in zoneIdx) if(+k>=r.tg) delete zoneIdx[k]; // счётчики платформ уровней впереди с нуля: забег дня одинаков у всех
     for(const k in bigGiven) if(+k>=r.tg) delete bigGiven[k];
+    for(const k in eliteLvl) if(+k>=r.tg) delete eliteLvl[k]; // элиты на перестроенных уровнях выпадут заново
     speed=sv.speed; arena=null; enemies=[]; pickups=[];
     player.y=H*0.72; player.vy=0;
     plats=[{x:player.x-100,y:player.y,w:900}];

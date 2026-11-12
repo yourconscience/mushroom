@@ -13,15 +13,15 @@ const BOSS_TIP={
   king:'СЕЛ И ПОЛЗЁТ — БЕЙ В ШЛЯПКУ; В БРОНЕ — СНАЧАЛА РАЗДАВИ СОЛДАТА ⭐',
 };
 function startBoss(){
-  const d=bossAt(arena.lvl)||miniAt(arena.lvl), sz=BOSS_SIZE[d.kind];
-  boss={easy:d.easy||0,mini:!!d.mini,lvl:arena.lvl,kind:d.kind,name:d.name,hp:d.hp,max:d.hp,hw:sz[0],hh:sz[1],gy:arena.y,sx:W+80,y:d.kind==='plumber'||d.kind==='rooster'?-200:H*0.1,
+  const d=bossAt(arena.lvl), sz=BOSS_SIZE[d.kind];
+  boss={lvl:arena.lvl,kind:d.kind,name:d.name,hp:d.hp,max:d.hp,hw:sz[0],hh:sz[1],gy:arena.y,sx:W+80,y:d.kind==='plumber'||d.kind==='rooster'?-200:H*0.1,
         vy:0,vsx:0,st:'enter',t:0,n:0,hitT:0,rot:0,scale:1,alpha:1,waves:[],obs:[],vuln:false,solid:false};
   boss.x=camX+boss.sx;
   enemies=enemies.filter(e=>e.x<player.x-40);
-  showQuote((d.mini?'МИНИ-БОСС: ':'БОСС: ')+boss.name,true); if(d.line) showQuote(d.line,false); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
-  const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },d.easy?0:1800); // у лёгкого мини-босса подсказка сразу
-  metaEvent(d.mini?'mini':'boss',d.kind);
-  vsCard(boss.name,d.mini); airhorn();
+  showQuote('БОСС: '+boss.name,true); shake(10,.4); beep(110,.5,'sawtooth',.15); setTimeout(()=>beep(82,.6,'sawtooth',.15),250);
+  const lvl=boss.lvl; setTimeout(()=>{ if(boss&&boss.lvl===lvl&&boss.hp===boss.max) showQuote(BOSS_TIP[boss.kind],false); },1800);
+  metaEvent('boss',d.kind);
+  vsCard(boss.name); airhorn();
 }
 const rand=(a,b)=>a+Math.random()*(b-a), randi=(a,b)=>a+((Math.random()*(b-a+1))|0), chance=p=>Math.random()<p; // разброс поведения
 // Рывок на гриб: своя скорость и иногда заминка, но только издалека: заминка рядом ловит того, кто уже прыгнул.
@@ -37,22 +37,21 @@ function bossThrow(b){
 function obsAhead(){ return boss.obs.some(o=>o.x>player.x-20); }
 function bossKill(b){
   b.st='dead'; b.t=0; b.vsx=520; b.vy=-900; b.waves=[]; b.obs=[]; b.frz=0;
-  score+=b.mini?(b.easy?750:1500):5000; confetti(b.mini?30:90); shake(18,.6);
+  score+=5000; confetti(90); shake(18,.6);
   if(b.kind==='rooster') for(let i=0;i<40;i++) parts.push({x:b.x,y:b.y-b.hh/2,vx:(Math.random()-.5)*900,vy:-Math.random()*700,l:1,c:Math.random()<.5?'#bfefff':'#ffffff'});
   if(b.kind==='balloon') beep(160,.8,'sawtooth',.14);
   for(let i=0;i<3;i++) setTimeout(()=>firework(camX+W*(0.3+Math.random()*0.5),H*(0.2+Math.random()*0.3)),i*220);
-  showQuote(b.mini?(b.easy?'МИНИ-БОСС СЛИТ +750 🎤':'МИНИ-БОСС СЛИТ +1500 🎤'):'БОСС ПОВЕРЖЕН +5000 🏆',true);
-  stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],b.mini?14:30);
+  showQuote('БОСС ПОВЕРЖЕН +5000 🏆',true);
+  stamp(BOSS_KO[(Math.random()*BOSS_KO.length)|0]); airhorn(); emojiRain(['🎤','🔥','🍄','💿'],30);
   bossDone[b.lvl]=true;
-  if(!b.mini) metaEvent('beat',b.kind); else metaEvent('minibeat',b.kind);
-  if(b.mini&&!spar) pickups.push({x:player.x+300,y:b.gy-52,kind:'life',t:0}); // мини-босс всегда роняет 1UP впереди гриба; арена режется до камеры+1.6W, 300 впереди остаётся
+  metaEvent('beat',b.kind);
   if(spar){ sparWon=1; sparT=setTimeout(()=>{ if(spar) overCard(); },2500); } // спарринг: через 2.5 с карточка
   if(arena){ // обрезаем арену и убираем всё, что генератор успел поставить за ней
     arena.w=Math.max(200,camX+W*1.6-arena.x); const end=arena.x+arena.w;
     plats=plats.filter(p=>p.x<end); enemies=enemies.filter(e=>e.x<end); pickups=pickups.filter(b=>b.x<end);
     arena=null;
   }
-  if(!b.mini) dist=(zoneN+1)*ZONE_LEN+1; // следующий уровень и новый трек начинаются сразу; мини-босс зону не сбрасывает
+  dist=(zoneN+1)*ZONE_LEN+1; // следующий уровень и новый трек начинаются сразу
 }
 // №1 ГЛАВНЫЙ САНТЕХНИК: ключи → (после первого тычка прыжок с волной) → устал и прёт на гриб
 function plumberRound(b,rage){ b.st='throw'; b.t=0; b.n=0; b.cnt=randi(1,2+(rage>=2?1:0)); b.gap=rand(bossGap(rage),bossGap(rage)+.5); b.ax=rand(.66,.82); }
@@ -372,7 +371,7 @@ function updBoss(dt,onGround){
   if(!(b.frz>0)) BOSS_UPD[b.kind](b,dt,psx,gy,rage);
   b.x=camX+b.sx;
   // ударная волна по земле: перепрыгни
-  for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*(b.easy?.8:1)*dt;
+  for(const w of b.waves){ w.sx+=w.d*(430+rage*25)*dt;
     if(!player.dead&&ghostT<=0&&onGround&&Math.abs(w.sx-psx)<16){ w.dead=1; hit(); } } // призрак: волны проходят; звезда: hit() ничего не делает, волна гаснет
   b.waves=b.waves.filter(w=>!w.dead&&w.sx>-60&&w.sx<W+60);
   // снаряды: яйца падают и лежат, пузыри и осколки летят на гриб
@@ -394,10 +393,6 @@ function updBoss(dt,onGround){
   // контакт с самим боссом
   if(player.dead||!b.solid||ghostT>0)return; // призрак проходит сквозь босса, без тычков
   const hh=b.hh*b.scale, top=b.y-hh, dx=Math.abs(player.x-b.x);
-  if(b.mini){ // телом не бьёт, поэтому окно для тычка широкое
-    if(player.vy>0&&dx<b.hw+34*psc&&player.y>top-10&&player.y<top+hh*.7){ player.vy=JUMP*0.78; player.jumps=maxJumps(); bossHit(b,top); }
-    return;
-  }
   if(b.below){ // бьётся снизу макушкой; приземление на гриб или касание стоя/падая — удар по грибу
     if(b.st!=='bounce') return; // пока летит на старт дуги — не задевает и не бьётся
     if(player.vy<0&&dx<b.hw*b.scale+44*psc&&player.y-40*psc<b.y+10&&player.y-40*psc>top){ player.vy=120; bossHit(b,b.y); }
@@ -428,7 +423,9 @@ function firePunch(){
   const t=enemies.filter(e=>!e.dead&&e.x>px&&e.x<camX+W).sort((a,c)=>a.x-c.x).slice(0,3);
   if(!t.length) punches.push({x0:px,y0:py,x1:camX+W,y1:py,l:.3});
   for(const e of t){
-    e.dead=0.01; score+=100; punches.push({x0:px,y0:py,x1:e.x,y1:e.y-20,l:.3});
+    punches.push({x0:px,y0:py,x1:e.x,y1:e.y-20,l:.3});
+    if(e.type==='elite'){ eliteHit(e); continue; } // элита: панч снимает один тычок
+    e.dead=0.01; score+=100;
     popText(e.x,e.y-60,'+100','#ff7aa8'); firework(e.x,e.y-40);
   }
   sStomp(); shake(4,.15);
@@ -447,8 +444,7 @@ function bossHit(b,top){
   if(b.kind==='balloon'){ b.scale=0.55+0.45*b.hp/b.max; beep(200,.4,'sawtooth',.1); }
   if(b.kind==='rooster') for(let i=0;i<14;i++) parts.push({x:b.x,y:top+20,vx:(Math.random()-.5)*500,vy:-Math.random()*400,l:.6,c:'#bfefff'});
   if(b.hp<=0){ bossKill(b); return; }
-  if(b.mini){ b.scale=0.65; b.waves=[]; b.obs=[]; showQuote(b.easy?'СДУЛСЯ — ЕЩЁ ОДИН ТЫЧОК 👊':MINI_PHASE2[b.kind],true); } // сдулся; полная форма меняет атаку, лёгкая нет
-  else showQuote('ТЫЧОК '+(b.max-b.hp)+'/'+b.max+' 👊',true);
+  showQuote('ТЫЧОК '+(b.max-b.hp)+'/'+b.max+' 👊',true);
   if(b.kind==='balloon'&&b.max-b.hp===2) showQuote('ДВА КОЛЬЦА ПОДРЯД: ПЕРЕПРЫГНИ И ПРОБЕЙ ВТОРЫМ ПРЫЖКОМ В ВОЗДУХЕ ⭐',false);
   b.st='hurt'; b.t=0; b.vsx=900; b.vy=-520;
 }

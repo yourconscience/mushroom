@@ -97,6 +97,7 @@ function loop(ts){
   const emult=ZONES[zoneI].mult*(1+lap*0.25), zm=zapT>0?.5:1, zs=zapT>0?.6:1; // молния: враги вдвое медленнее и мельче
   for(const e of enemies){
     if(e.dead){ e.dead+=dt; continue; }
+    if(e.type==='elite'){ updElite(e,dt,t); continue; } // элита живёт своим циклом (см. minis.js)
     if(e.spd===undefined){ // характер выбирается один раз
       e.spd=0.85+Math.random()*0.5; e.fr=2.2+Math.random()*1.6; e.amp=14+Math.random()*20;
       e.pat=Math.random(); e.cd2=0.8+Math.random()*2.4; e.lunge=0; e.hopV=340+Math.random()*120;
