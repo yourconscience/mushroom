@@ -90,9 +90,13 @@ def main():
             titles.append(None)
             continue
         files.append(name)
-        titles.append(title_of(src))
-        tracklist.append(f"| {i} | {title_of(src)} | {start}s |")
+        title = cfg.get("title") or title_of(src)  # "title": the name shown in the game when the file name spells the artist differently
+        titles.append(title)
+        tracklist.append(f"| {i} | {title} | {start}s |")
         print(f"{name} {start}s  {os.path.basename(src)}")
+    for f in os.listdir(CLIPS):  # clips left over from a longer pool
+        if re.fullmatch(r"\d+\.mp3", f) and f not in files:
+            os.remove(os.path.join(CLIPS, f))
     json.dump({"files": files, "t": [obf(t) for t in titles]},
               open(os.path.join(CLIPS, "manifest.json"), "w"), indent=0, ensure_ascii=False)
     open(os.path.join(MUSIC, "TRACKLIST.md"), "w", encoding="utf8").write("\n".join(tracklist) + "\n")
