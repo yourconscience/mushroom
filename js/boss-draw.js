@@ -20,9 +20,10 @@ function drawBalloonB(b,t){
     const tx=b.touchX-b.sx, gy=b.gy, apex=b.apex||150;
     const hgt=Math.max(0,gy-b.y), grow=Math.min(1,Math.max(0,1-hgt/apex)); // 0 на вершине, 1 у земли
     const fin=b.touchIdx===0;
-    ctx.globalAlpha=(fin?0.5:0.3)+(fin?0.2*Math.sin(t*8):0);
-    ctx.fillStyle=fin?'#ff3d3d':'#000';
-    ctx.beginPath(); ctx.ellipse(tx,gy-b.y+2,(rx+8)*(0.35+0.65*grow),7*(0.35+0.65*grow),0,0,7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.globalAlpha=fin?0.75+0.2*Math.sin(t*10):0.5; // красная с белым кольцом: видна и на красной земле
+    ctx.fillStyle=fin?'#ff2a2a':'#000';
+    ctx.beginPath(); ctx.ellipse(tx,gy-b.y+3,(rx+10)*(0.35+0.65*grow),9*(0.35+0.65*grow),0,0,7); ctx.fill();
+    if(fin){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); } ctx.globalAlpha=1;
   }
   ctx.strokeStyle=OL; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,8); ctx.lineTo(6,8); ctx.closePath(); ctx.fillStyle='#d94c80'; ctx.fill(); ctx.stroke(); // узелок
@@ -140,6 +141,14 @@ function drawBoss(t){
     else if(o.kind==='egg'){ ctx.fillStyle=o.act?'#ffd84d':'#fff6e0'; ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x,o.y,o.r*0.8,o.r,0,0,7); ctx.fill(); ctx.stroke();
       if(o.mark!=null&&!o.bounced){ ctx.strokeStyle='#ff3d3d'; ctx.lineWidth=2; const mx=o.mark-camX; ctx.beginPath(); ctx.moveTo(mx-9,gy-9); ctx.lineTo(mx+9,gy); ctx.moveTo(mx+9,gy-9); ctx.lineTo(mx-9,gy); ctx.stroke(); } }
     else if(o.kind==='shard'){ ctx.fillStyle='#bfefff'; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x-10,o.y+9); ctx.lineTo(x-2,o.y-10); ctx.lineTo(x+4,o.y+2); ctx.lineTo(x+10,o.y+9); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    else if(b.kind==='rooster'){ // ноты песни: стеклянные, низкая — одна, высокая — пара под ребром
+      const hi=o.kind==='ringH'; ctx.fillStyle='#bfefff'; ctx.strokeStyle=OL; ctx.lineWidth=2;
+      for(const dx of hi?[-9,9]:[0]){ ctx.beginPath(); ctx.ellipse(x+dx-3,o.y+9,8,6,-.4,0,7); ctx.fill(); ctx.stroke(); ctx.fillRect(x+dx+3,o.y-17,3,25); ctx.strokeRect(x+dx+3,o.y-17,3,25); }
+      if(hi){ ctx.fillRect(x-6,o.y-19,21,6); ctx.strokeRect(x-6,o.y-19,21,6); } else { ctx.beginPath(); ctx.moveTo(x+6,o.y-17); ctx.lineTo(x+17,o.y-9); ctx.lineTo(x+6,o.y-9); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+    else if(b.kind==='ufo'){ // диски тарелки: металл и бегущие огни
+      ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.fillStyle='#9aa3b5'; ctx.beginPath(); ctx.ellipse(x,o.y,o.r+7,o.r*.45,0,0,7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#d5dbe8'; ctx.beginPath(); ctx.ellipse(x,o.y-4,o.r*.55,o.r*.32,0,Math.PI,0); ctx.fill(); ctx.stroke();
+      for(let i=-1;i<=1;i++){ ctx.fillStyle=((t*8+i)|0)%2?'#ffe14d':'#ff5a4d'; ctx.fillRect(x+i*10-2,o.y+1,4,4); } }
     else { const ring=o.kind[0]==='r', low=o.kind.endsWith('L');
       ctx.globalAlpha=.85; ctx.strokeStyle=low?'#ff7aa8':'#7ad7ff'; ctx.lineWidth=ring?4:2.5;
       ctx.fillStyle=ring?'rgba(0,0,0,0)':(low?'rgba(255,122,168,.35)':'rgba(122,215,255,.35)');

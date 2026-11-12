@@ -75,7 +75,7 @@ No build step. `index.html` holds the markup and loads `style.css` and `js/*.js`
 
 ## Version
 
-Current build: **v44** (shown in the bottom-right corner of the game).
+Current build: **v45** (shown in the bottom-right corner of the game).
 
 ## Credits
 

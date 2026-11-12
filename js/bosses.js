@@ -94,17 +94,18 @@ function updPlumber(b,dt,psx,gy,rage){
 // №2 ГОЛУБИНЫЙ КОРОЛЬ: сам недосягаем. Несёт яйца, они скачут по земле к грибу:
 // под высокой дугой стой, низкое касание перепрыгни. Последнее яйцо золотое и тоже скачет —
 // топни его, и оно полетит обратно в голубя. Пропустил — пикирует и проносится по земле, это надо перепрыгнуть.
-const PIGEON_EGGS={ hi:{a:170,bv:850,r:13}, mid:{a:240,bv:700,r:13}, lo:{a:380,bv:490,r:13} }; // a — скорость подхода по экрану, bv — скорость отскока (дуга bv²/2G)
+const PIGEON_EGGS={ hi:{a:200,bv:800,r:13}, mid:{a:240,bv:760,r:13}, lo:{a:380,bv:600,r:13} }; // a — скорость подхода по экрану, bv — скорость отскока (дуга bv²/2G)
 function pigeonRound(b,rage){
   b.st='hover'; b.t=0; b.n=0; b.gap=rand(.8,1.1); b.ao=rand(0,60);
-  b.eggs=rage===0?['hi']:rage===1?['hi','mid']:['mid','hi','lo']; // незолотые яйца; золотое — всегда последнее
+  b.eggs=rage===0?['hi']:rage===1?['mid','hi']:['lo','mid','hi']; // незолотые яйца; золотое — всегда последнее
 }
 function pigeonEgg(b,psx,gy,prof,gold){
-  const a=prof.a, bv=prof.bv, r=prof.r, sx=b.sx-b.hw, sy=b.y;
+  const a=prof.a*(gold?1:rand(.88,1.12)), bv=prof.bv, r=prof.r, sx=b.sx-b.hw, sy=b.y;
   const dropH=Math.max(40,sy-(gy-r)), T=Math.sqrt(2*dropH/G), mark=camX+sx-a*T; // первая точка касания земли
   b.obs.push({x:camX+sx,y:sy,vx:speed-a,vy:0,r,bv,bounced:0,mark,kind:'egg',grav:1,act:gold?'kick':null,
               stopAt:gold?(psx+34):null,sit:gold?1.5:0});
   beep(gold?880:520,.06,'triangle');
+  return (sx-psx)/a; // сколько яйцу идти до гриба
 }
 function updPigeon(b,dt,psx,gy,rage){
   const ax=Math.min(W*0.7,psx+560)+(b.ao||0), ay=Math.max(110,gy-300);
@@ -114,9 +115,9 @@ function updPigeon(b,dt,psx,gy,rage){
       b.sx+=(ax-b.sx)*Math.min(1,dt*3); b.y=ay+Math.sin(b.t*3)*14;
       if(b.t>b.gap){ b.t=0; b.n++; const gold=b.n>b.eggs.length;
         const prof=PIGEON_EGGS[gold?'hi':b.eggs[b.n-1]];
-        pigeonEgg(b,psx,gy,prof,gold);
-        b.gap=gold?rand(1.5,1.9):rand(.8,1.15)-rage*.04; // золотое с паузой, чтобы успеть приземлиться
-        if(gold){ b.n=0; b.st='wait'; b.t=0; b.dv=chance(.7); b.tx=psx+rand(270,400); } }
+        const T=pigeonEgg(b,psx,gy,prof,gold), nx=PIGEON_EGGS[b.n<b.eggs.length?b.eggs[b.n]:'hi'];
+        b.gap=gold?0:Math.max(.5,T+rand(1.4,1.8)-(b.sx-b.hw-psx)/nx.a); // яйца приходят к грибу с интервалом 1.4–1.8 с: одним прыжком хватает на каждое
+        if(gold){ b.n=0; b.st='wait'; b.t=0; b.dv=rage===0||chance(.7); b.tx=psx+rand(270,400); } }
       break;
     case 'wait': // ждёт, пока все яйца позади; золотое топнули — новый круг, пропустил — пикирует
       b.sx+=(ax+40-b.sx)*Math.min(1,dt*3); b.y+=(ay-30-b.y)*Math.min(1,dt*3);
@@ -387,7 +388,7 @@ function updBoss(dt,onGround){
       if(!player.dead&&ghostT<=0&&player.vy>40&&Math.abs(player.x-o.x)<o.r+26*psc&&player.y>o.y-o.r-36&&player.y<=o.y+o.r+4){ o.dead=1; bossAct(b,o); }
       continue;
     }
-    if(!player.dead&&player.inv<=0&&ghostT<=0&&Math.abs(player.x-o.x)<o.r+12*psc&&Math.abs(player.y-20*psc-o.y)<o.r+18*psc){ o.dead=1; hit(); }
+    if(!player.dead&&player.inv<=0&&ghostT<=0&&Math.abs(player.x-o.x)<o.r+(o.kind==='egg'?7:12)*psc&&Math.abs(player.y-20*psc-o.y)<o.r+(o.kind==='egg'?14:18)*psc){ o.dead=1; hit(); } // яйцо скачет: рамка поуже, чтобы промах на волосок не считался
   }
   b.obs=b.obs.filter(o=>!o.dead&&o.x>camX-80&&o.x<camX+W+600);
   // контакт с самим боссом
@@ -399,7 +400,7 @@ function updBoss(dt,onGround){
   }
   if(b.below){ // бьётся снизу макушкой; приземление на гриб или касание стоя/падая — удар по грибу
     if(b.st!=='bounce') return; // пока летит на старт дуги — не задевает и не бьётся
-    if(player.vy<0&&dx<b.hw*b.scale+16*psc&&player.y-40*psc<b.y+10&&player.y-40*psc>top){ player.vy=120; bossHit(b,b.y); }
+    if(player.vy<0&&dx<b.hw*b.scale+44*psc&&player.y-40*psc<b.y+10&&player.y-40*psc>top){ player.vy=120; bossHit(b,b.y); }
     else if(b.touchIdx===0&&player.vy>=0&&dx<b.hw*b.scale+20*psc&&player.y-40*psc<b.y+6&&player.y>top-8){ hit(); } // падает на гриб: только последнее касание
     return;
   }
@@ -448,5 +449,6 @@ function bossHit(b,top){
   if(b.hp<=0){ bossKill(b); return; }
   if(b.mini){ b.scale=0.65; b.waves=[]; b.obs=[]; showQuote(b.easy?'СДУЛСЯ — ЕЩЁ ОДИН ТЫЧОК 👊':MINI_PHASE2[b.kind],true); } // сдулся; полная форма меняет атаку, лёгкая нет
   else showQuote('ТЫЧОК '+(b.max-b.hp)+'/'+b.max+' 👊',true);
+  if(b.kind==='balloon'&&b.max-b.hp===2) showQuote('ДВА КОЛЬЦА ПОДРЯД: ПЕРЕПРЫГНИ И ПРОБЕЙ ВТОРЫМ ПРЫЖКОМ В ВОЗДУХЕ ⭐',false);
   b.st='hurt'; b.t=0; b.vsx=900; b.vy=-520;
 }
