@@ -10,7 +10,7 @@ const MINI_KINDS=[
   {name:'ТАНЦОР', kind:'dancer',hp:2,mini:1,line:'ТАНЦПОЛ ОТКРЫТ 🕺'},
   {name:'РИКИ Ф', kind:'ricky', hp:2,mini:1,line:'РИКИ Ф НА БИТЕ 🎧'},
 ];
-let miniBag=[], miniR=null, eliteLvl={}, eliteUp=0; // eliteLvl: на каком уровне элита уже выпала; eliteUp: первая элита забег уже уронила 1UP
+let miniBag=[], miniR=null, eliteLvl={}, eliteUp=0, eliteFlip=1; // eliteLvl: на каком уровне элита уже выпала; eliteUp: первая элита забег уже уронила 1UP
 const ELITE_CHANCE=0.24; // доля подходящих платформ с элитой: целимся в половину уровней 4..12
 function miniKind(){
   if(!miniBag.length){ miniBag=MINI_KINDS.map((_,i)=>i); const R=miniR||(miniR=rngFor('mini')); for(let j=miniBag.length-1;j>0;j--){ const r=(R()*(j+1))|0; [miniBag[j],miniBag[r]]=[miniBag[r],miniBag[j]]; } }
@@ -31,7 +31,7 @@ function eliteGround(x){ for(const p of plats) if(x>=p.x-6&&x<=p.x+p.w+6) return
 function eliteHop(e,back){
   const q=plats.filter(p=>p.x>e.x&&p.x+p.w>e.x+10).sort((a,b)=>a.x-b.x)[0];
   if(!q) return false;
-  e.back=back; e.st='hop'; e.tt=0; e.hx0=e.x; e.hy0=e.y;
+  e.back=back; e.bt=e.tt; e.st='hop'; e.tt=0; e.hx0=e.x; e.hy0=e.y; // bt: таймер прерванного состояния, после прыжка идёт дальше
   e.hx1=Math.min(q.x+44,q.x+q.w-30); e.hy1=q.y;
   e.hT=Math.max(.3,Math.min(.75,(e.hx1-e.x)/420)); e.hA=80+Math.max(0,e.hy0-e.hy1);
   return true;
@@ -57,14 +57,17 @@ function updElite(e,dt,t){
   const D=Math.min(380,W*0.55), zm=zapT>0?.5:1; // молния: элита медленнее
   e.tt+=dt;
   if(e.st==='idle'){
-    if(!player.dead&&Math.abs(player.x-e.x)<620){ // заметила гриба: баннер, строка, горн
+    if(!player.dead&&Math.abs(player.x-e.x)<620&&!enemies.some(q=>q!==e&&q.type==='elite'&&!q.dead&&q.st!=='idle')){ // заметила гриба (пока другая элита в деле — ждёт): баннер, строка, горн
       const k=MINI_KINDS.find(m=>m.kind===e.ek);
       showQuote('МИНИ-БОСС: '+k.name,true); setTimeout(()=>showQuote(k.line,false),120); metaEvent('mini',e.ek);
       beep(110,.35,'sawtooth',.14); setTimeout(()=>beep(82,.45,'sawtooth',.14),220);
-      e.st='duel'; e.tt=0;
+      e.st='duel'; e.tt=0; e.life=0;
     }
     return;
   }
+  e.life+=dt;
+  if(!e.noGive&&e.life>26&&(e.st==='duel'||e.st==='behind')){ // погоня не вечная: 26 с — и сбежала, даже если рельеф мешал таранить
+    e.st='flee'; e.tt=0; showQuote(MINI_KINDS.find(m=>m.kind===e.ek).name+' СБЕЖАЛ',true); beep(300,.3,'triangle',.1); }
   switch(e.st){
     case 'duel':{ // держит дистанцию впереди гриба и бежит вместе со скроллом, лицом к грибу
       const q=eliteGround(e.x);
@@ -88,7 +91,7 @@ function updElite(e,dt,t){
     case 'hop':{
       const k=Math.min(1,e.tt/e.hT);
       e.x=e.hx0+(e.hx1-e.hx0)*k; e.y=e.hy0+(e.hy1-e.hy0)*k-Math.sin(Math.PI*k)*e.hA;
-      if(k>=1){ e.y=e.hy1; e.st=e.back; e.tt=0; }
+      if(k>=1){ e.y=e.hy1; e.st=e.back; e.tt=e.bt+e.hT; }
       break;
     }
     case 'behind': // ушла за левый край; третий таран без тычка — сбежала
@@ -136,9 +139,10 @@ function drawElite(e,t){
   const sc=e.sc*(zapT>0?.6:1), cr=(e.st==='charge'&&!e.go)?1:0; // присед на замахе
   ctx.save(); ctx.translate(e.x-camX,e.y);
   if(e.dead){ ctx.scale(1,.25); ctx.globalAlpha=Math.max(0,1-e.dead*2); }
-  ctx.scale(e.dir*sc*(1+cr*.1),sc*(1-cr*.22));
+  eliteFlip=e.st==='flee'?-1:1; // фигурки нарисованы лицом влево, к грибу; убегая, разворачивается
+  ctx.scale(eliteFlip*sc*(1+cr*.1),sc*(1-cr*.22));
   BOSS_DRAW[e.ek](e,t);
-  ctx.restore();
+  ctx.restore(); eliteFlip=1;
   if(e.dead)return;
   const x=e.x-camX, hy=e.y-86*sc;
   ctx.fillStyle='#ff2d78';
@@ -155,7 +159,7 @@ function miniDude(body,skin,label,t){
   ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(10,-58+bob,12,58-bob);
   ob(-16,-86+bob,32,28,skin);
   ctx.fillStyle='#222'; ctx.fillRect(-11,-76+bob,6,5); ctx.fillRect(3,-76+bob,6,5);
-  ctx.fillStyle='#fff'; ctx.font="800 8px 'Unbounded',system-ui,sans-serif"; ctx.textAlign='center'; ctx.fillText(label,0,-30+bob); ctx.textAlign='left';
+  ctx.fillStyle='#fff'; ctx.font="800 8px 'Unbounded',system-ui,sans-serif"; ctx.textAlign='center'; ctx.save(); ctx.scale(eliteFlip,1); ctx.fillText(label,0,-30+bob); ctx.restore(); ctx.textAlign='left'; // надпись не зеркалим
   return bob;
 }
 function drawOxy(b,t){
